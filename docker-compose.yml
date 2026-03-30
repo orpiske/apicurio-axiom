@@ -36,7 +36,7 @@ services:
       - -c
       - |
         echo "Waiting for NATS to be ready..."
-        until nats --server=nats:4222 server ping; do
+        until nats --server=nats:4222 account info >/dev/null 2>&1; do
           echo "NATS not ready, waiting..."
           sleep 2
         done
