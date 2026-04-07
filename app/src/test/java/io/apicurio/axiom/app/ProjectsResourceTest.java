@@ -1,0 +1,318 @@
+package io.apicurio.axiom.app;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+/**
+ * Tests for the Projects REST API endpoints, including tasks and threads.
+ */
+@QuarkusTest
+class ProjectsResourceTest {
+
+    private static final String PROJECTS_PATH = "/api/v1/projects";
+
+    // ── Projects CRUD ─────────────────────────────────────────────────
+
+    @Test
+    void testListProjectsEmpty() {
+        given()
+            .when()
+                .get(PROJECTS_PATH)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("$", is(notNullValue()));
+    }
+
+    @Test
+    void testCreateAndGetProject() {
+        int id = given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {
+                    "name": "Test Project",
+                    "description": "A test project",
+                    "type": "bug-fix",
+                    "issueSource": "github",
+                    "issueRef": "owner/repo#1",
+                    "repository": "owner/repo"
+                }
+                """)
+            .when()
+                .post(PROJECTS_PATH)
+            .then()
+                .statusCode(200)
+                .body("name", equalTo("Test Project"))
+                .body("description", equalTo("A test project"))
+                .body("type", equalTo("bug-fix"))
+                .body("status", equalTo("Created"))
+                .body("issueSource", equalTo("github"))
+                .body("issueRef", equalTo("owner/repo#1"))
+                .body("repository", equalTo("owner/repo"))
+                .body("id", notNullValue())
+                .body("createdOn", notNullValue())
+                .body("updatedOn", notNullValue())
+                .extract().path("id");
+
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("name", equalTo("Test Project"))
+                .body("id", equalTo(id));
+    }
+
+    @Test
+    void testUpdateProject() {
+        int id = createProject("Update Test", "feature", "owner/repo#100");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {
+                    "name": "Updated Name",
+                    "description": "Updated description"
+                }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("name", equalTo("Updated Name"))
+                .body("description", equalTo("Updated description"))
+                .body("type", equalTo("feature"));
+    }
+
+    @Test
+    void testDeleteProject() {
+        int id = createProject("Delete Test", "other", "owner/repo#200");
+
+        given()
+            .when()
+                .delete(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(204);
+
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void testGetProjectNotFound() {
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/999999")
+            .then()
+                .statusCode(404);
+    }
+
+    // ── Project Lifecycle ─────────────────────────────────────────────
+
+    @Test
+    void testValidStatusTransition() {
+        int id = createProject("Lifecycle Test", "bug-fix", "owner/repo#300");
+
+        // Created → InProgress (valid)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "status": "InProgress" }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("status", equalTo("InProgress"));
+
+        // InProgress → Idle (valid)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "status": "Idle" }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("status", equalTo("Idle"));
+
+        // Idle → Completed (valid)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "status": "Completed" }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("status", equalTo("Completed"));
+    }
+
+    @Test
+    void testInvalidStatusTransition() {
+        int id = createProject("Invalid Lifecycle", "bug-fix", "owner/repo#301");
+
+        // Created → Completed (invalid — must go through InProgress)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "status": "Completed" }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(409);
+    }
+
+    @Test
+    void testReopenCompletedProject() {
+        int id = createProject("Reopen Test", "bug-fix", "owner/repo#302");
+
+        // Created → InProgress → Completed
+        updateStatus(id, "InProgress");
+        updateStatus(id, "Completed");
+
+        // Completed → InProgress (valid re-open)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "status": "InProgress" }
+                """)
+            .when()
+                .put(PROJECTS_PATH + "/" + id)
+            .then()
+                .statusCode(200)
+                .body("status", equalTo("InProgress"));
+    }
+
+    // ── Tasks ─────────────────────────────────────────────────────────
+
+    @Test
+    void testCreateAndListTasks() {
+        int projectId = createProject("Task Test", "feature", "owner/repo#400");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {
+                    "actionType": "analyze",
+                    "input": "Please analyze this issue"
+                }
+                """)
+            .when()
+                .post(PROJECTS_PATH + "/" + projectId + "/tasks")
+            .then()
+                .statusCode(200)
+                .body("actionType", equalTo("analyze"))
+                .body("createdBy", equalTo("user"))
+                .body("status", equalTo("Pending"))
+                .body("input", equalTo("Please analyze this issue"))
+                .body("projectId", equalTo(projectId));
+
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/" + projectId + "/tasks")
+            .then()
+                .statusCode(200)
+                .body("$.size()", equalTo(1))
+                .body("[0].actionType", equalTo("analyze"));
+    }
+
+    @Test
+    void testGetTask() {
+        int projectId = createProject("Get Task Test", "feature", "owner/repo#401");
+
+        int taskId = given()
+            .contentType(ContentType.JSON)
+            .body("""
+                { "actionType": "implement" }
+                """)
+            .when()
+                .post(PROJECTS_PATH + "/" + projectId + "/tasks")
+            .then()
+                .statusCode(200)
+                .extract().path("id");
+
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/" + projectId + "/tasks/" + taskId)
+            .then()
+                .statusCode(200)
+                .body("id", equalTo(taskId))
+                .body("actionType", equalTo("implement"));
+    }
+
+    @Test
+    void testTasksForNonexistentProject() {
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/999999/tasks")
+            .then()
+                .statusCode(404);
+    }
+
+    // ── Threads ───────────────────────────────────────────────────────
+
+    @Test
+    void testListThreadEntriesEmpty() {
+        int projectId = createProject("Thread Test", "feature", "owner/repo#500");
+
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/" + projectId + "/thread")
+            .then()
+                .statusCode(200)
+                .body("$.size()", equalTo(0));
+    }
+
+    @Test
+    void testThreadEntriesForNonexistentProject() {
+        given()
+            .when()
+                .get(PROJECTS_PATH + "/999999/thread")
+            .then()
+                .statusCode(404);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    private int createProject(String name, String type, String issueRef) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body(String.format("""
+                {
+                    "name": "%s",
+                    "type": "%s",
+                    "issueSource": "github",
+                    "issueRef": "%s",
+                    "repository": "owner/repo"
+                }
+                """, name, type, issueRef))
+            .when()
+                .post(PROJECTS_PATH)
+            .then()
+                .statusCode(200)
+                .extract().path("id");
+    }
+
+    private void updateStatus(int projectId, String status) {
+        given()
+            .contentType(ContentType.JSON)
+            .body(String.format("""
+                { "status": "%s" }
+                """, status))
+            .when()
+                .put(PROJECTS_PATH + "/" + projectId)
+            .then()
+                .statusCode(200);
+    }
+}
