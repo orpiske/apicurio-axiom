@@ -26,6 +26,7 @@ public class ClaudeCodeSubprocess {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final List<String> command;
+    private final java.io.File workingDirectory;
     private final Map<String, String> environment;
     private final Duration timeout;
     private final Consumer<String> streamListener;
@@ -36,13 +37,16 @@ public class ClaudeCodeSubprocess {
      * Creates a new subprocess wrapper.
      *
      * @param command the command line arguments
+     * @param workingDirectory the working directory for the process (may be null)
      * @param environment additional environment variables
      * @param timeout maximum execution duration
      * @param streamListener callback for streaming output lines (may be null)
      */
-    public ClaudeCodeSubprocess(List<String> command, Map<String, String> environment,
+    public ClaudeCodeSubprocess(List<String> command, java.io.File workingDirectory,
+                                 Map<String, String> environment,
                                  Duration timeout, Consumer<String> streamListener) {
         this.command = command;
+        this.workingDirectory = workingDirectory;
         this.environment = environment;
         this.timeout = timeout;
         this.streamListener = streamListener;
@@ -80,6 +84,10 @@ public class ClaudeCodeSubprocess {
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(false);
+
+        if (workingDirectory != null) {
+            pb.directory(workingDirectory);
+        }
 
         if (environment != null) {
             pb.environment().putAll(environment);

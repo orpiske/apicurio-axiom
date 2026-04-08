@@ -67,8 +67,12 @@ public class ClaudeCodeActor implements Actor {
 
         List<String> command = cmdBuilder.build();
 
+        java.io.File workDir = context.getWorkingDirectory() != null
+                ? context.getWorkingDirectory().toFile() : null;
+
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
                 command,
+                workDir,
                 context.getEnvironment() != null ? context.getEnvironment() : Map.of(),
                 Duration.ofSeconds(timeoutSeconds),
                 line -> LOG.tracef("Task %d stream: %s", task.id, line)

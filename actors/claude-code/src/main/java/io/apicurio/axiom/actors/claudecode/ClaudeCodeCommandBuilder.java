@@ -94,15 +94,14 @@ public class ClaudeCodeCommandBuilder {
         if (streamJson) {
             cmd.add("--output-format");
             cmd.add("stream-json");
+            cmd.add("--verbose");
         } else {
             cmd.add("--output-format");
             cmd.add("json");
         }
 
-        if (workingDirectory != null) {
-            cmd.add("--cwd");
-            cmd.add(workingDirectory.toAbsolutePath().toString());
-        }
+        // Note: working directory is set via ProcessBuilder.directory(),
+        // not via a CLI flag. Claude Code uses the process's cwd.
 
         if (model != null) {
             cmd.add("--model");
