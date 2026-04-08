@@ -1,0 +1,206 @@
+package io.apicurio.axiom.manager;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.apicurio.axiom.actors.claudecode.ClaudeCodeCommandBuilder;
+import io.apicurio.axiom.actors.claudecode.ClaudeCodeResult;
+import io.apicurio.axiom.actors.claudecode.ClaudeCodeSubprocess;
+import io.apicurio.axiom.actors.spi.ActorContext;
+import io.apicurio.axiom.core.entities.ActionTypeEntity;
+import io.apicurio.axiom.core.entities.ActivityLogEntity;
+import io.apicurio.axiom.core.entities.ActorEntity;
+import io.apicurio.axiom.core.entities.EventEntity;
+import io.apicurio.axiom.core.entities.PolicyEntity;
+import io.apicurio.axiom.core.entities.ProjectEntity;
+import io.apicurio.axiom.core.entities.TaskEntity;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Service that invokes the AI Manager to evaluate events and produce decisions.
+ * Launches Claude Code as a subprocess with a specialized prompt containing
+ * the event, project context, policies, and available actions/actors.
+ */
+@ApplicationScoped
+public class ManagerService {
+
+    private static final Logger LOG = Logger.getLogger(ManagerService.class);
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @ConfigProperty(name = "axiom.manager.confidence-threshold", defaultValue = "0.7")
+    double confidenceThreshold;
+
+    @ConfigProperty(name = "axiom.manager.timeout-seconds", defaultValue = "120")
+    int timeoutSeconds;
+
+    @ConfigProperty(name = "axiom.manager.max-turns", defaultValue = "5")
+    int maxTurns;
+
+    @ConfigProperty(name = "axiom.manager.model")
+    Optional<String> model;
+
+    /**
+     * Evaluates an event and returns the Manager's decisions.
+     *
+     * @param event the event to evaluate
+     * @return a list of decisions (may be empty if the Manager fails)
+     */
+    public List<ManagerDecision> evaluate(EventEntity event) {
+        LOG.infof("Manager evaluating event %d: %s [%s]", event.id, event.eventType, event.issueRef);
+
+        // Gather context
+        List<PolicyEntity> policies = PolicyEntity.listAll();
+        List<ActionTypeEntity> actionTypes = ActionTypeEntity.listAll();
+        List<ActorEntity> actors = ActorEntity.listAll();
+
+        // Find existing project for this issue
+        ProjectEntity project = null;
+        List<TaskEntity> recentTasks = Collections.emptyList();
+        if (event.issueRef != null) {
+            project = ProjectEntity.find("issueRef", event.issueRef).firstResult();
+            if (project != null) {
+                recentTasks = TaskEntity.find(
+                        "projectId = ?1 order by createdOn desc",
+                        project.id).page(0, 10).list();
+            }
+        }
+
+        // Build prompts
+        String systemPrompt = ManagerPromptBuilder.buildSystemPrompt(policies, actionTypes, actors);
+        String userPrompt = ManagerPromptBuilder.buildUserPrompt(event, project, recentTasks);
+        String jsonSchema = ManagerPromptBuilder.getResponseJsonSchema();
+
+        // Build command
+        ActorContext context = ActorContext.builder()
+                .systemPrompt(systemPrompt)
+                .build();
+
+        ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
+                .fromContext(userPrompt, context)
+                .streamJson(false)
+                .maxTurns(maxTurns);
+
+        model.ifPresent(cmdBuilder::model);
+
+        List<String> command = cmdBuilder.build();
+
+        // Add json-schema flag
+        command.add("--json-schema");
+        command.add(jsonSchema);
+
+        // Execute
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                command, null, Map.of(),
+                Duration.ofSeconds(timeoutSeconds), null
+        );
+
+        try {
+            ClaudeCodeResult result = subprocess.execute().join();
+
+            if (!result.isSuccess()) {
+                LOG.errorf("Manager subprocess failed (exit %d): %s",
+                        result.exitCode(), result.result());
+                logManagerActivity(event.id, "manager-error",
+                        "Manager failed to evaluate event: " + result.result());
+                return Collections.emptyList();
+            }
+
+            List<ManagerDecision> decisions = parseDecisions(result.result());
+
+            // Log decisions
+            for (ManagerDecision decision : decisions) {
+                LOG.infof("Manager decision for event %d: %s (action: %s, confidence: %.2f) — %s",
+                        event.id, decision.decision(), decision.actionType(),
+                        decision.confidence(), decision.reasoning());
+            }
+
+            return decisions;
+
+        } catch (Exception e) {
+            LOG.errorf(e, "Manager evaluation failed for event %d", event.id);
+            logManagerActivity(event.id, "manager-error",
+                    "Manager evaluation error: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Checks whether a decision meets the confidence threshold.
+     *
+     * @param decision the decision to check
+     * @return true if the confidence is at or above the threshold
+     */
+    public boolean meetsConfidenceThreshold(ManagerDecision decision) {
+        return decision.confidence() >= confidenceThreshold;
+    }
+
+    /**
+     * Parses the Manager's JSON output into a list of decisions.
+     */
+    List<ManagerDecision> parseDecisions(String jsonOutput) {
+        if (jsonOutput == null || jsonOutput.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(jsonOutput);
+
+            // Handle structured output with "decisions" array
+            JsonNode decisionsNode = root.path("decisions");
+            if (decisionsNode.isMissingNode() || !decisionsNode.isArray()) {
+                // Maybe the entire output is the structured response
+                // wrapped in a result field
+                if (root.has("result")) {
+                    String resultText = root.get("result").asText();
+                    return parseDecisions(resultText);
+                }
+                LOG.warnf("Manager output missing 'decisions' array: %s",
+                        jsonOutput.substring(0, Math.min(jsonOutput.length(), 200)));
+                return Collections.emptyList();
+            }
+
+            List<ManagerDecision> decisions = new ArrayList<>();
+            for (JsonNode node : decisionsNode) {
+                ManagerDecision decision = new ManagerDecision(
+                        node.path("decision").asText("ignore"),
+                        node.path("actionType").asText(null),
+                        node.path("actorHint").asText(null),
+                        node.path("inputContext").asText(null),
+                        node.path("confidence").asDouble(0.5),
+                        node.path("reasoning").asText("")
+                );
+                decisions.add(decision);
+            }
+
+            return decisions;
+
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to parse Manager output: %s",
+                    jsonOutput.substring(0, Math.min(jsonOutput.length(), 200)));
+            return Collections.emptyList();
+        }
+    }
+
+    @Transactional
+    void logManagerActivity(Long eventId, String entryType, String summary) {
+        ActivityLogEntity log = new ActivityLogEntity();
+        log.eventId = eventId;
+        log.entryType = entryType;
+        log.summary = summary;
+        log.createdOn = Instant.now();
+        log.persist();
+    }
+}

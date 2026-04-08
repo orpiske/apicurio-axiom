@@ -21,8 +21,40 @@
             <artifactId>apicurio-axiom-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-axiom-actors-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-axiom-actors-claude-code</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

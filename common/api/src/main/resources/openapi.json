@@ -900,6 +900,38 @@
           }
         }
       }
+    },
+    "/manager/evaluate/{eventId}": {
+      "post": {
+        "tags": [
+          "Manager"
+        ],
+        "summary": "Evaluate an event with the AI Manager (debug)",
+        "description": "Invokes the AI Manager to evaluate a specific event and return its decisions. This is a debug/testing endpoint — in production, events are evaluated automatically via the pipeline.",
+        "operationId": "evaluateEvent",
+        "responses": {
+          "200": {
+            "description": "Manager decisions",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "eventId",
+          "in": "path",
+          "description": "Event ID to evaluate",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -1607,6 +1639,40 @@
             "type": "string"
           }
         }
+      },
+      "ManagerDecision": {
+        "required": [
+          "decision",
+          "confidence",
+          "reasoning"
+        ],
+        "type": "object",
+        "properties": {
+          "decision": {
+            "enum": [
+              "create_task",
+              "ignore",
+              "system_action",
+              "escalate"
+            ],
+            "type": "string"
+          },
+          "actionType": {
+            "type": "string"
+          },
+          "actorHint": {
+            "type": "string"
+          },
+          "inputContext": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "reasoning": {
+            "type": "string"
+          }
+        }
       }
     },
     "responses": {
@@ -1728,6 +1794,10 @@
     {
       "name": "Webhooks",
       "description": "Webhook endpoints for external event sources"
+    },
+    {
+      "name": "Manager",
+      "description": "AI Manager event evaluation and debugging"
     }
   ]
 }
