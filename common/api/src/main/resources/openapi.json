@@ -932,6 +932,53 @@
           }
         }
       ]
+    },
+    "/projects/{projectId}/tasks/{taskId}/respond": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Submit a human response to a task",
+        "description": "Submits a user response for a task that is awaiting human input.",
+        "operationId": "respondToTask",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response accepted"
+          },
+          "404": {
+            "description": "Task not found or not awaiting input"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "description": "Project ID",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "taskId",
+          "in": "path",
+          "description": "Task ID",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -1670,6 +1717,18 @@
             "type": "number"
           },
           "reasoning": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskResponse": {
+        "required": [
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "response": {
+            "description": "The human's response text",
             "type": "string"
           }
         }

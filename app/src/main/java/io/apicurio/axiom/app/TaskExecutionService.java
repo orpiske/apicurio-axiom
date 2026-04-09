@@ -83,8 +83,12 @@ public class TaskExecutionService {
             return;
         }
 
-        // Mark task as in progress
-        markTaskInProgress(task.id);
+        // Mark task status based on actor type
+        if ("human".equals(actor.getType())) {
+            markTaskAwaitingInput(task.id);
+        } else {
+            markTaskInProgress(task.id);
+        }
 
         // Build the actor context
         ProjectEntity project = ProjectEntity.findById(task.projectId);
@@ -170,6 +174,35 @@ public class TaskExecutionService {
 
             // Fire SSE events
             sseEvents.fire(SseEvent.taskUpdated(task.projectId, taskId, "InProgress"));
+            sseEvents.fire(SseEvent.projectUpdated(task.projectId));
+            sseEvents.fire(SseEvent.threadEntry(task.projectId));
+        }
+    }
+
+    @Transactional
+    void markTaskAwaitingInput(Long taskId) {
+        TaskEntity task = TaskEntity.findById(taskId);
+        if (task != null) {
+            task.status = "AwaitingInput";
+
+            // Update project status
+            ProjectEntity project = ProjectEntity.findById(task.projectId);
+            if (project != null) {
+                project.status = "InProgress";
+                project.updatedOn = Instant.now();
+            }
+
+            // Log to activity
+            logActivity(task.projectId, taskId, "task-awaiting-input",
+                    "Task awaiting human input: " + task.actionType);
+
+            // Log to thread
+            addThreadEntry(task.projectId, "system", "update",
+                    "Task awaiting human input: " + task.actionType
+                            + (task.input != null ? "\n\n" + task.input : ""));
+
+            // Fire SSE events
+            sseEvents.fire(SseEvent.taskUpdated(task.projectId, taskId, "AwaitingInput"));
             sseEvents.fire(SseEvent.projectUpdated(task.projectId));
             sseEvents.fire(SseEvent.threadEntry(task.projectId));
         }

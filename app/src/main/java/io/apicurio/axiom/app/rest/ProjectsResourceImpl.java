@@ -1,10 +1,12 @@
 package io.apicurio.axiom.app.rest;
 
+import io.apicurio.axiom.actors.human.HumanActor;
 import io.apicurio.axiom.api.ProjectsResource;
 import io.apicurio.axiom.api.beans.NewProject;
 import io.apicurio.axiom.api.beans.NewTask;
 import io.apicurio.axiom.api.beans.Project;
 import io.apicurio.axiom.api.beans.Task;
+import io.apicurio.axiom.api.beans.TaskResponse;
 import io.apicurio.axiom.api.beans.ThreadEntry;
 import io.apicurio.axiom.api.beans.UpdateProject;
 import io.apicurio.axiom.core.entities.ProjectEntity;
@@ -14,8 +16,11 @@ import io.apicurio.axiom.core.lifecycle.ProjectLifecycle;
 import io.apicurio.axiom.core.lifecycle.ProjectStatus;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
+
+import java.math.BigInteger;
 
 import java.time.Instant;
 import java.util.Date;
@@ -27,6 +32,9 @@ import java.util.List;
 @ApplicationScoped
 @RunOnVirtualThread
 public class ProjectsResourceImpl implements ProjectsResource {
+
+    @Inject
+    HumanActor humanActor;
 
     // ── Projects ──────────────────────────────────────────────────────
 
@@ -167,6 +175,33 @@ public class ProjectsResourceImpl implements ProjectsResource {
                 .stream()
                 .map(this::toThreadEntryBean)
                 .toList();
+    }
+
+    // ── Task Response ──────────────────────────────────────────────────
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void respondToTask(BigInteger projectId, BigInteger taskId, TaskResponse data) {
+        long pid = projectId.longValue();
+        long tid = taskId.longValue();
+
+        findProjectOrThrow(pid);
+
+        TaskEntity task = TaskEntity.findById(tid);
+        if (task == null || task.projectId != pid) {
+            throw new WebApplicationException("Task not found: " + tid, 404);
+        }
+        if (!"AwaitingInput".equals(task.status)) {
+            throw new WebApplicationException(
+                    "Task is not awaiting input (status: " + task.status + ")", 409);
+        }
+
+        boolean accepted = humanActor.submitResponse(tid, data.getResponse());
+        if (!accepted) {
+            throw new WebApplicationException("Task is not pending a human response", 409);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────

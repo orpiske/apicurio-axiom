@@ -43,6 +43,7 @@ import {
     fetchProjectTasks,
     fetchThreadEntries,
     createTask,
+    respondToTask,
 } from "../config/api";
 
 const STATUS_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "red"> = {
@@ -244,7 +245,7 @@ export function ProjectDetailPage() {
                 </Tabs>
 
                 <TabContent id="tasks-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "16px" }}>
-                    <TasksTab tasks={tasks} />
+                    <TasksTab tasks={tasks} projectId={id} onRefresh={loadData} />
                 </TabContent>
                 <TabContent id="thread-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "16px" }}>
                     <ThreadTab entries={thread} />
@@ -326,7 +327,27 @@ export function ProjectDetailPage() {
     );
 }
 
-function TasksTab({ tasks }: { tasks: Task[] }) {
+function TasksTab({ tasks, projectId, onRefresh }: {
+    tasks: Task[];
+    projectId: number;
+    onRefresh: () => void;
+}) {
+    const [respondingTo, setRespondingTo] = useState<number | null>(null);
+    const [responseText, setResponseText] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmitResponse = (taskId: number) => {
+        setSubmitting(true);
+        respondToTask(projectId, taskId, responseText)
+            .then(() => {
+                setRespondingTo(null);
+                setResponseText("");
+                onRefresh();
+            })
+            .catch(console.error)
+            .finally(() => setSubmitting(false));
+    };
+
     if (tasks.length === 0) {
         return (
             <EmptyState>
@@ -336,42 +357,95 @@ function TasksTab({ tasks }: { tasks: Task[] }) {
     }
 
     return (
-        <Table aria-label="Tasks" variant="compact">
-            <Thead>
-                <Tr>
-                    <Th>Action</Th>
-                    <Th>Status</Th>
-                    <Th>Created By</Th>
-                    <Th>Created</Th>
-                    <Th>Completed</Th>
-                    <Th>Cost</Th>
-                </Tr>
-            </Thead>
-            <Tbody>
-                {tasks.map((task) => (
-                    <Tr key={task.id}>
-                        <Td>{task.actionType}</Td>
-                        <Td>
-                            <Label color={STATUS_COLORS[task.status] || "grey"}>
-                                {task.status}
-                            </Label>
-                        </Td>
-                        <Td>{task.createdBy}</Td>
-                        <Td>{new Date(task.createdOn).toLocaleString()}</Td>
-                        <Td>
-                            {task.completedOn
-                                ? new Date(task.completedOn).toLocaleString()
-                                : "—"}
-                        </Td>
-                        <Td>
-                            {task.costUsd != null
-                                ? `$${task.costUsd.toFixed(4)}`
-                                : "—"}
-                        </Td>
+        <div>
+            <Table aria-label="Tasks" variant="compact">
+                <Thead>
+                    <Tr>
+                        <Th>Action</Th>
+                        <Th>Status</Th>
+                        <Th>Created By</Th>
+                        <Th>Created</Th>
+                        <Th>Completed</Th>
+                        <Th>Cost</Th>
+                        <Th />
                     </Tr>
-                ))}
-            </Tbody>
-        </Table>
+                </Thead>
+                <Tbody>
+                    {tasks.map((task) => (
+                        <Tr key={task.id}>
+                            <Td>{task.actionType}</Td>
+                            <Td>
+                                <Label color={STATUS_COLORS[task.status] || "grey"}>
+                                    {task.status}
+                                </Label>
+                            </Td>
+                            <Td>{task.createdBy}</Td>
+                            <Td>{new Date(task.createdOn).toLocaleString()}</Td>
+                            <Td>
+                                {task.completedOn
+                                    ? new Date(task.completedOn).toLocaleString()
+                                    : "—"}
+                            </Td>
+                            <Td>
+                                {task.costUsd != null
+                                    ? `$${task.costUsd.toFixed(4)}`
+                                    : "—"}
+                            </Td>
+                            <Td>
+                                {task.status === "AwaitingInput" && (
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setRespondingTo(task.id);
+                                            setResponseText("");
+                                        }}
+                                    >
+                                        Respond
+                                    </Button>
+                                )}
+                            </Td>
+                        </Tr>
+                    ))}
+                </Tbody>
+            </Table>
+
+            {/* Response form for AwaitingInput task */}
+            {respondingTo != null && (
+                <Card style={{ marginTop: "16px" }}>
+                    <CardBody>
+                        <Title headingLevel="h4" size="md">
+                            Respond to Task #{respondingTo}
+                        </Title>
+                        <TextArea
+                            id="task-response"
+                            placeholder="Enter your response..."
+                            value={responseText}
+                            onChange={(_e, v) => setResponseText(v)}
+                            rows={4}
+                            style={{ marginTop: "8px" }}
+                        />
+                        <div style={{ marginTop: "8px" }}>
+                            <Button
+                                variant="primary"
+                                onClick={() => handleSubmitResponse(respondingTo)}
+                                isDisabled={!responseText.trim() || submitting}
+                                isLoading={submitting}
+                                style={{ marginRight: "8px" }}
+                            >
+                                {submitting ? "Submitting..." : "Submit Response"}
+                            </Button>
+                            <Button
+                                variant="link"
+                                onClick={() => setRespondingTo(null)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            )}
+        </div>
     );
 }
 
