@@ -63,6 +63,13 @@ public class ManagerService {
 
         // Gather context
         List<PolicyEntity> policies = PolicyEntity.listAll();
+        if (policies.isEmpty()) {
+            LOG.warnf("Skipping Manager evaluation for event %d: no policies configured", event.id);
+            logManagerActivity(event.id, "manager-skipped",
+                    "Manager evaluation skipped: no policies configured");
+            return Collections.emptyList();
+        }
+
         List<ActionTypeEntity> actionTypes = ActionTypeEntity.listAll();
         List<ActorEntity> actors = ActorEntity.listAll();
 

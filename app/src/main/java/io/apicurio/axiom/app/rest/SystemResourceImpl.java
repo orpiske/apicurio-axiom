@@ -1,11 +1,14 @@
 package io.apicurio.axiom.app.rest;
 
 import io.apicurio.axiom.api.beans.Features;
+import io.apicurio.axiom.api.beans.StartupCheck;
 import io.apicurio.axiom.api.beans.SystemConfig;
 import io.apicurio.axiom.api.beans.SystemHealth;
 import io.apicurio.axiom.api.SystemResource;
+import io.apicurio.axiom.app.StartupCheckService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Date;
@@ -19,6 +22,9 @@ public class SystemResourceImpl implements SystemResource {
 
     @ConfigProperty(name = "quarkus.application.version", defaultValue = "1.0.0-SNAPSHOT")
     String applicationVersion;
+
+    @Inject
+    StartupCheckService startupCheckService;
 
     /**
      * {@inheritDoc}
@@ -40,7 +46,15 @@ public class SystemResourceImpl implements SystemResource {
         SystemConfig config = new SystemConfig();
         config.setVersion(applicationVersion);
         config.setFeatures(new Features());
+        config.setChecks(startupCheckService.getResults().stream()
+                .map(r -> {
+                    StartupCheck check = new StartupCheck();
+                    check.setName(r.name());
+                    check.setStatus(StartupCheck.Status.fromValue(r.status()));
+                    check.setMessage(r.message());
+                    return check;
+                })
+                .toList());
         return config;
     }
-
 }

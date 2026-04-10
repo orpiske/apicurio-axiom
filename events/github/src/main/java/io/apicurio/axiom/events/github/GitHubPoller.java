@@ -69,11 +69,19 @@ public class GitHubPoller {
 
     private void pollRepository(RepositoryEntity repo) {
         String token = githubToken.orElse(null);
-        Instant since = repo.lastPolledAt;
         Instant pollStartedAt = Instant.now();
+        Instant since = repo.lastPolledAt;
+
+        // On first poll, skip historical data — only track events from now on
+        if (since == null) {
+            LOG.infof("First poll for %s/%s — setting baseline to now, skipping historical events",
+                    repo.owner, repo.name);
+            updateLastPolledAt(repo.id, pollStartedAt);
+            return;
+        }
 
         LOG.infof("Polling GitHub repository %s/%s (since: %s)",
-                repo.owner, repo.name, since != null ? since : "first poll");
+                repo.owner, repo.name, since);
 
         int eventsIngested = 0;
 

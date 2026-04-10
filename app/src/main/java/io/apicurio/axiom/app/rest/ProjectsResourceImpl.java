@@ -233,6 +233,7 @@ public class ProjectsResourceImpl implements ProjectsResource {
         Task task = new Task();
         task.setId(entity.id);
         task.setProjectId(entity.projectId);
+        task.setEventId(entity.eventId);
         task.setActionType(entity.actionType);
         task.setCreatedBy(Task.CreatedBy.fromValue(entity.createdBy));
         task.setAssignedActor(entity.assignedActor);

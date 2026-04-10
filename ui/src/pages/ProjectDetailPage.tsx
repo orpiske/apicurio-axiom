@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
     Breadcrumb,
     BreadcrumbItem,
     Button,
     Card,
     CardBody,
+    Content,
     DescriptionList,
     DescriptionListDescription,
     DescriptionListGroup,
@@ -240,20 +243,21 @@ export function ProjectDetailPage() {
             {/* Tabs */}
             <div style={{ marginTop: "24px" }}>
                 <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
-                    <Tab eventKey={0} title={<TabTitleText>Tasks ({tasks.length})</TabTitleText>} />
-                    <Tab eventKey={1} title={<TabTitleText>Thread ({thread.length})</TabTitleText>} />
+                    <Tab eventKey={0} title={<TabTitleText>Tasks ({tasks.length})</TabTitleText>}>
+                        <TabContent id="tasks-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "16px" }}>
+                            <TasksTab tasks={tasks} projectId={id} onRefresh={loadData} />
+                        </TabContent>
+                    </Tab>
+                    <Tab eventKey={1} title={<TabTitleText>Thread ({thread.length})</TabTitleText>}>
+                        <TabContent id="thread-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "16px" }}>
+                            <ThreadTab entries={thread} />
+                        </TabContent>
+                    </Tab>
                 </Tabs>
-
-                <TabContent id="tasks-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "16px" }}>
-                    <TasksTab tasks={tasks} projectId={id} onRefresh={loadData} />
-                </TabContent>
-                <TabContent id="thread-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "16px" }}>
-                    <ThreadTab entries={thread} />
-                </TabContent>
             </div>
 
             <div style={{ marginTop: "16px" }}>
-                <Button variant="link" onClick={loadData}>
+                <Button variant="secondary" onClick={loadData}>
                     Refresh
                 </Button>
             </div>
@@ -492,14 +496,9 @@ function ThreadTab({ entries }: { entries: ThreadEntry[] }) {
                                 </span>
                             </FlexItem>
                         </Flex>
-                        <pre style={{
-                            whiteSpace: "pre-wrap",
-                            fontFamily: "inherit",
-                            margin: 0,
-                            fontSize: "14px",
-                        }}>
-                            {entry.content}
-                        </pre>
+                        <Content>
+                            <Markdown remarkPlugins={[remarkGfm]}>{entry.content}</Markdown>
+                        </Content>
                     </CardBody>
                 </Card>
             ))}

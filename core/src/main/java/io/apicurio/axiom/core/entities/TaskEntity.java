@@ -23,6 +23,9 @@ public class TaskEntity extends PanacheEntity {
     @Column(name = "created_by", nullable = false)
     public String createdBy;
 
+    @Column(name = "event_id")
+    public Long eventId;
+
     @Column(name = "assigned_actor")
     public Long assignedActor;
 

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+    Alert,
+    Button,
     Card,
     CardBody,
     CardTitle,
@@ -13,11 +15,17 @@ import {
     Title,
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
 import {
     type Project,
     type ActivityLogEntry,
     fetchProjects,
     fetchActivityLog,
+    fetchActionTypes,
+    fetchActors,
+    fetchPolicies,
+    fetchRepositories,
 } from "../config/api";
 
 const STATUS_COLORS: Record<string, "blue" | "green" | "orange" | "grey"> = {
@@ -47,18 +55,75 @@ const ENTRY_TYPE_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "
     "manager-escalation": "orange",
 };
 
+interface SetupRequirement {
+    name: string;
+    met: boolean;
+    description: string;
+    navPath: string;
+    navLabel: string;
+}
+
 export function DashboardPage() {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [recentActivity, setRecentActivity] = useState<ActivityLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [requirements, setRequirements] = useState<SetupRequirement[]>([]);
+    const [setupChecked, setSetupChecked] = useState(false);
 
     const loadData = useCallback(() => {
         setLoading(true);
-        Promise.all([fetchProjects(), fetchActivityLog()])
-            .then(([p, a]) => {
+        Promise.all([
+            fetchProjects(),
+            fetchActivityLog(),
+            fetchRepositories(),
+            fetchActors(),
+            fetchPolicies(),
+            fetchActionTypes(),
+        ])
+            .then(([p, a, repos, actors, policies, actionTypes]) => {
                 setProjects(p);
                 setRecentActivity(a.reverse().slice(0, 10));
+
+                setRequirements([
+                    {
+                        name: "Repository",
+                        met: repos.length > 0,
+                        description:
+                            "At least one GitHub or Jira repository must be configured for " +
+                            "the system to monitor for events.",
+                        navPath: "/repositories",
+                        navLabel: "Configure Repositories",
+                    },
+                    {
+                        name: "Actor",
+                        met: actors.length > 0,
+                        description:
+                            "At least one actor (AI agent or human) must be configured to " +
+                            "perform tasks assigned by the Manager.",
+                        navPath: "/actors",
+                        navLabel: "Configure Actors",
+                    },
+                    {
+                        name: "Policy",
+                        met: policies.length > 0,
+                        description:
+                            "At least one policy must be configured to guide the Manager's " +
+                            "decision-making when evaluating events.",
+                        navPath: "/policies",
+                        navLabel: "Configure Policies",
+                    },
+                    {
+                        name: "Action Type",
+                        met: actionTypes.length > 0,
+                        description:
+                            "At least one action type must be registered to define the kinds " +
+                            "of work that can be performed.",
+                        navPath: "/action-types",
+                        navLabel: "Configure Action Types",
+                    },
+                ]);
+                setSetupChecked(true);
             })
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -67,6 +132,8 @@ export function DashboardPage() {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const unmetRequirements = requirements.filter((r) => !r.met);
 
     const statusCounts = projects.reduce(
         (acc, p) => {
@@ -79,6 +146,65 @@ export function DashboardPage() {
     const activeProjects = projects.filter(
         (p) => p.status !== "Completed"
     );
+
+    const setupIncomplete = setupChecked && unmetRequirements.length > 0;
+
+    if (setupIncomplete) {
+        return (
+            <PageSection>
+                <Title headingLevel="h1" size="lg">
+                    Dashboard
+                </Title>
+                <Alert
+                    variant="warning"
+                    title="Setup Incomplete"
+                    isInline
+                    style={{ marginTop: "16px" }}
+                >
+                    <p style={{ marginBottom: "12px" }}>
+                        The following configuration is required before the system can
+                        process events and perform work:
+                    </p>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <tbody>
+                            {requirements.map((req) => (
+                                <tr key={req.name} style={{ borderBottom: "1px solid #d2d2d2" }}>
+                                    <td style={{ padding: "8px", width: "24px" }}>
+                                        {req.met ? (
+                                            <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+                                        ) : (
+                                            <ExclamationCircleIcon color="var(--pf-t--global--color--status--warning--default)" />
+                                        )}
+                                    </td>
+                                    <td style={{ padding: "8px", fontWeight: "bold", width: "120px" }}>
+                                        {req.name}
+                                    </td>
+                                    <td style={{ padding: "8px" }}>
+                                        {req.met ? (
+                                            <span style={{ color: "var(--pf-t--global--color--status--success--default)" }}>
+                                                Configured
+                                            </span>
+                                        ) : (
+                                            <>
+                                                {req.description}{" "}
+                                                <Button
+                                                    variant="link"
+                                                    isInline
+                                                    onClick={() => navigate(req.navPath)}
+                                                >
+                                                    {req.navLabel}
+                                                </Button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </Alert>
+            </PageSection>
+        );
+    }
 
     return (
         <PageSection>

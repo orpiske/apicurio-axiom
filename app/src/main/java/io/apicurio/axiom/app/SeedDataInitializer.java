@@ -1,6 +1,9 @@
 package io.apicurio.axiom.app;
 
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
+import io.apicurio.axiom.core.entities.ActorEntity;
+import io.apicurio.axiom.core.entities.PolicyEntity;
+import io.apicurio.axiom.core.entities.RepositoryEntity;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -66,6 +69,64 @@ public class SeedDataInitializer {
                 "system", false, false);
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
+
+        // Seed actor, policy, and test repository
+        seedActor();
+        seedPolicy();
+        seedRepository();
+    }
+
+    private void seedActor() {
+        if (ActorEntity.count() > 0) {
+            LOG.info("Actors already exist, skipping actor seed data");
+            return;
+        }
+
+        ActorEntity actor = new ActorEntity();
+        actor.name = "Claude Code Agent";
+        actor.description = "AI agent powered by Claude Code CLI";
+        actor.type = "ai-agent";
+        actor.capabilities = "analyze,auto-tag,implement,propose,review,respond,answer-question";
+        actor.persist();
+
+        LOG.infof("Seeded actor: %s (%s)", actor.name, actor.type);
+    }
+
+    private void seedPolicy() {
+        if (PolicyEntity.count() > 0) {
+            LOG.info("Policies already exist, skipping policy seed data");
+            return;
+        }
+
+        PolicyEntity policy = new PolicyEntity();
+        policy.name = "Analyze new issues";
+        policy.guideline = "If the event represents a new issue being created (issue-created), " +
+                "perform the \"analyze\" action. The actor should read the issue title and body, " +
+                "understand the problem or request, assess its complexity, and produce a brief " +
+                "summary with recommendations for next steps.";
+        policy.actionType = "analyze";
+        policy.persist();
+
+        LOG.infof("Seeded policy: %s", policy.name);
+    }
+
+    private void seedRepository() {
+        if (RepositoryEntity.count() > 0) {
+            LOG.info("Repositories already exist, skipping repository seed data");
+            return;
+        }
+
+        RepositoryEntity repo = new RepositoryEntity();
+        repo.name = "cb-test-project";
+        repo.owner = "EricWittmann";
+        repo.source = "github";
+        repo.url = "https://github.com/EricWittmann/cb-test-project";
+        repo.pollInterval = 30;
+        repo.pollingEnabled = true;
+        repo.persist();
+
+        LOG.infof("Seeded test repository: %s/%s (polling every %ds)",
+                repo.owner, repo.name, repo.pollInterval);
     }
 
     private void seedActionType(String name, String description, String executionMode,

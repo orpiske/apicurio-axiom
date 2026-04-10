@@ -6,6 +6,17 @@ export default defineConfig({
     server: {
         port: 8888,
         proxy: {
+            "/api/v1/sse": {
+                target: "http://localhost:8080",
+                changeOrigin: true,
+                // Required for SSE: disable response buffering
+                configure: (proxy) => {
+                    proxy.on("proxyRes", (proxyRes) => {
+                        proxyRes.headers["cache-control"] = "no-cache";
+                        proxyRes.headers["x-accel-buffering"] = "no";
+                    });
+                },
+            },
             "/api": {
                 target: "http://localhost:8080",
                 changeOrigin: true,

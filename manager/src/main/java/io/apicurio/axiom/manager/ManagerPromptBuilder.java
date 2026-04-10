@@ -162,9 +162,10 @@ public final class ManagerPromptBuilder {
         }
 
         sb.append("""
-                Analyze this event and return your decisions as a JSON object with a \
-                "decisions" array. Each element must have: decision, actionType, actorHint, \
-                inputContext, confidence, reasoning.
+                Analyze this event and return ONLY a JSON object (no other text, no \
+                markdown, no explanation) with a "decisions" array. Each element must \
+                have: decision, actionType, actorHint, inputContext, confidence, reasoning. \
+                Your entire response must be valid JSON and nothing else.
                 """);
 
         return sb.toString();
@@ -175,31 +176,7 @@ public final class ManagerPromptBuilder {
      * Used with Claude Code's {@code --json-schema} flag.
      */
     public static String getResponseJsonSchema() {
-        return """
-                {
-                    "type": "object",
-                    "required": ["decisions"],
-                    "properties": {
-                        "decisions": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "required": ["decision", "confidence", "reasoning"],
-                                "properties": {
-                                    "decision": {
-                                        "type": "string",
-                                        "enum": ["create_task", "ignore", "system_action", "escalate"]
-                                    },
-                                    "actionType": { "type": "string" },
-                                    "actorHint": { "type": "string" },
-                                    "inputContext": { "type": "string" },
-                                    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-                                    "reasoning": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                }
-                """;
+        // Must be a single-line compact JSON string for the CLI argument
+        return "{\"type\":\"object\",\"required\":[\"decisions\"],\"properties\":{\"decisions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"decision\",\"confidence\",\"reasoning\"],\"properties\":{\"decision\":{\"type\":\"string\",\"enum\":[\"create_task\",\"ignore\",\"system_action\",\"escalate\"]},\"actionType\":{\"type\":\"string\"},\"actorHint\":{\"type\":\"string\"},\"inputContext\":{\"type\":\"string\"},\"confidence\":{\"type\":\"number\",\"minimum\":0,\"maximum\":1},\"reasoning\":{\"type\":\"string\"}}}}}}";
     }
 }

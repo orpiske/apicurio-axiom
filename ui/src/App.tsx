@@ -25,10 +25,10 @@ import {
     Toolbar,
     ToolbarContent,
     ToolbarItem,
-    Label,
 } from "@patternfly/react-core";
 import BarsIcon from "@patternfly/react-icons/dist/esm/icons/bars-icon";
-import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
 
 import { DashboardPage } from "./pages/DashboardPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
@@ -38,7 +38,8 @@ import { ActionTypesPage } from "./pages/ActionTypesPage";
 import { ActivityLogPage } from "./pages/ActivityLogPage";
 import { RepositoriesPage } from "./pages/RepositoriesPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
-import { fetchSystemHealth } from "./config/api";
+import { ConfigurationWarning } from "./components/ConfigurationWarning";
+import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
 import { sseClient, type AxiomSseEvent } from "./config/sse";
 
 interface NavEntry {
@@ -72,6 +73,7 @@ export function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [backendStatus, setBackendStatus] = useState<string>("checking...");
+    const [startupChecks, setStartupChecks] = useState<StartupCheck[] | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
@@ -91,11 +93,21 @@ export function App() {
 
     useEffect(() => {
         fetchSystemHealth()
-            .then((health) => setBackendStatus(health.status))
+            .then((health) => {
+                setBackendStatus(health.status);
+                // Only connect SSE after confirming the backend is reachable
+                sseClient.connect();
+            })
             .catch(() => setBackendStatus("DOWN"));
 
-        // Connect SSE
-        sseClient.connect();
+        fetchSystemConfig()
+            .then((config) => {
+                if (config.checks) {
+                    setStartupChecks(config.checks);
+                }
+            })
+            .catch(console.error);
+
         const unsubscribe = sseClient.subscribe((event: AxiomSseEvent) => {
             if (event.type === "notification") {
                 const data = event.data as { message?: string; severity?: string };
@@ -135,7 +147,7 @@ export function App() {
                     </PageToggleButton>
                 </MastheadToggle>
                 <MastheadBrand>
-                    <span style={{ color: "white", fontSize: "18px", fontWeight: "bold" }}>
+                    <span style={{ fontSize: "18px", fontWeight: "bold" }}>
                         Apicurio Axiom
                     </span>
                 </MastheadBrand>
@@ -143,22 +155,24 @@ export function App() {
             <MastheadContent>
                 <Toolbar>
                     <ToolbarContent>
-                        <ToolbarItem>
+                        <ToolbarItem align={{ default: "alignEnd" }}>
                             <NotificationBadge
                                 variant={unreadCount > 0 ? "unread" : "read"}
                                 onClick={() => setIsDrawerOpen(!isDrawerOpen)}
                                 aria-label="Notifications"
                                 count={unreadCount}
                             >
-                                <BellIcon />
                             </NotificationBadge>
                         </ToolbarItem>
                         <ToolbarItem>
-                            <Label
-                                color={backendStatus === "UP" ? "green" : "red"}
+                            <Button
+                                variant="plain"
+                                aria-label={`API: ${backendStatus}`}
+                                title={`API: ${backendStatus}`}
+                                style={{ color: backendStatus === "UP" ? "var(--pf-t--global--color--status--success--default)" : "var(--pf-t--global--color--status--danger--default)" }}
                             >
-                                API: {backendStatus}
-                            </Label>
+                                {backendStatus === "UP" ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
+                            </Button>
                         </ToolbarItem>
                     </ToolbarContent>
                 </Toolbar>
@@ -249,23 +263,30 @@ export function App() {
         </NotificationDrawer>
     ) : undefined;
 
+    const hasCheckErrors = startupChecks != null &&
+        startupChecks.some((c) => c.status === "error");
+
     return (
         <Page
             masthead={masthead}
-            sidebar={sidebar}
+            sidebar={hasCheckErrors ? undefined : sidebar}
             notificationDrawer={notificationDrawer}
             isNotificationDrawerExpanded={isDrawerOpen}
         >
-            <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/projects" element={<ProjectsPage />} />
-                <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-                <Route path="/actors" element={<ActorsPage />} />
-                <Route path="/policies" element={<PoliciesPage />} />
-                <Route path="/action-types" element={<ActionTypesPage />} />
-                <Route path="/activity" element={<ActivityLogPage />} />
-                <Route path="/repositories" element={<RepositoriesPage />} />
-            </Routes>
+            {hasCheckErrors ? (
+                <ConfigurationWarning checks={startupChecks!} />
+            ) : (
+                <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+                    <Route path="/actors" element={<ActorsPage />} />
+                    <Route path="/policies" element={<PoliciesPage />} />
+                    <Route path="/action-types" element={<ActionTypesPage />} />
+                    <Route path="/activity" element={<ActivityLogPage />} />
+                    <Route path="/repositories" element={<RepositoriesPage />} />
+                </Routes>
+            )}
         </Page>
     );
 }

@@ -23,6 +23,18 @@ export interface SystemHealth {
     timestamp: string;
 }
 
+export interface StartupCheck {
+    name: string;
+    status: "ok" | "warning" | "error";
+    message: string;
+}
+
+export interface SystemConfig {
+    version: string;
+    features: Record<string, boolean>;
+    checks?: StartupCheck[];
+}
+
 export interface Project {
     id: number;
     name: string;
@@ -49,6 +61,7 @@ export interface NewProject {
 export interface Task {
     id: number;
     projectId: number;
+    eventId?: number;
     actionType: string;
     createdBy: string;
     assignedActor?: number;
@@ -89,6 +102,12 @@ export interface ActivityLogEntry {
 export async function fetchSystemHealth(): Promise<SystemHealth> {
     const response = await fetch(`${API}/system/health`);
     if (!response.ok) throw new Error(`Health check failed: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchSystemConfig(): Promise<SystemConfig> {
+    const response = await fetch(`${API}/system/config`);
+    if (!response.ok) throw new Error(`Failed to fetch config: ${response.status}`);
     return response.json();
 }
 

@@ -71,6 +71,7 @@ public class PipelineOrchestrator {
         return entry;
     }
 
+    @Transactional
     void processEvent(EventQueueEntity queueEntry) {
         EventEntity event = EventEntity.findById(queueEntry.eventId);
         if (event == null) {
@@ -132,14 +133,14 @@ public class PipelineOrchestrator {
         }
     }
 
-    @Transactional
-    void handleCreateTask(EventEntity event, ManagerDecision decision) {
+    private void handleCreateTask(EventEntity event, ManagerDecision decision) {
         // Find or create the project
         ProjectEntity project = findOrCreateProject(event);
 
         // Create the task
         TaskEntity task = new TaskEntity();
         task.projectId = project.id;
+        task.eventId = event.id;
         task.actionType = decision.actionType();
         task.createdBy = "manager";
         task.status = "Pending";
@@ -167,15 +168,13 @@ public class PipelineOrchestrator {
         sseEvents.fire(SseEvent.threadEntry(project.id));
     }
 
-    @Transactional
-    void handleIgnore(EventEntity event, ManagerDecision decision) {
+    private void handleIgnore(EventEntity event, ManagerDecision decision) {
         LOG.infof("Ignoring event %d: %s", event.id, decision.reasoning());
         logActivity(null, null, event.id, "event-ignored",
                 "Event ignored: " + event.eventType + " — " + decision.reasoning());
     }
 
-    @Transactional
-    void handleSystemAction(EventEntity event, ManagerDecision decision) {
+    private void handleSystemAction(EventEntity event, ManagerDecision decision) {
         ProjectEntity project = findProjectForEvent(event);
         if (project == null) {
             LOG.warnf("Cannot execute system action %s: no project for event %d",
@@ -209,8 +208,7 @@ public class PipelineOrchestrator {
         }
     }
 
-    @Transactional
-    void handleEscalation(EventEntity event, ManagerDecision decision, String reason) {
+    private void handleEscalation(EventEntity event, ManagerDecision decision, String reason) {
         LOG.infof("Escalating event %d to user: %s", event.id, reason);
         logActivity(null, null, event.id, "manager-escalation",
                 "Manager escalation: " + reason);
@@ -250,8 +248,7 @@ public class PipelineOrchestrator {
         return null;
     }
 
-    @Transactional
-    ProjectEntity createProjectFromEvent(EventEntity event) {
+    private ProjectEntity createProjectFromEvent(EventEntity event) {
         ProjectEntity project = new ProjectEntity();
         project.name = event.issueRef != null ? event.issueRef : "Project from event " + event.id;
         project.type = "other";
@@ -282,8 +279,7 @@ public class PipelineOrchestrator {
         return project;
     }
 
-    @Transactional
-    void markQueueEntry(Long queueEntryId, String status) {
+    private void markQueueEntry(Long queueEntryId, String status) {
         EventQueueEntity entry = EventQueueEntity.findById(queueEntryId);
         if (entry != null) {
             entry.status = status;
@@ -298,7 +294,9 @@ public class PipelineOrchestrator {
         log.taskId = taskId;
         log.eventId = eventId;
         log.entryType = entryType;
-        log.summary = summary;
+        log.summary = summary != null && summary.length() > 1024
+                ? summary.substring(0, 1021) + "..."
+                : summary;
         log.createdOn = Instant.now();
         log.persist();
     }

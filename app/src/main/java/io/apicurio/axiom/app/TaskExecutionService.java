@@ -165,7 +165,7 @@ public class TaskExecutionService {
             }
 
             // Log to activity
-            logActivity(task.projectId, taskId, "task-started",
+            logActivity(task.projectId, taskId, task.eventId, "task-started",
                     "Task started: " + task.actionType);
 
             // Log to thread
@@ -193,7 +193,7 @@ public class TaskExecutionService {
             }
 
             // Log to activity
-            logActivity(task.projectId, taskId, "task-awaiting-input",
+            logActivity(task.projectId, taskId, task.eventId, "task-awaiting-input",
                     "Task awaiting human input: " + task.actionType);
 
             // Log to thread
@@ -231,7 +231,7 @@ public class TaskExecutionService {
                 result.getOutputTokens() != null ? result.getOutputTokens() : 0);
 
         // Log to activity
-        logActivity(task.projectId, taskId, "task-" + statusText,
+        logActivity(task.projectId, taskId, task.eventId, "task-" + statusText,
                 "Task " + statusText + ": " + task.actionType);
 
         // Log to thread
@@ -269,7 +269,7 @@ public class TaskExecutionService {
             task.output = reason;
             task.completedOn = Instant.now();
 
-            logActivity(task.projectId, taskId, "task-failed",
+            logActivity(task.projectId, taskId, task.eventId, "task-failed",
                     "Task failed: " + task.actionType + " — " + reason);
             addThreadEntry(task.projectId, "system", "result",
                     "Task failed: " + task.actionType + "\n\nError: " + reason);
@@ -321,12 +321,16 @@ public class TaskExecutionService {
         }
     }
 
-    private void logActivity(Long projectId, Long taskId, String entryType, String summary) {
+    private void logActivity(Long projectId, Long taskId, Long eventId,
+                              String entryType, String summary) {
         ActivityLogEntity log = new ActivityLogEntity();
         log.projectId = projectId;
         log.taskId = taskId;
+        log.eventId = eventId;
         log.entryType = entryType;
-        log.summary = summary;
+        log.summary = summary != null && summary.length() > 1024
+                ? summary.substring(0, 1021) + "..."
+                : summary;
         log.createdOn = Instant.now();
         log.persist();
     }

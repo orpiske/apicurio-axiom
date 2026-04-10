@@ -55,11 +55,9 @@ public class ClaudeCodeActor implements Actor {
         LOG.infof("Executing task %d (action: %s) via Claude Code", task.id, task.actionType);
 
         String prompt = buildPrompt(task);
-        String sessionId = "axiom-task-" + task.id;
 
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, context)
-                .sessionId(sessionId)
                 .maxTurns(maxTurns)
                 .maxBudgetUsd(maxBudgetUsd);
 

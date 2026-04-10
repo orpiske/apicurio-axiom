@@ -84,6 +84,7 @@ public class ClaudeCodeSubprocess {
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(false);
+        pb.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
 
         if (workingDirectory != null) {
             pb.directory(workingDirectory);
@@ -172,7 +173,15 @@ public class ClaudeCodeSubprocess {
         try {
             JsonNode root = MAPPER.readTree(jsonLine);
 
-            String result = root.path("result").asText(null);
+            // When --json-schema is used, the structured output may be in
+            // "structured_output" as a parsed object, or in "result" as a string
+            String result;
+            JsonNode structuredOutput = root.path("structured_output");
+            if (!structuredOutput.isMissingNode() && !structuredOutput.isNull()) {
+                result = MAPPER.writeValueAsString(structuredOutput);
+            } else {
+                result = root.path("result").asText(null);
+            }
             String sessionId = root.path("session_id").asText(null);
 
             Double costUsd = null;

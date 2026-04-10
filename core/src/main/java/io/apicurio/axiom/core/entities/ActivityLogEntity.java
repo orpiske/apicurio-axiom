@@ -26,7 +26,7 @@ public class ActivityLogEntity extends PanacheEntity {
     @Column(name = "entry_type", nullable = false)
     public String entryType;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1024)
     public String summary;
 
     @Column(columnDefinition = "TEXT")

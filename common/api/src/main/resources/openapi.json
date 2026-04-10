@@ -1026,6 +1026,13 @@
           },
           "features": {
             "$ref": "#/components/schemas/Features"
+          },
+          "checks": {
+            "description": "Results of startup configuration checks",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StartupCheck"
+            }
           }
         }
       },
@@ -1247,6 +1254,11 @@
           "completedOn": {
             "format": "date-time",
             "type": "string"
+          },
+          "eventId": {
+            "format": "int64",
+            "description": "Originating event ID (correlation ID for tracing)",
+            "type": "integer"
           }
         }
       },
@@ -1729,6 +1741,32 @@
         "properties": {
           "response": {
             "description": "The human's response text",
+            "type": "string"
+          }
+        }
+      },
+      "StartupCheck": {
+        "required": [
+          "name",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Check name",
+            "type": "string"
+          },
+          "status": {
+            "description": "Check result",
+            "enum": [
+              "ok",
+              "warning",
+              "error"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "description": "Details or instructions",
             "type": "string"
           }
         }
