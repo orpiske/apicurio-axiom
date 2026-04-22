@@ -69,6 +69,15 @@ public class GitHubPoller {
 
     private void pollRepository(RepositoryEntity repo) {
         String token = githubToken.orElse(null);
+        if (token == null || token.isBlank()) {
+            token = System.getenv("AXIOM_GITHUB_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
+            token = System.getenv("GH_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
+            token = System.getenv("GITHUB_TOKEN");
+        }
         Instant pollStartedAt = Instant.now();
         Instant since = repo.lastPolledAt;
 

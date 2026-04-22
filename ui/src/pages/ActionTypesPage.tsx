@@ -10,6 +10,8 @@ import {
     FormGroup,
     FormSelect,
     FormSelectOption,
+    InputGroup,
+    InputGroupItem,
     Label,
     Modal,
     ModalBody,
@@ -40,6 +42,8 @@ export function ActionTypesPage() {
     const [form, setForm] = useState<NewActionType>({
         name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true,
     });
+    const [tools, setTools] = useState<string[]>([]);
+    const [newTool, setNewTool] = useState("");
 
     const load = useCallback(() => {
         setLoading(true);
@@ -51,6 +55,8 @@ export function ActionTypesPage() {
     const openCreate = () => {
         setEditing(null);
         setForm({ name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true });
+        setTools([]);
+        setNewTool("");
         setIsModalOpen(true);
     };
 
@@ -59,14 +65,29 @@ export function ActionTypesPage() {
         setForm({
             name: at.name, description: at.description, executionMode: at.executionMode,
             userTriggerable: at.userTriggerable, emitsEvent: at.emitsEvent,
-            inputSchema: at.inputSchema, toolConstraints: at.toolConstraints,
+            inputSchema: at.inputSchema, allowedTools: at.allowedTools,
         });
+        setTools(at.allowedTools || []);
+        setNewTool("");
         setIsModalOpen(true);
     };
 
     const handleSave = () => {
-        const action = editing ? updateActionType(editing.id, form) : createActionType(form);
+        const data = { ...form, allowedTools: tools };
+        const action = editing ? updateActionType(editing.id, data) : createActionType(data);
         action.then(() => { setIsModalOpen(false); load(); }).catch(console.error);
+    };
+
+    const addTool = () => {
+        const trimmed = newTool.trim();
+        if (trimmed && !tools.includes(trimmed)) {
+            setTools([...tools, trimmed]);
+            setNewTool("");
+        }
+    };
+
+    const removeTool = (tool: string) => {
+        setTools(tools.filter(t => t !== tool));
     };
 
     const handleDelete = (id: number) => {
@@ -128,6 +149,36 @@ export function ActionTypesPage() {
                         <FormGroup fieldId="flags">
                             <Checkbox id="userTriggerable" label="User triggerable" isChecked={form.userTriggerable} onChange={(_e, v) => setForm({ ...form, userTriggerable: v })} />
                             <Checkbox id="emitsEvent" label="Emits internal event on completion" isChecked={form.emitsEvent} onChange={(_e, v) => setForm({ ...form, emitsEvent: v })} />
+                        </FormGroup>
+                        <FormGroup label="Allowed Tools" fieldId="allowedTools">
+                            <InputGroup>
+                                <InputGroupItem isFill>
+                                    <TextInput
+                                        id="newTool"
+                                        value={newTool}
+                                        onChange={(_e, v) => setNewTool(v)}
+                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTool(); } }}
+                                        placeholder='e.g. Read, Bash(git log *)'
+                                    />
+                                </InputGroupItem>
+                                <InputGroupItem>
+                                    <Button variant="control" onClick={addTool} isDisabled={!newTool.trim()}>Add</Button>
+                                </InputGroupItem>
+                            </InputGroup>
+                            {tools.length > 0 && (
+                                <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                                    {tools.map((tool) => (
+                                        <Label key={tool} isCompact onClose={() => removeTool(tool)}>
+                                            {tool}
+                                        </Label>
+                                    ))}
+                                </div>
+                            )}
+                            {tools.length === 0 && (
+                                <p style={{ color: "#6a6e73", fontSize: "13px", marginTop: "4px" }}>
+                                    No tools configured. The actor will use minimal read-only defaults.
+                                </p>
+                            )}
                         </FormGroup>
                     </Form>
                 </ModalBody>

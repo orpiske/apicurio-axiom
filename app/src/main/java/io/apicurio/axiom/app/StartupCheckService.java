@@ -61,16 +61,22 @@ public class StartupCheckService {
     private void checkGitHubToken() {
         String token = System.getenv("AXIOM_GITHUB_TOKEN");
         if (token == null || token.isBlank()) {
+            token = System.getenv("GH_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
+            token = System.getenv("GITHUB_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
             results.add(new CheckResult(
                     "GitHub API Token",
                     "error",
-                    "The AXIOM_GITHUB_TOKEN environment variable is not set. "
-                            + "This token is required for polling GitHub repositories for events. "
-                            + "Create a GitHub Personal Access Token at "
-                            + "https://github.com/settings/tokens and set it as "
-                            + "AXIOM_GITHUB_TOKEN in your environment."
+                    "No GitHub token found. Set one of: AXIOM_GITHUB_TOKEN, GH_TOKEN, "
+                            + "or GITHUB_TOKEN. This token is required for polling GitHub "
+                            + "repositories and for AI agents to post comments on issues. "
+                            + "Create a Personal Access Token at "
+                            + "https://github.com/settings/tokens"
             ));
-            LOG.warn("Startup check FAILED: AXIOM_GITHUB_TOKEN not set");
+            LOG.warn("Startup check FAILED: No GitHub token found");
         } else {
             results.add(new CheckResult(
                     "GitHub API Token",

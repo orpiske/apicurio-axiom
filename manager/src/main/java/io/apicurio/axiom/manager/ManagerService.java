@@ -90,14 +90,15 @@ public class ManagerService {
         String userPrompt = ManagerPromptBuilder.buildUserPrompt(event, project, recentTasks);
         String jsonSchema = ManagerPromptBuilder.getResponseJsonSchema();
 
-        // Build command
+        // Build command — Manager needs no tools, just reasoning
         ActorContext context = ActorContext.builder()
                 .systemPrompt(systemPrompt)
+                .allowedTools(List.of("StructuredOutput"))
                 .build();
 
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(userPrompt, context)
-                .streamJson(false)
+                .streamJson(true)
                 .maxTurns(maxTurns);
 
         model.ifPresent(cmdBuilder::model);

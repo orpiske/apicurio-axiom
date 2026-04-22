@@ -189,7 +189,7 @@ export interface ActionType {
     executionMode: string;
     userTriggerable: boolean;
     inputSchema?: string;
-    toolConstraints?: string;
+    allowedTools?: string[];
     emitsEvent: boolean;
 }
 

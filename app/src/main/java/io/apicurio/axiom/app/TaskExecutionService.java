@@ -18,11 +18,15 @@ import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Orchestrates task execution. Resolves the appropriate Actor implementation,
@@ -42,6 +46,9 @@ public class TaskExecutionService {
 
     @Inject
     Event<SseEvent> sseEvents;
+
+    @ConfigProperty(name = "axiom.github.token")
+    Optional<String> githubToken;
 
     /**
      * Attempts to execute the next pending task for the given project.
@@ -101,6 +108,8 @@ public class TaskExecutionService {
         ActorContext context = ActorContext.builder()
                 .workingDirectory(workspace)
                 .systemPrompt(buildSystemPrompt(task, project))
+                .allowedTools(getToolsFromActionType(task.actionType))
+                .environment(buildEnvironment())
                 .build();
 
         // Execute asynchronously
@@ -156,6 +165,56 @@ public class TaskExecutionService {
         return null;
     }
 
+    /**
+     * Reads the allowed tools from the ActionTypeEntity's allowedTools field.
+     * Falls back to a minimal read-only set if not configured.
+     */
+    private List<String> getToolsFromActionType(String actionType) {
+        ActionTypeEntity actionTypeEntity = ActionTypeEntity.find("name", actionType).firstResult();
+        if (actionTypeEntity != null
+                && actionTypeEntity.allowedTools != null
+                && !actionTypeEntity.allowedTools.isBlank()) {
+            return java.util.Arrays.stream(actionTypeEntity.allowedTools.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+        // Fallback: minimal read-only tools
+        LOG.warnf("No allowed tools configured for action type '%s', using minimal read-only defaults",
+                actionType);
+        return List.of("Read", "Glob", "Grep");
+    }
+
+    /**
+     * Builds environment variables to pass to the actor subprocess.
+     * Includes the GitHub token so gh CLI commands can authenticate.
+     */
+    private Map<String, String> buildEnvironment() {
+        Map<String, String> env = new HashMap<>();
+
+        // Try config property first, then fall back to env vars directly
+        String token = githubToken.orElse(null);
+        if (token == null || token.isBlank()) {
+            token = System.getenv("AXIOM_GITHUB_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
+            token = System.getenv("GH_TOKEN");
+        }
+        if (token == null || token.isBlank()) {
+            token = System.getenv("GITHUB_TOKEN");
+        }
+
+        if (token != null && !token.isBlank()) {
+            env.put("GH_TOKEN", token);
+            env.put("GITHUB_TOKEN", token);
+            LOG.debugf("GH_TOKEN set for subprocess (%d chars)", token.length());
+        } else {
+            LOG.warnf("No GitHub token configured — gh CLI commands will fail");
+        }
+
+        return env;
+    }
+
     private String buildSystemPrompt(TaskEntity task, ProjectEntity project) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are working on project: ").append(project.name).append("\n");
@@ -164,6 +223,15 @@ public class TaskExecutionService {
         if (project.description != null) {
             sb.append("Project description: ").append(project.description).append("\n");
         }
+
+        // Action-specific guidance
+        if ("answer-question".equals(task.actionType) || "respond".equals(task.actionType)) {
+            sb.append("\nIMPORTANT: To post a comment on a GitHub issue, use the gh CLI directly:\n");
+            sb.append("  gh issue comment <number> --repo <owner/repo> --body '<comment>'\n");
+            sb.append("Do NOT try to write temp files first — post the comment directly.\n");
+            sb.append("If the gh command fails, include the comment text in your output.\n");
+        }
+
         return sb.toString();
     }
 

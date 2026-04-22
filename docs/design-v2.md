@@ -206,7 +206,7 @@ registered in the system and form the vocabulary used by Policies, the Manager, 
 | `executionMode`  | How this action is executed: `actor` or `system` (see below)   |
 | `userTriggerable`| Whether the application user can manually trigger this action  |
 | `inputSchema`    | (Optional) Description of input required when manually triggered (e.g. "target branch", "additional instructions") |
-| `toolConstraints`| The set of tools available to actors performing this action (see Section 7.2); only applicable to `actor` mode |
+| `allowedTools`   | List of tools the actor is allowed to use when performing this action (see Section 7.2); only applicable to `actor` mode |
 | `emitsEvent`     | Whether completing a task of this type emits an internal event  |
 
 **Execution modes:**

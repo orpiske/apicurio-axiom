@@ -81,6 +81,15 @@ public class ClaudeCodeSubprocess {
     private ClaudeCodeResult doExecute() throws IOException, InterruptedException {
         LOG.infof("Launching Claude Code: %s", String.join(" ",
                 command.subList(0, Math.min(command.size(), 5))) + "...");
+        // Log tool-related flags for debugging
+        for (int i = 0; i < command.size(); i++) {
+            String arg = command.get(i);
+            if ("--tools".equals(arg) || "--allowedTools".equals(arg)
+                    || "--disallowedTools".equals(arg) || "--permission-mode".equals(arg)) {
+                String value = (i + 1 < command.size()) ? command.get(i + 1) : "?";
+                LOG.infof("  [cmd] %s %s", arg, value);
+            }
+        }
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(false);
@@ -100,7 +109,7 @@ public class ClaudeCodeSubprocess {
         StringBuilder lastResultLine = new StringBuilder();
         StringBuilder stderrContent = new StringBuilder();
 
-        // Read stdout in a thread
+        // Read stdout in a thread — parse NDJSON for diagnostic logging
         CompletableFuture<Void> stdoutFuture = CompletableFuture.runAsync(() -> {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
@@ -113,7 +122,8 @@ public class ClaudeCodeSubprocess {
                         streamListener.accept(line);
                     }
 
-                    LOG.tracef("Claude Code stdout: %s", line);
+                    // Parse NDJSON for diagnostic logging
+                    logStreamEvent(line);
                 }
             } catch (IOException e) {
                 LOG.warnf("Error reading Claude Code stdout: %s", e.getMessage());
@@ -208,6 +218,62 @@ public class ClaudeCodeSubprocess {
                     jsonLine.substring(0, Math.min(jsonLine.length(), 200)));
             // Fall back to treating the raw output as the result text
             return new ClaudeCodeResult(jsonLine, null, null, null, null, exitCode);
+        }
+    }
+
+    /**
+     * Parses a stream-json NDJSON line and logs meaningful diagnostic information.
+     * This helps trace what Claude Code is doing during execution.
+     */
+    private void logStreamEvent(String line) {
+        try {
+            JsonNode node = MAPPER.readTree(line);
+            String type = node.path("type").asText("");
+
+            switch (type) {
+                case "assistant" -> {
+                    // Assistant message — check for tool use
+                    JsonNode content = node.path("message").path("content");
+                    if (content.isArray()) {
+                        for (JsonNode block : content) {
+                            String blockType = block.path("type").asText("");
+                            if ("tool_use".equals(blockType)) {
+                                String toolName = block.path("name").asText("?");
+                                String input = block.path("input").toString();
+                                String inputPreview = input.length() > 150
+                                        ? input.substring(0, 147) + "..."
+                                        : input;
+                                LOG.infof("  [claude] Tool call: %s — %s", toolName, inputPreview);
+                            } else if ("text".equals(blockType)) {
+                                String text = block.path("text").asText("");
+                                if (!text.isBlank()) {
+                                    String preview = text.length() > 120
+                                            ? text.substring(0, 117) + "..."
+                                            : text;
+                                    LOG.debugf("  [claude] Text: %s", preview);
+                                }
+                            }
+                        }
+                    }
+                }
+                case "result" -> {
+                    String subtype = node.path("subtype").asText("");
+                    double cost = node.path("total_cost_usd").asDouble(0);
+                    int turns = node.path("num_turns").asInt(0);
+                    long durationMs = node.path("duration_ms").asLong(0);
+                    LOG.infof("  [claude] Result: %s (turns=%d, cost=$%.4f, duration=%dms)",
+                            subtype, turns, cost, durationMs);
+                }
+                case "tool_result" -> {
+                    // Tool completed
+                    LOG.debugf("  [claude] Tool result received");
+                }
+                default -> LOG.tracef("  [claude] Stream event type: %s", type);
+            }
+        } catch (Exception e) {
+            // Not JSON or unparseable — log raw at trace
+            LOG.tracef("  [claude] Raw: %s",
+                    line.substring(0, Math.min(line.length(), 200)));
         }
     }
 }

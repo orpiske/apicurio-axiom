@@ -1390,11 +1390,15 @@
           "inputSchema": {
             "type": "string"
           },
-          "toolConstraints": {
-            "type": "string"
-          },
           "emitsEvent": {
             "type": "boolean"
+          },
+          "allowedTools": {
+            "description": "Tools the actor is allowed to use when performing this action",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1424,11 +1428,15 @@
           "inputSchema": {
             "type": "string"
           },
-          "toolConstraints": {
-            "type": "string"
-          },
           "emitsEvent": {
             "type": "boolean"
+          },
+          "allowedTools": {
+            "description": "Tools the actor is allowed to use when performing this action",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

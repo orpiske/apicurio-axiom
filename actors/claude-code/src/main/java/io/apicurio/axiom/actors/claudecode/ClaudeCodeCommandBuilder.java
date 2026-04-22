@@ -5,6 +5,7 @@ import io.apicurio.axiom.actors.spi.ActorContext;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Builds the command line for launching a Claude Code CLI subprocess.
@@ -108,23 +109,56 @@ public class ClaudeCodeCommandBuilder {
             cmd.add(model);
         }
 
+        // Three-layer tool restriction:
+        //
+        // 1. --tools: hard restriction on which tools are AVAILABLE to the agent.
+        //    Tools not in this list are removed from the model's context entirely.
+        //    We derive this from allowedTools by extracting the base tool names
+        //    (e.g. "Bash(git log *)" -> "Bash").
+        //
+        // 2. --allowedTools: auto-approve list with patterns. Tools matching
+        //    these patterns run without prompting. Supports wildcards like
+        //    "Bash(git log *)".
+        //
+        // 3. --permission-mode dontAsk: denies any tool call that doesn't match
+        //    an --allowedTools pattern. In -p mode, denied calls abort rather
+        //    than prompt.
         if (allowedTools != null && !allowedTools.isEmpty()) {
+            // Derive base tool names for --tools (hard availability restriction)
+            String baseTools = allowedTools.stream()
+                    .map(tool -> {
+                        int parenIdx = tool.indexOf('(');
+                        return parenIdx > 0 ? tool.substring(0, parenIdx) : tool;
+                    })
+                    .distinct()
+                    .collect(java.util.stream.Collectors.joining(","));
+            cmd.add("--tools");
+            cmd.add(baseTools);
+
+            // Set specific patterns for auto-approval — space-separated in a
+            // single argument. Comma-separated breaks patterns with parentheses,
+            // and separate args only passes the first pattern.
             cmd.add("--allowedTools");
-            cmd.addAll(allowedTools);
+            cmd.add(String.join(" ", allowedTools));
+
+            // Deny anything not in the allowed list
+            cmd.add("--permission-mode");
+            cmd.add("dontAsk");
+        } else {
+            // No tool restrictions — use acceptEdits for backward compat
+            cmd.add("--permission-mode");
+            cmd.add("acceptEdits");
         }
 
         if (disallowedTools != null && !disallowedTools.isEmpty()) {
             cmd.add("--disallowedTools");
-            cmd.addAll(disallowedTools);
+            cmd.add(String.join(",", disallowedTools));
         }
 
         if (systemPrompt != null) {
             cmd.add("--append-system-prompt");
             cmd.add(systemPrompt);
         }
-
-        cmd.add("--permission-mode");
-        cmd.add("acceptEdits");
 
         if (maxTurns != null) {
             cmd.add("--max-turns");

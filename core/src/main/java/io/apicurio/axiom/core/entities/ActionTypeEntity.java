@@ -27,8 +27,8 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "input_schema", columnDefinition = "TEXT")
     public String inputSchema;
 
-    @Column(name = "tool_constraints", columnDefinition = "TEXT")
-    public String toolConstraints;
+    @Column(name = "allowed_tools", columnDefinition = "TEXT")
+    public String allowedTools;
 
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;

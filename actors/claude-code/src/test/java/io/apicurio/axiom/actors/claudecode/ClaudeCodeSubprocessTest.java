@@ -193,4 +193,209 @@ class ClaudeCodeSubprocessTest {
         assertTrue(result.isSuccess());
         assertNotNull(result.result());
     }
+
+    @Test
+    void testAllowedToolsCommandBuildsCorrectly()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Verify that restricted allowedTools still produces a working subprocess
+        ActorContext context = ActorContext.builder()
+                .workingDirectory(tempDir)
+                .allowedTools(List.of("Read", "Glob"))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder
+                .fromContext("What files are in the current directory? Just list them.", context)
+                .streamJson(false)
+                .maxTurns(3)
+                .maxBudgetUsd(0.10)
+                .build();
+
+        // Verify the command contains the expected flags
+        assertTrue(cmd.contains("--allowedTools"));
+        assertTrue(cmd.contains("--allowedTools"));
+        int aidx = cmd.indexOf("--allowedTools");
+        String aarg = cmd.get(aidx + 1);
+        assertTrue(aarg.contains("Read"));
+        assertTrue(aarg.contains("Glob"));
+
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+
+        ClaudeCodeResult result = subprocess.execute()
+                .get(90, TimeUnit.SECONDS);
+
+        assertTrue(result.isSuccess(), "Should complete with allowed tools");
+        assertNotNull(result.result());
+    }
+
+    @Test
+    void testAllowedBashWildcardPattern()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Allow Bash(echo *) — agent should be able to run echo
+        ActorContext context = ActorContext.builder()
+                .workingDirectory(tempDir)
+                .allowedTools(List.of("Read", "Bash(echo *)"))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder
+                .fromContext("Run 'echo AXIOM_WILDCARD_TEST' and tell me the exact output", context)
+                .streamJson(false)
+                .maxTurns(3)
+                .maxBudgetUsd(0.10)
+                .build();
+
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+
+        ClaudeCodeResult result = subprocess.execute()
+                .get(90, TimeUnit.SECONDS);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.result());
+        assertTrue(result.result().contains("AXIOM_WILDCARD_TEST"),
+                "Agent should have been able to run echo with Bash(echo *) permission. Got: "
+                        + result.result().substring(0, Math.min(result.result().length(), 200)));
+    }
+
+    @Test
+    void testAllowedGhCommandPattern()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Allow Bash(gh *) — test that gh wildcard pattern works
+        ActorContext context = ActorContext.builder()
+                .workingDirectory(tempDir)
+                .allowedTools(List.of("Read", "Bash(gh *)"))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder
+                .fromContext("Run 'gh --version' and tell me the exact output", context)
+                .streamJson(false)
+                .maxTurns(3)
+                .maxBudgetUsd(0.10)
+                .build();
+
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+
+        ClaudeCodeResult result = subprocess.execute()
+                .get(90, TimeUnit.SECONDS);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.result());
+        assertTrue(result.result().toLowerCase().contains("gh version")
+                        || result.result().contains("gh "),
+                "Agent should have been able to run gh with Bash(gh *) permission. Got: "
+                        + result.result().substring(0, Math.min(result.result().length(), 200)));
+    }
+
+    @Test
+    void testEnvironmentVariablesPassedToSubprocess()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Use broad Bash permission — this test is about env vars, not tool patterns
+        ActorContext context = ActorContext.builder()
+                .workingDirectory(tempDir)
+                .allowedTools(List.of("Read", "Bash"))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder
+                .fromContext("Run 'echo $AXIOM_TEST_VAR' and tell me the exact output", context)
+                .streamJson(false)
+                .maxTurns(3)
+                .maxBudgetUsd(0.10)
+                .build();
+
+        Map<String, String> env = Map.of("AXIOM_TEST_VAR", "env_value_12345");
+
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                cmd, tempDir.toFile(), env, Duration.ofSeconds(60), null);
+
+        ClaudeCodeResult result = subprocess.execute()
+                .get(90, TimeUnit.SECONDS);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.result());
+        assertTrue(result.result().contains("env_value_12345"),
+                "Environment variable should be accessible. Got: "
+                        + result.result().substring(0, Math.min(result.result().length(), 200)));
+    }
+
+    @Test
+    void testGhIssueCommentWithAllowedTools()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Replicate the exact setup used by the answer-question action type:
+        // - --tools with base names including Bash
+        // - --allowedTools with Bash(gh issue *) pattern
+        // - --permission-mode dontAsk
+        // - GH_TOKEN passed via environment
+        String ghToken = System.getenv("AXIOM_GITHUB_TOKEN");
+        if (ghToken == null || ghToken.isBlank()) {
+            ghToken = System.getenv("GH_TOKEN");
+        }
+        if (ghToken == null || ghToken.isBlank()) {
+            ghToken = System.getenv("GITHUB_TOKEN");
+        }
+        assertNotNull(ghToken,
+                "AXIOM_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN must be set to run this test");
+
+        // Use the same allowed tools as READ_PLUS_GH_TOOLS in SeedDataInitializer
+        ActorContext context = ActorContext.builder()
+                .workingDirectory(tempDir)
+                .allowedTools(List.of(
+                        "Read", "Glob", "Grep",
+                        "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)",
+                        "Bash(find *)", "Bash(wc *)", "Bash(file *)",
+                        "Bash(git log *)", "Bash(git diff *)", "Bash(git show *)",
+                        "Bash(git status *)", "Bash(git branch *)",
+                        "Write",
+                        "Bash(cat *)", "Bash(echo *)",
+                        "Bash(gh issue *)", "Bash(gh api *)"
+                ))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder
+                .fromContext(
+                        "Post a comment on GitHub issue #59 in the EricWittmann/cb-test-project repo. "
+                                + "The comment should say: 'Automated test comment from ClaudeCodeSubprocessTest'. "
+                                + "Use: gh issue comment 59 --repo EricWittmann/cb-test-project --body '...'",
+                        context)
+                .streamJson(false)
+                .maxTurns(5)
+                .maxBudgetUsd(0.20)
+                .build();
+
+        // Log the exact command for debugging
+        System.out.println("=== Command ===");
+        for (int i = 0; i < cmd.size(); i++) {
+            String arg = cmd.get(i);
+            if (arg.startsWith("--")) {
+                String val = (i + 1 < cmd.size()) ? cmd.get(i + 1) : "";
+                System.out.println("  " + arg + " " + val);
+            }
+        }
+
+        Map<String, String> env = Map.of(
+                "GH_TOKEN", ghToken,
+                "GITHUB_TOKEN", ghToken
+        );
+
+        ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
+                cmd, tempDir.toFile(), env, Duration.ofSeconds(60), null);
+
+        ClaudeCodeResult result = subprocess.execute()
+                .get(90, TimeUnit.SECONDS);
+
+        System.out.println("=== Result ===");
+        System.out.println("Exit code: " + result.exitCode());
+        System.out.println("Output: " + result.result());
+
+        assertTrue(result.isSuccess(), "Should complete successfully. Got: " + result.result());
+        assertNotNull(result.result());
+
+        String lower = result.result().toLowerCase();
+        // The comment should have been posted successfully
+        assertFalse(lower.contains("denied") || lower.contains("unable to post")
+                        || lower.contains("permission") || lower.contains("restricted")
+                        || lower.contains("shell access"),
+                "gh issue comment should have been allowed. Got: "
+                        + result.result().substring(0, Math.min(result.result().length(), 400)));
+    }
 }

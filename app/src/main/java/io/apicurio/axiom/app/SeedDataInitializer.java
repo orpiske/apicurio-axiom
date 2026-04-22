@@ -34,39 +34,39 @@ public class SeedDataInitializer {
 
         seedActionType("analyze",
                 "Read and understand an issue, assess complexity, identify affected components",
-                "actor", true, true);
+                "actor", true, true, READ_ONLY_TOOLS);
 
         seedActionType("auto-tag",
                 "Determine appropriate labels/tags for an issue",
-                "actor", false, true);
+                "actor", false, true, READ_PLUS_GH_TOOLS);
 
         seedActionType("implement",
                 "Write code to address the issue",
-                "actor", true, true);
+                "actor", true, true, WRITE_TOOLS);
 
         seedActionType("propose",
                 "Draft a proposal or design for addressing the issue (read-only, no code changes)",
-                "actor", true, true);
+                "actor", true, true, READ_ONLY_TOOLS);
 
         seedActionType("review",
                 "Review a pull request or code change",
-                "actor", true, true);
+                "actor", true, true, READ_ONLY_TOOLS);
 
         seedActionType("respond",
                 "Reply to a comment or review feedback",
-                "actor", true, true);
+                "actor", true, true, WRITE_TOOLS);
 
         seedActionType("answer-question",
                 "Answer a question asked by a user on the issue",
-                "actor", false, true);
+                "actor", false, true, READ_PLUS_GH_TOOLS);
 
         seedActionType("close-project",
                 "Mark the project as completed",
-                "system", false, false);
+                "system", false, false, null);
 
         seedActionType("reopen-project",
                 "Re-open a completed project",
-                "system", false, false);
+                "system", false, false, null);
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
@@ -136,14 +136,39 @@ public class SeedDataInitializer {
                 repo.owner, repo.name, repo.pollInterval);
     }
 
+    private static final String READ_ONLY_TOOLS = String.join(",",
+            "Read", "Glob", "Grep",
+            "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)",
+            "Bash(find *)", "Bash(wc *)", "Bash(file *)",
+            "Bash(git log *)", "Bash(git diff *)", "Bash(git show *)",
+            "Bash(git status *)", "Bash(git branch *)"
+    );
+
+    private static final String READ_PLUS_GH_TOOLS = String.join(",",
+            READ_ONLY_TOOLS,
+            "Write",
+            "Bash(cat *)", "Bash(echo *)",
+            "Bash(gh issue *)", "Bash(gh api *)"
+    );
+
+    private static final String WRITE_TOOLS = String.join(",",
+            READ_ONLY_TOOLS,
+            "Edit", "Write",
+            "Bash(git add *)", "Bash(git commit *)", "Bash(git checkout *)",
+            "Bash(git switch *)", "Bash(git push *)", "Bash(git merge *)",
+            "Bash(gh issue *)", "Bash(gh pr *)", "Bash(gh api *)",
+            "Bash(mkdir *)", "Bash(cp *)", "Bash(mv *)"
+    );
+
     private void seedActionType(String name, String description, String executionMode,
-                                boolean userTriggerable, boolean emitsEvent) {
+                                boolean userTriggerable, boolean emitsEvent, String allowedTools) {
         ActionTypeEntity entity = new ActionTypeEntity();
         entity.name = name;
         entity.description = description;
         entity.executionMode = executionMode;
         entity.userTriggerable = userTriggerable;
         entity.emitsEvent = emitsEvent;
+        entity.allowedTools = allowedTools;
         entity.persist();
     }
 }

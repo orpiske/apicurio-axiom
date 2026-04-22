@@ -6,6 +6,7 @@ import io.apicurio.axiom.core.entities.EventQueueEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
+import io.apicurio.axiom.core.services.WorkspaceService;
 import io.apicurio.axiom.manager.ManagerDecision;
 import io.apicurio.axiom.manager.ManagerService;
 import io.quarkus.test.junit.QuarkusTest;
@@ -37,10 +38,16 @@ class PipelineOrchestratorTest {
     @InjectMock
     ManagerService managerService;
 
+    @InjectMock
+    WorkspaceService workspaceService;
+
     @BeforeEach
     void setUp() {
         // Default: all decisions meet confidence threshold
         when(managerService.meetsConfidenceThreshold(any())).thenReturn(true);
+        // Mock workspace service to avoid real git clone operations
+        when(workspaceService.ensureWorkspace(any())).thenReturn(java.nio.file.Path.of("/tmp/test-workspace"));
+        when(workspaceService.getWorkspacePath(any())).thenReturn(java.nio.file.Path.of("/tmp/test-workspace"));
     }
 
     // ── Create Task Decision ──────────────────────────────────────────

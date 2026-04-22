@@ -68,18 +68,33 @@ class ClaudeCodeCommandBuilderTest {
     }
 
     @Test
-    void testAllowedTools() {
+    void testAllowedToolsThreeLayers() {
         ActorContext context = ActorContext.builder()
                 .allowedTools(List.of("Read", "Edit", "Bash"))
                 .build();
 
         List<String> cmd = ClaudeCodeCommandBuilder.fromContext("test", context).build();
 
-        int toolsIndex = cmd.indexOf("--allowedTools");
-        assertTrue(toolsIndex >= 0);
-        assertTrue(cmd.contains("Read"));
-        assertTrue(cmd.contains("Edit"));
-        assertTrue(cmd.contains("Bash"));
+        // Layer 1: --tools (hard availability restriction with base names)
+        int hardToolsIndex = cmd.indexOf("--tools");
+        assertTrue(hardToolsIndex >= 0, "Should have --tools flag");
+        String hardToolsArg = cmd.get(hardToolsIndex + 1);
+        assertTrue(hardToolsArg.contains("Read"));
+        assertTrue(hardToolsArg.contains("Edit"));
+        assertTrue(hardToolsArg.contains("Bash"));
+
+        // Layer 2: --allowedTools (auto-approve patterns, space-separated single arg)
+        int allowedIndex = cmd.indexOf("--allowedTools");
+        assertTrue(allowedIndex >= 0, "Should have --allowedTools flag");
+        String allowedArg = cmd.get(allowedIndex + 1);
+        assertTrue(allowedArg.contains("Read"));
+        assertTrue(allowedArg.contains("Edit"));
+        assertTrue(allowedArg.contains("Bash"));
+
+        // Layer 3: --permission-mode dontAsk
+        int modeIndex = cmd.indexOf("--permission-mode");
+        assertTrue(modeIndex >= 0);
+        assertEquals("dontAsk", cmd.get(modeIndex + 1));
     }
 
     @Test
@@ -92,7 +107,8 @@ class ClaudeCodeCommandBuilderTest {
 
         int toolsIndex = cmd.indexOf("--disallowedTools");
         assertTrue(toolsIndex >= 0);
-        assertTrue(cmd.contains("Write"));
+        String toolsArg = cmd.get(toolsIndex + 1);
+        assertTrue(toolsArg.contains("Write"));
     }
 
     @Test
@@ -156,5 +172,74 @@ class ClaudeCodeCommandBuilderTest {
                 .build();
 
         assertFalse(cmd.contains("--bare"));
+    }
+
+    @Test
+    void testPermissionModeDontAskWithAllowedTools() {
+        ActorContext context = ActorContext.builder()
+                .allowedTools(List.of("Read", "Glob"))
+                .build();
+        List<String> cmd = ClaudeCodeCommandBuilder.fromContext("test", context).build();
+        int modeIndex = cmd.indexOf("--permission-mode");
+        assertTrue(modeIndex >= 0);
+        assertEquals("dontAsk", cmd.get(modeIndex + 1),
+                "Should use dontAsk when allowedTools is set");
+    }
+
+    @Test
+    void testPermissionModeAcceptEditsWithoutAllowedTools() {
+        ActorContext contextNoTools = ActorContext.builder().build();
+        List<String> cmd = ClaudeCodeCommandBuilder.fromContext("test", contextNoTools).build();
+        int modeIndex = cmd.indexOf("--permission-mode");
+        assertTrue(modeIndex >= 0);
+        assertEquals("acceptEdits", cmd.get(modeIndex + 1),
+                "Should use acceptEdits when no allowedTools set");
+    }
+
+    @Test
+    void testWildcardPatternsDerivesBaseToolNames() {
+        ActorContext context = ActorContext.builder()
+                .allowedTools(List.of(
+                        "Read", "Glob", "Grep",
+                        "Bash(git log *)", "Bash(git diff *)",
+                        "Bash(gh issue *)", "Bash(gh pr *)"
+                ))
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder.fromContext("test", context).build();
+
+        // --tools should have deduplicated base names
+        int hardToolsIndex = cmd.indexOf("--tools");
+        assertTrue(hardToolsIndex >= 0);
+        String hardToolsArg = cmd.get(hardToolsIndex + 1);
+        assertTrue(hardToolsArg.contains("Read"));
+        assertTrue(hardToolsArg.contains("Glob"));
+        assertTrue(hardToolsArg.contains("Grep"));
+        assertTrue(hardToolsArg.contains("Bash"));
+        // Should NOT contain the wildcard patterns — just base names
+        assertFalse(hardToolsArg.contains("("),
+                "Base tool names should not contain patterns: " + hardToolsArg);
+
+        // --allowedTools should have the full patterns in a space-separated single arg
+        int allowedIndex = cmd.indexOf("--allowedTools");
+        assertTrue(allowedIndex >= 0);
+        String allowedArg = cmd.get(allowedIndex + 1);
+        assertTrue(allowedArg.contains("Bash(git log *)"));
+        assertTrue(allowedArg.contains("Bash(gh issue *)"));
+        assertTrue(allowedArg.contains("Bash(gh pr *)"));
+    }
+
+    @Test
+    void testAllowedToolsEmptyListFallsBackToAcceptEdits() {
+        ActorContext context = ActorContext.builder()
+                .allowedTools(List.of())
+                .build();
+
+        List<String> cmd = ClaudeCodeCommandBuilder.fromContext("test", context).build();
+
+        assertFalse(cmd.contains("--allowedTools"),
+                "Empty allowedTools should not produce --allowedTools flag");
+        int modeIndex = cmd.indexOf("--permission-mode");
+        assertEquals("acceptEdits", cmd.get(modeIndex + 1));
     }
 }
