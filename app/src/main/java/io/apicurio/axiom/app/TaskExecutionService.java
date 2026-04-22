@@ -104,10 +104,12 @@ public class TaskExecutionService {
 
         // Build the actor context
         ProjectEntity project = ProjectEntity.findById(task.projectId);
+        ActionTypeEntity actionTypeEntity = ActionTypeEntity.find("name", task.actionType).firstResult();
         Path workspace = workspaceService.getWorkspacePath(project);
         ActorContext context = ActorContext.builder()
                 .workingDirectory(workspace)
                 .systemPrompt(buildSystemPrompt(task, project))
+                .promptTemplate(resolvePromptTemplate(actionTypeEntity, task, project))
                 .allowedTools(getToolsFromActionType(task.actionType))
                 .environment(buildEnvironment())
                 .build();
@@ -215,6 +217,26 @@ public class TaskExecutionService {
         return env;
     }
 
+    /**
+     * Resolves the prompt template for the action type, substituting placeholders
+     * with values from the task and project. Returns null if no template is configured.
+     */
+    private String resolvePromptTemplate(ActionTypeEntity actionType, TaskEntity task,
+                                          ProjectEntity project) {
+        if (actionType == null || actionType.promptTemplate == null
+                || actionType.promptTemplate.isBlank()) {
+            return null;
+        }
+
+        String resolved = actionType.promptTemplate;
+        resolved = resolved.replace("{{managerInput}}", task.input != null ? task.input : "");
+        resolved = resolved.replace("{{actionType}}", task.actionType != null ? task.actionType : "");
+        resolved = resolved.replace("{{issueRef}}", project.issueRef != null ? project.issueRef : "");
+        resolved = resolved.replace("{{repository}}", project.repository != null ? project.repository : "");
+        resolved = resolved.replace("{{projectName}}", project.name != null ? project.name : "");
+        return resolved;
+    }
+
     private String buildSystemPrompt(TaskEntity task, ProjectEntity project) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are working on project: ").append(project.name).append("\n");
@@ -223,15 +245,6 @@ public class TaskExecutionService {
         if (project.description != null) {
             sb.append("Project description: ").append(project.description).append("\n");
         }
-
-        // Action-specific guidance
-        if ("answer-question".equals(task.actionType) || "respond".equals(task.actionType)) {
-            sb.append("\nIMPORTANT: To post a comment on a GitHub issue, use the gh CLI directly:\n");
-            sb.append("  gh issue comment <number> --repo <owner/repo> --body '<comment>'\n");
-            sb.append("Do NOT try to write temp files first — post the comment directly.\n");
-            sb.append("If the gh command fails, include the comment text in your output.\n");
-        }
-
         return sb.toString();
     }
 

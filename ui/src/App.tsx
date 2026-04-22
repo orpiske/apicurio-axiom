@@ -38,6 +38,7 @@ import { ActionTypesPage } from "./pages/ActionTypesPage";
 import { ActivityLogPage } from "./pages/ActivityLogPage";
 import { RepositoriesPage } from "./pages/RepositoriesPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
+import { ActionTypeDetailPage } from "./pages/ActionTypeDetailPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
 import { sseClient, type AxiomSseEvent } from "./config/sse";
@@ -283,6 +284,7 @@ export function App() {
                     <Route path="/actors" element={<ActorsPage />} />
                     <Route path="/policies" element={<PoliciesPage />} />
                     <Route path="/action-types" element={<ActionTypesPage />} />
+                    <Route path="/action-types/:actionTypeId" element={<ActionTypeDetailPage />} />
                     <Route path="/activity" element={<ActivityLogPage />} />
                     <Route path="/repositories" element={<RepositoriesPage />} />
                 </Routes>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Button,
-    Checkbox,
     EmptyState,
     EmptyStateBody,
     Flex,
@@ -10,8 +10,6 @@ import {
     FormGroup,
     FormSelect,
     FormSelectOption,
-    InputGroup,
-    InputGroupItem,
     Label,
     Modal,
     ModalBody,
@@ -23,27 +21,22 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
-import PencilAltIcon from "@patternfly/react-icons/dist/esm/icons/pencil-alt-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
 import {
     type ActionType,
     type NewActionType,
     fetchActionTypes,
     createActionType,
-    updateActionType,
     deleteActionType,
 } from "../config/api";
 
 export function ActionTypesPage() {
+    const navigate = useNavigate();
     const [actionTypes, setActionTypes] = useState<ActionType[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editing, setEditing] = useState<ActionType | null>(null);
-    const [form, setForm] = useState<NewActionType>({
-        name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true,
-    });
-    const [tools, setTools] = useState<string[]>([]);
-    const [newTool, setNewTool] = useState("");
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [newMode, setNewMode] = useState("actor");
 
     const load = useCallback(() => {
         setLoading(true);
@@ -52,45 +45,24 @@ export function ActionTypesPage() {
 
     useEffect(() => { load(); }, [load]);
 
-    const openCreate = () => {
-        setEditing(null);
-        setForm({ name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true });
-        setTools([]);
-        setNewTool("");
-        setIsModalOpen(true);
+    const handleCreate = () => {
+        const data: NewActionType = {
+            name: newName,
+            executionMode: newMode,
+            userTriggerable: false,
+            emitsEvent: true,
+        };
+        createActionType(data)
+            .then((created) => {
+                setIsCreateOpen(false);
+                setNewName("");
+                navigate(`/action-types/${created.id}`);
+            })
+            .catch(console.error);
     };
 
-    const openEdit = (at: ActionType) => {
-        setEditing(at);
-        setForm({
-            name: at.name, description: at.description, executionMode: at.executionMode,
-            userTriggerable: at.userTriggerable, emitsEvent: at.emitsEvent,
-            inputSchema: at.inputSchema, allowedTools: at.allowedTools,
-        });
-        setTools(at.allowedTools || []);
-        setNewTool("");
-        setIsModalOpen(true);
-    };
-
-    const handleSave = () => {
-        const data = { ...form, allowedTools: tools };
-        const action = editing ? updateActionType(editing.id, data) : createActionType(data);
-        action.then(() => { setIsModalOpen(false); load(); }).catch(console.error);
-    };
-
-    const addTool = () => {
-        const trimmed = newTool.trim();
-        if (trimmed && !tools.includes(trimmed)) {
-            setTools([...tools, trimmed]);
-            setNewTool("");
-        }
-    };
-
-    const removeTool = (tool: string) => {
-        setTools(tools.filter(t => t !== tool));
-    };
-
-    const handleDelete = (id: number) => {
+    const handleDelete = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
         if (confirm("Delete this action type?")) {
             deleteActionType(id).then(load).catch(console.error);
         }
@@ -100,7 +72,15 @@ export function ActionTypesPage() {
         <PageSection>
             <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} alignItems={{ default: "alignItemsCenter" }}>
                 <FlexItem><Title headingLevel="h1" size="lg">Action Types</Title></FlexItem>
-                <FlexItem><Button variant="primary" icon={<PlusCircleIcon />} onClick={openCreate}>Create Action Type</Button></FlexItem>
+                <FlexItem>
+                    <Button variant="primary" icon={<PlusCircleIcon />} onClick={() => {
+                        setNewName("");
+                        setNewMode("actor");
+                        setIsCreateOpen(true);
+                    }}>
+                        Create Action Type
+                    </Button>
+                </FlexItem>
             </Flex>
 
             <div style={{ marginTop: "16px" }}>
@@ -110,18 +90,38 @@ export function ActionTypesPage() {
                     <EmptyState><EmptyStateBody>No action types.</EmptyStateBody></EmptyState>
                 ) : (
                     <Table aria-label="Action Types" variant="compact">
-                        <Thead><Tr><Th>Name</Th><Th>Mode</Th><Th>User Triggerable</Th><Th>Emits Event</Th><Th>Description</Th><Th /></Tr></Thead>
+                        <Thead>
+                            <Tr>
+                                <Th>Name</Th>
+                                <Th>Mode</Th>
+                                <Th>User Triggerable</Th>
+                                <Th>Emits Event</Th>
+                                <Th>Tools</Th>
+                                <Th>Prompt Template</Th>
+                                <Th />
+                            </Tr>
+                        </Thead>
                         <Tbody>
                             {actionTypes.map((at) => (
-                                <Tr key={at.id}>
+                                <Tr
+                                    key={at.id}
+                                    isClickable
+                                    onRowClick={() => navigate(`/action-types/${at.id}`)}
+                                >
                                     <Td>{at.name}</Td>
-                                    <Td><Label isCompact color={at.executionMode === "actor" ? "blue" : "grey"}>{at.executionMode}</Label></Td>
+                                    <Td>
+                                        <Label isCompact color={at.executionMode === "actor" ? "blue" : "grey"}>
+                                            {at.executionMode}
+                                        </Label>
+                                    </Td>
                                     <Td>{at.userTriggerable ? "Yes" : "No"}</Td>
                                     <Td>{at.emitsEvent ? "Yes" : "No"}</Td>
-                                    <Td>{at.description || "—"}</Td>
+                                    <Td>{at.allowedTools?.length || 0} tools</Td>
+                                    <Td>{at.promptTemplate ? "Configured" : "—"}</Td>
                                     <Td>
-                                        <Button variant="plain" onClick={() => openEdit(at)}><PencilAltIcon /></Button>
-                                        <Button variant="plain" onClick={() => handleDelete(at.id)}><TrashIcon /></Button>
+                                        <Button variant="plain" onClick={(e) => handleDelete(e, at.id)}>
+                                            <TrashIcon />
+                                        </Button>
                                     </Td>
                                 </Tr>
                             ))}
@@ -130,61 +130,44 @@ export function ActionTypesPage() {
                 )}
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} variant="medium">
-                <ModalHeader title={editing ? "Edit Action Type" : "Create Action Type"} />
+            {/* Simple create modal — just name and mode, then navigate to detail page */}
+            <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} variant="small">
+                <ModalHeader title="Create Action Type" />
                 <ModalBody>
                     <Form>
                         <FormGroup label="Name" isRequired fieldId="name">
-                            <TextInput id="name" isRequired value={form.name} onChange={(_e, v) => setForm({ ...form, name: v })} />
-                        </FormGroup>
-                        <FormGroup label="Description" fieldId="description">
-                            <TextInput id="description" value={form.description || ""} onChange={(_e, v) => setForm({ ...form, description: v })} />
+                            <TextInput
+                                id="name"
+                                isRequired
+                                value={newName}
+                                onChange={(_e, v) => setNewName(v)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && newName.trim()) {
+                                        e.preventDefault();
+                                        handleCreate();
+                                    }
+                                }}
+                            />
                         </FormGroup>
                         <FormGroup label="Execution Mode" isRequired fieldId="executionMode">
-                            <FormSelect id="executionMode" value={form.executionMode} onChange={(_e, v) => setForm({ ...form, executionMode: v })}>
+                            <FormSelect
+                                id="executionMode"
+                                value={newMode}
+                                onChange={(_e, v) => setNewMode(v)}
+                            >
                                 <FormSelectOption value="actor" label="Actor" />
                                 <FormSelectOption value="system" label="System" />
                             </FormSelect>
                         </FormGroup>
-                        <FormGroup fieldId="flags">
-                            <Checkbox id="userTriggerable" label="User triggerable" isChecked={form.userTriggerable} onChange={(_e, v) => setForm({ ...form, userTriggerable: v })} />
-                            <Checkbox id="emitsEvent" label="Emits internal event on completion" isChecked={form.emitsEvent} onChange={(_e, v) => setForm({ ...form, emitsEvent: v })} />
-                        </FormGroup>
-                        <FormGroup label="Allowed Tools" fieldId="allowedTools">
-                            <InputGroup>
-                                <InputGroupItem isFill>
-                                    <TextInput
-                                        id="newTool"
-                                        value={newTool}
-                                        onChange={(_e, v) => setNewTool(v)}
-                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTool(); } }}
-                                        placeholder='e.g. Read, Bash(git log *)'
-                                    />
-                                </InputGroupItem>
-                                <InputGroupItem>
-                                    <Button variant="control" onClick={addTool} isDisabled={!newTool.trim()}>Add</Button>
-                                </InputGroupItem>
-                            </InputGroup>
-                            {tools.length > 0 && (
-                                <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                                    {tools.map((tool) => (
-                                        <Label key={tool} isCompact onClose={() => removeTool(tool)}>
-                                            {tool}
-                                        </Label>
-                                    ))}
-                                </div>
-                            )}
-                            {tools.length === 0 && (
-                                <p style={{ color: "#6a6e73", fontSize: "13px", marginTop: "4px" }}>
-                                    No tools configured. The actor will use minimal read-only defaults.
-                                </p>
-                            )}
-                        </FormGroup>
                     </Form>
                 </ModalBody>
                 <ModalFooter>
-                    <Button variant="primary" onClick={handleSave} isDisabled={!form.name}>Save</Button>
-                    <Button variant="link" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                    <Button variant="primary" onClick={handleCreate} isDisabled={!newName.trim()}>
+                        Create
+                    </Button>
+                    <Button variant="link" onClick={() => setIsCreateOpen(false)}>
+                        Cancel
+                    </Button>
                 </ModalFooter>
             </Modal>
         </PageSection>

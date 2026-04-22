@@ -14,6 +14,7 @@ public class ActorContext {
     private final List<String> allowedTools;
     private final List<String> disallowedTools;
     private final String systemPrompt;
+    private final String promptTemplate;
     private final Map<String, String> environment;
 
     private ActorContext(Builder builder) {
@@ -21,6 +22,7 @@ public class ActorContext {
         this.allowedTools = builder.allowedTools;
         this.disallowedTools = builder.disallowedTools;
         this.systemPrompt = builder.systemPrompt;
+        this.promptTemplate = builder.promptTemplate;
         this.environment = builder.environment;
     }
 
@@ -53,6 +55,13 @@ public class ActorContext {
     }
 
     /**
+     * @return the prompt template for this action type, or null if not configured
+     */
+    public String getPromptTemplate() {
+        return promptTemplate;
+    }
+
+    /**
      * @return additional environment variables for the subprocess
      */
     public Map<String, String> getEnvironment() {
@@ -68,6 +77,7 @@ public class ActorContext {
         private List<String> allowedTools = List.of();
         private List<String> disallowedTools = List.of();
         private String systemPrompt;
+        private String promptTemplate;
         private Map<String, String> environment = Map.of();
 
         public Builder workingDirectory(Path workingDirectory) {
@@ -87,6 +97,11 @@ public class ActorContext {
 
         public Builder systemPrompt(String systemPrompt) {
             this.systemPrompt = systemPrompt;
+            return this;
+        }
+
+        public Builder promptTemplate(String promptTemplate) {
+            this.promptTemplate = promptTemplate;
             return this;
         }
 

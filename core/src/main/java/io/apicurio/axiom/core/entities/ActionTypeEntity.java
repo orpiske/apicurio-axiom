@@ -30,6 +30,9 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "allowed_tools", columnDefinition = "TEXT")
     public String allowedTools;
 
+    @Column(name = "prompt_template", columnDefinition = "TEXT")
+    public String promptTemplate;
+
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;
 }

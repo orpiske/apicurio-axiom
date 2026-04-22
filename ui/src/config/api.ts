@@ -190,6 +190,7 @@ export interface ActionType {
     userTriggerable: boolean;
     inputSchema?: string;
     allowedTools?: string[];
+    promptTemplate?: string;
     emitsEvent: boolean;
 }
 
@@ -198,6 +199,12 @@ export type NewActionType = Omit<ActionType, "id">;
 export async function fetchActionTypes(): Promise<ActionType[]> {
     const response = await fetch(`${API}/action-types`);
     if (!response.ok) throw new Error(`Failed to fetch action types: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchActionType(id: number): Promise<ActionType> {
+    const response = await fetch(`${API}/action-types/${id}`);
+    if (!response.ok) throw new Error(`Failed to fetch action type: ${response.status}`);
     return response.json();
 }
 

@@ -54,7 +54,7 @@ public class ClaudeCodeActor implements Actor {
     public CompletableFuture<TaskResult> execute(TaskEntity task, ActorContext context) {
         LOG.infof("Executing task %d (action: %s) via Claude Code", task.id, task.actionType);
 
-        String prompt = buildPrompt(task);
+        String prompt = buildPrompt(task, context);
 
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, context)
@@ -103,16 +103,21 @@ public class ClaudeCodeActor implements Actor {
     }
 
     /**
-     * Builds the prompt for Claude Code from the task's action type and input.
+     * Builds the prompt for Claude Code. If the context has a resolved prompt template,
+     * uses it. Otherwise falls back to a generic prompt.
      */
-    private String buildPrompt(TaskEntity task) {
+    private String buildPrompt(TaskEntity task, ActorContext context) {
+        String template = context.getPromptTemplate();
+        if (template != null && !template.isBlank()) {
+            return template;
+        }
+
+        // Fallback: generic prompt
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are performing the following action: ").append(task.actionType).append("\n\n");
-
         if (task.input != null && !task.input.isEmpty()) {
             prompt.append("Task context:\n").append(task.input).append("\n");
         }
-
         return prompt.toString();
     }
 

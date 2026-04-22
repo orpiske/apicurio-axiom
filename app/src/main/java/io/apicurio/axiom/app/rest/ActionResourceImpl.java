@@ -78,6 +78,7 @@ public class ActionResourceImpl implements ActionResource {
         entity.inputSchema = data.getInputSchema();
         entity.allowedTools = data.getAllowedTools() != null
                 ? String.join(", ", data.getAllowedTools()) : null;
+        entity.promptTemplate = data.getPromptTemplate();
         entity.emitsEvent = data.getEmitsEvent() != null ? data.getEmitsEvent() : false;
     }
 
@@ -101,6 +102,7 @@ public class ActionResourceImpl implements ActionResource {
             actionType.setAllowedTools(java.util.Arrays.stream(entity.allowedTools.split(","))
                     .map(String::trim).filter(s -> !s.isEmpty()).toList());
         }
+        actionType.setPromptTemplate(entity.promptTemplate);
         actionType.setEmitsEvent(entity.emitsEvent);
         return actionType;
     }

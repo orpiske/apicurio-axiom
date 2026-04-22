@@ -34,39 +34,166 @@ public class SeedDataInitializer {
 
         seedActionType("analyze",
                 "Read and understand an issue, assess complexity, identify affected components",
-                "actor", true, true, READ_ONLY_TOOLS);
+                "actor", true, true, READ_ONLY_TOOLS,
+                """
+                You are analyzing a GitHub issue. Read the issue details, examine the \
+                repository structure, and produce a structured analysis.
+
+                ## Instructions
+                1. Read and understand the issue described below
+                2. Examine the repository to gather relevant context
+                3. Produce a summary with the following sections:
+                   - **Issue Summary**: What is being asked or reported
+                   - **Findings**: What you discovered in the repository
+                   - **Complexity Assessment**: Low/Medium/High with justification
+                   - **Recommendations**: Suggested next steps
+                4. Do NOT make any code changes — this is a read-only analysis
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("auto-tag",
                 "Determine appropriate labels/tags for an issue",
-                "actor", false, true, READ_PLUS_GH_TOOLS);
+                "actor", false, true, READ_PLUS_GH_TOOLS,
+                """
+                You are tagging a GitHub issue with appropriate labels.
+
+                ## Instructions
+                1. Read the issue title and body
+                2. Determine appropriate labels (e.g. bug, feature, documentation, \
+                   question, good-first-issue, help-wanted)
+                3. Apply the labels using: gh issue edit {{issueRef}} --repo {{repository}} --add-label "label1,label2"
+                4. If suitable labels don't exist in the repository, skip labeling and \
+                   report what labels you would have applied
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("implement",
                 "Write code to address the issue",
-                "actor", true, true, WRITE_TOOLS);
+                "actor", true, true, WRITE_TOOLS,
+                """
+                You are implementing a code change to address a GitHub issue.
+
+                ## Instructions
+                1. Read the issue and understand what needs to be done
+                2. Examine the repository to understand the codebase
+                3. Create a feature branch: git checkout -b agent/issue-<number>
+                4. Make the necessary code changes
+                5. Commit with a descriptive message referencing the issue
+                6. Push the branch: git push -u origin agent/issue-<number>
+                7. Open a pull request: gh pr create --title "..." --body "Closes #<number>"
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("propose",
                 "Draft a proposal or design for addressing the issue (read-only, no code changes)",
-                "actor", true, true, READ_ONLY_TOOLS);
+                "actor", true, true, READ_ONLY_TOOLS,
+                """
+                You are drafting a proposal for how to address a GitHub issue.
+
+                ## Instructions
+                1. Read the issue and understand the requirements
+                2. Examine the repository structure and relevant code
+                3. Produce a design proposal with:
+                   - **Approach**: How you would solve this
+                   - **Files to Change**: Which files would be modified
+                   - **Risks**: Potential issues or trade-offs
+                   - **Estimated Effort**: Rough assessment of complexity
+                4. Do NOT make any code changes — this is a read-only proposal
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("review",
                 "Review a pull request or code change",
-                "actor", true, true, READ_ONLY_TOOLS);
+                "actor", true, true, READ_ONLY_TOOLS,
+                """
+                You are reviewing code changes related to a GitHub issue.
+
+                ## Instructions
+                1. Examine the changes in the repository
+                2. Review for correctness, style, and potential issues
+                3. Produce a review summary with:
+                   - **Summary**: What the changes do
+                   - **Issues Found**: Any bugs, style issues, or concerns
+                   - **Suggestions**: Improvements or alternatives
+                4. Do NOT make any code changes
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("respond",
                 "Reply to a comment or review feedback",
-                "actor", true, true, WRITE_TOOLS);
+                "actor", true, true, WRITE_TOOLS,
+                """
+                You are responding to feedback on a GitHub issue or pull request.
+
+                ## Instructions
+                1. Read the feedback or comment described below
+                2. If code changes are requested, make them and commit
+                3. Post a response on the issue:
+                   a. Write your comment to /tmp/gh-comment.md using the Write tool
+                   b. Then run: gh issue comment <number> --repo {{repository}} --body-file /tmp/gh-comment.md
+                4. If you cannot post the comment, include the full response text in your output
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("answer-question",
                 "Answer a question asked by a user on the issue",
-                "actor", false, true, READ_PLUS_GH_TOOLS);
+                "actor", false, true, READ_PLUS_GH_TOOLS,
+                """
+                You are answering a question on a GitHub issue.
+
+                ## Instructions
+                1. Read the question described below
+                2. Examine the repository to find the answer
+                3. Post your answer directly on the issue:
+                   a. Write your answer to /tmp/gh-comment.md using the Write tool
+                   b. Then run: gh issue comment <number> --repo {{repository}} --body-file /tmp/gh-comment.md
+                4. Keep your answer concise, friendly, and informative
+                5. If you cannot post the comment, include the full answer in your output
+
+                ## Issue
+                {{issueRef}} in {{repository}}
+
+                ## Context from Manager
+                {{managerInput}}
+                """);
 
         seedActionType("close-project",
                 "Mark the project as completed",
-                "system", false, false, null);
+                "system", false, false, null, null);
 
         seedActionType("reopen-project",
                 "Re-open a completed project",
-                "system", false, false, null);
+                "system", false, false, null, null);
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
@@ -161,7 +288,8 @@ public class SeedDataInitializer {
     );
 
     private void seedActionType(String name, String description, String executionMode,
-                                boolean userTriggerable, boolean emitsEvent, String allowedTools) {
+                                boolean userTriggerable, boolean emitsEvent, String allowedTools,
+                                String promptTemplate) {
         ActionTypeEntity entity = new ActionTypeEntity();
         entity.name = name;
         entity.description = description;
@@ -169,6 +297,7 @@ public class SeedDataInitializer {
         entity.userTriggerable = userTriggerable;
         entity.emitsEvent = emitsEvent;
         entity.allowedTools = allowedTools;
+        entity.promptTemplate = promptTemplate;
         entity.persist();
     }
 }
