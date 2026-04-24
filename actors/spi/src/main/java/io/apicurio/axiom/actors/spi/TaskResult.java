@@ -12,6 +12,7 @@ public class TaskResult {
     private final Long inputTokens;
     private final Long outputTokens;
     private final String errorMessage;
+    private final String executionLog;
 
     private TaskResult(Builder builder) {
         this.success = builder.success;
@@ -21,6 +22,7 @@ public class TaskResult {
         this.inputTokens = builder.inputTokens;
         this.outputTokens = builder.outputTokens;
         this.errorMessage = builder.errorMessage;
+        this.executionLog = builder.executionLog;
     }
 
     /**
@@ -73,6 +75,13 @@ public class TaskResult {
     }
 
     /**
+     * @return the full execution log transcript, or null if not captured
+     */
+    public String getExecutionLog() {
+        return executionLog;
+    }
+
+    /**
      * Creates a successful result.
      *
      * @return a new builder for a successful result
@@ -98,6 +107,7 @@ public class TaskResult {
         private Long inputTokens;
         private Long outputTokens;
         private String errorMessage;
+        private String executionLog;
 
         private Builder(boolean success, String output) {
             this.success = success;
@@ -126,6 +136,17 @@ public class TaskResult {
 
         public Builder errorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
+            return this;
+        }
+
+        /**
+         * Sets the execution log transcript.
+         *
+         * @param executionLog the full execution log text
+         * @return this builder
+         */
+        public Builder executionLog(String executionLog) {
+            this.executionLog = executionLog;
             return this;
         }
 

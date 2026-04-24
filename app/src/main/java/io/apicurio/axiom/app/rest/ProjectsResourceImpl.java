@@ -204,6 +204,29 @@ public class ProjectsResourceImpl implements ProjectsResource {
         }
     }
 
+    // ── Task Execution Log ─────────────────────────────────────────────
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getTaskExecutionLog(BigInteger projectId, BigInteger taskId) {
+        long pid = projectId.longValue();
+        long tid = taskId.longValue();
+
+        findProjectOrThrow(pid);
+
+        TaskEntity entity = TaskEntity.findById(tid);
+        if (entity == null || entity.projectId != pid) {
+            throw new WebApplicationException("Task not found: " + tid, 404);
+        }
+        if (entity.executionLog == null || entity.executionLog.isEmpty()) {
+            throw new WebApplicationException(
+                    "No execution log available for task: " + tid, 404);
+        }
+        return entity.executionLog;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     private ProjectEntity findProjectOrThrow(long id) {

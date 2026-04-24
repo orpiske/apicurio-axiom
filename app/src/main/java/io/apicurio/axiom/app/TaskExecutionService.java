@@ -332,6 +332,7 @@ public class TaskExecutionService {
         task.costUsd = result.getCostUsd();
         task.inputTokens = result.getInputTokens();
         task.outputTokens = result.getOutputTokens();
+        task.executionLog = result.getExecutionLog();
 
         String statusText = result.isSuccess() ? "completed" : "failed";
         LOG.infof("Task %d %s (cost: $%s, tokens: %d/%d)",

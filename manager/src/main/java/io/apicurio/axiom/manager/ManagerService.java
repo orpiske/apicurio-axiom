@@ -112,7 +112,8 @@ public class ManagerService {
         // Execute
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
                 command, null, Map.of(),
-                Duration.ofSeconds(timeoutSeconds), null
+                Duration.ofSeconds(timeoutSeconds), null,
+                new io.apicurio.axiom.actors.claudecode.ExecutionLogBuilder()
         );
 
         try {

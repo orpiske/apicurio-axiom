@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +31,7 @@ public class ClaudeCodeSubprocess {
     private final Map<String, String> environment;
     private final Duration timeout;
     private final Consumer<String> streamListener;
+    private final ExecutionLogBuilder logBuilder;
 
     private Process process;
 
@@ -41,15 +43,18 @@ public class ClaudeCodeSubprocess {
      * @param environment additional environment variables
      * @param timeout maximum execution duration
      * @param streamListener callback for streaming output lines (may be null)
+     * @param logBuilder accumulator for the per-task execution log
      */
     public ClaudeCodeSubprocess(List<String> command, java.io.File workingDirectory,
                                  Map<String, String> environment,
-                                 Duration timeout, Consumer<String> streamListener) {
+                                 Duration timeout, Consumer<String> streamListener,
+                                 ExecutionLogBuilder logBuilder) {
         this.command = command;
         this.workingDirectory = workingDirectory;
         this.environment = environment;
         this.timeout = timeout;
         this.streamListener = streamListener;
+        this.logBuilder = logBuilder;
     }
 
     /**
@@ -79,6 +84,8 @@ public class ClaudeCodeSubprocess {
     }
 
     private ClaudeCodeResult doExecute() throws IOException, InterruptedException {
+        Instant startTime = Instant.now();
+
         LOG.infof("Launching Claude Code: %s", String.join(" ",
                 command.subList(0, Math.min(command.size(), 5))) + "...");
         // Log tool-related flags for debugging
@@ -90,6 +97,9 @@ public class ClaudeCodeSubprocess {
                 LOG.infof("  [cmd] %s %s", arg, value);
             }
         }
+
+        // Write command to execution log
+        logBuilder.command(command);
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(false);
@@ -138,6 +148,7 @@ public class ClaudeCodeSubprocess {
                 while ((line = reader.readLine()) != null) {
                     stderrContent.append(line).append("\n");
                     LOG.debugf("Claude Code stderr: %s", line);
+                    logBuilder.stderr(line);
                 }
             } catch (IOException e) {
                 LOG.warnf("Error reading Claude Code stderr: %s", e.getMessage());
@@ -150,7 +161,10 @@ public class ClaudeCodeSubprocess {
             LOG.warnf("Claude Code subprocess timed out after %s", timeout);
             process.destroyForcibly();
             process.waitFor(5, TimeUnit.SECONDS);
-            return ClaudeCodeResult.failed("Process timed out after " + timeout, 124);
+            logBuilder.footer("Timed Out", null, null, null,
+                    Duration.between(startTime, Instant.now()));
+            return new ClaudeCodeResult("Process timed out after " + timeout,
+                    null, null, null, null, 124, logBuilder.build());
         }
 
         // Wait for stream readers to finish
@@ -165,11 +179,20 @@ public class ClaudeCodeSubprocess {
             if (error.isEmpty()) {
                 error = "Process exited with code " + exitCode;
             }
-            return ClaudeCodeResult.failed(error, exitCode);
+            logBuilder.footer("Failed (exit " + exitCode + ")", null, null, null,
+                    Duration.between(startTime, Instant.now()));
+            return new ClaudeCodeResult(error, null, null, null, null,
+                    exitCode, logBuilder.build());
         }
 
         // Parse the final result line
-        return parseResult(lastResultLine.toString(), exitCode);
+        ClaudeCodeResult result = parseResult(lastResultLine.toString(), exitCode);
+        logBuilder.footer(result.isSuccess() ? "Completed" : "Failed",
+                result.totalCostUsd(), result.inputTokens(), result.outputTokens(),
+                Duration.between(startTime, Instant.now()));
+        return new ClaudeCodeResult(result.result(), result.sessionId(),
+                result.totalCostUsd(), result.inputTokens(), result.outputTokens(),
+                result.exitCode(), logBuilder.build());
     }
 
     /**
@@ -212,12 +235,12 @@ public class ClaudeCodeSubprocess {
             }
 
             return new ClaudeCodeResult(result, sessionId, costUsd, inputTokens,
-                    outputTokens, exitCode);
+                    outputTokens, exitCode, null);
         } catch (Exception e) {
             LOG.warnf(e, "Failed to parse Claude Code output as JSON: %s",
                     jsonLine.substring(0, Math.min(jsonLine.length(), 200)));
             // Fall back to treating the raw output as the result text
-            return new ClaudeCodeResult(jsonLine, null, null, null, null, exitCode);
+            return new ClaudeCodeResult(jsonLine, null, null, null, null, exitCode, null);
         }
     }
 
@@ -244,6 +267,7 @@ public class ClaudeCodeSubprocess {
                                         ? input.substring(0, 147) + "..."
                                         : input;
                                 LOG.infof("  [claude] Tool call: %s — %s", toolName, inputPreview);
+                                logBuilder.toolCall(toolName, inputPreview);
                             } else if ("text".equals(blockType)) {
                                 String text = block.path("text").asText("");
                                 if (!text.isBlank()) {
@@ -251,6 +275,7 @@ public class ClaudeCodeSubprocess {
                                             ? text.substring(0, 117) + "..."
                                             : text;
                                     LOG.debugf("  [claude] Text: %s", preview);
+                                    logBuilder.text(preview);
                                 }
                             }
                         }
@@ -263,6 +288,7 @@ public class ClaudeCodeSubprocess {
                     long durationMs = node.path("duration_ms").asLong(0);
                     LOG.infof("  [claude] Result: %s (turns=%d, cost=$%.4f, duration=%dms)",
                             subtype, turns, cost, durationMs);
+                    logBuilder.result(subtype, turns, cost, durationMs);
                 }
                 case "tool_result" -> {
                     String toolName = node.path("name").asText("");
@@ -274,8 +300,10 @@ public class ClaudeCodeSubprocess {
                                 ? errorContent.substring(0, 197) + "..."
                                 : errorContent;
                         LOG.warnf("  [claude] Tool failed: %s — %s", toolName, errorPreview);
+                        logBuilder.toolResult(toolName, true, errorPreview);
                     } else {
                         LOG.infof("  [claude] Tool completed: %s", toolName);
+                        logBuilder.toolResult(toolName, false, null);
                     }
                 }
                 default -> LOG.tracef("  [claude] Stream event type: %s", type);

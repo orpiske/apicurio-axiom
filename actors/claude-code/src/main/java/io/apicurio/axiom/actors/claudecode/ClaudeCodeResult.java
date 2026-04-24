@@ -19,7 +19,8 @@ public record ClaudeCodeResult(
         Double totalCostUsd,
         Long inputTokens,
         Long outputTokens,
-        int exitCode
+        int exitCode,
+        String executionLog
 ) {
 
     /**
@@ -30,7 +31,7 @@ public record ClaudeCodeResult(
      * @return a failed result
      */
     public static ClaudeCodeResult failed(String errorMessage, int exitCode) {
-        return new ClaudeCodeResult(errorMessage, null, null, null, null, exitCode);
+        return new ClaudeCodeResult(errorMessage, null, null, null, null, exitCode, null);
     }
 
     /**

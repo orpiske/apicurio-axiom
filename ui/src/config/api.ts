@@ -180,6 +180,17 @@ export async function respondToTask(
     if (!res.ok) throw new Error(`Failed to respond to task: ${res.status}`);
 }
 
+export async function fetchTaskExecutionLog(
+    projectId: number,
+    taskId: number
+): Promise<string> {
+    const response = await fetch(
+        `${API}/projects/${projectId}/tasks/${taskId}/log`
+    );
+    if (!response.ok) throw new Error(`Failed to fetch execution log: ${response.status}`);
+    return response.text();
+}
+
 // ── Action Types ──────────────────────────────────────────────────
 
 export interface ActionType {

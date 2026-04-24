@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +57,11 @@ public class ClaudeCodeActor implements Actor {
 
         String prompt = buildPrompt(task, context);
 
+        // Create execution log builder and fill header + prompt sections
+        ExecutionLogBuilder logBuilder = new ExecutionLogBuilder();
+        logBuilder.header(task.id, task.actionType, Instant.now());
+        logBuilder.prompt(prompt);
+
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, context)
                 .maxTurns(maxTurns)
@@ -77,7 +83,8 @@ public class ClaudeCodeActor implements Actor {
                 workDir,
                 context.getEnvironment() != null ? context.getEnvironment() : Map.of(),
                 Duration.ofSeconds(timeoutSeconds),
-                line -> LOG.tracef("Task %d stream: %s", task.id, line)
+                line -> LOG.tracef("Task %d stream: %s", task.id, line),
+                logBuilder
         );
 
         runningProcesses.put(task.id, subprocess);
@@ -132,6 +139,7 @@ public class ClaudeCodeActor implements Actor {
                     .costUsd(result.totalCostUsd())
                     .inputTokens(result.inputTokens())
                     .outputTokens(result.outputTokens())
+                    .executionLog(result.executionLog())
                     .build();
         } else {
             return TaskResult.failure(result.result())
@@ -139,6 +147,7 @@ public class ClaudeCodeActor implements Actor {
                     .costUsd(result.totalCostUsd())
                     .inputTokens(result.inputTokens())
                     .outputTokens(result.outputTokens())
+                    .executionLog(result.executionLog())
                     .build();
         }
     }

@@ -12,7 +12,7 @@ class ClaudeCodeResultTest {
     @Test
     void testSuccessfulResult() {
         ClaudeCodeResult result = new ClaudeCodeResult(
-                "Analysis complete", "session-123", 0.05, 1200L, 800L, 0);
+                "Analysis complete", "session-123", 0.05, 1200L, 800L, 0, null);
 
         assertTrue(result.isSuccess());
         assertEquals("Analysis complete", result.result());

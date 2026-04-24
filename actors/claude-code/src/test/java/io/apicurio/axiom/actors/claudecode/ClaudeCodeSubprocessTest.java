@@ -51,7 +51,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -77,7 +77,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -111,7 +111,7 @@ class ClaudeCodeSubprocessTest {
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
                 cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60),
-                line -> lineCount.incrementAndGet());
+                line -> lineCount.incrementAndGet(), new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -135,7 +135,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(5), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(5), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(30, TimeUnit.SECONDS);
@@ -157,7 +157,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(120), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(120), null, new ExecutionLogBuilder());
 
         var future = subprocess.execute();
 
@@ -185,7 +185,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -219,7 +219,7 @@ class ClaudeCodeSubprocessTest {
         assertTrue(aarg.contains("Glob"));
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -245,7 +245,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -274,7 +274,7 @@ class ClaudeCodeSubprocessTest {
                 .build();
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), Map.of(), Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);
@@ -306,7 +306,7 @@ class ClaudeCodeSubprocessTest {
         Map<String, String> env = Map.of("AXIOM_TEST_VAR", "env_value_12345");
 
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
-                cmd, tempDir.toFile(), env, Duration.ofSeconds(60), null);
+                cmd, tempDir.toFile(), env, Duration.ofSeconds(60), null, new ExecutionLogBuilder());
 
         ClaudeCodeResult result = subprocess.execute()
                 .get(90, TimeUnit.SECONDS);

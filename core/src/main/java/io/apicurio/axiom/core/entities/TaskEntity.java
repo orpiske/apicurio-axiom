@@ -55,4 +55,7 @@ public class TaskEntity extends PanacheEntity {
 
     @Column(name = "output_tokens")
     public Long outputTokens;
+
+    @Column(name = "execution_log", columnDefinition = "TEXT")
+    public String executionLog;
 }
