@@ -57,10 +57,11 @@ public class ClaudeCodeActor implements Actor {
 
         String prompt = buildPrompt(task, context);
 
-        // Create execution log builder and fill header + prompt sections
+        // Create execution log builder and fill header + prompt + allowed tools sections
         ExecutionLogBuilder logBuilder = new ExecutionLogBuilder();
         logBuilder.header(task.id, task.actionType, Instant.now());
         logBuilder.prompt(prompt);
+        logBuilder.allowedTools(context.getAllowedTools());
 
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, context)

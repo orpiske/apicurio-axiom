@@ -66,6 +66,23 @@ public class ExecutionLogBuilder {
     }
 
     /**
+     * Appends the allowed tools section as a numbered list.
+     *
+     * @param tools the list of allowed tool patterns
+     */
+    public void allowedTools(List<String> tools) {
+        log.append("=== Allowed Tools ===\n");
+        if (tools == null || tools.isEmpty()) {
+            log.append("(none — no tool restrictions)\n\n");
+            return;
+        }
+        for (int i = 0; i < tools.size(); i++) {
+            log.append("  ").append(i + 1).append(". ").append(tools.get(i)).append("\n");
+        }
+        log.append("\n");
+    }
+
+    /**
      * Appends the command line section, formatting flags for readability.
      *
      * @param cmdLine the full command line as a list of arguments
@@ -97,16 +114,18 @@ public class ExecutionLogBuilder {
     }
 
     /**
-     * Appends a tool call entry with timestamp.
+     * Appends a tool call entry with timestamp and full input.
+     * If the input is JSON, it will be pretty-printed for readability.
      *
      * @param toolName the tool being called
-     * @param inputPreview truncated preview of the tool input
+     * @param input the full tool input (typically JSON)
      */
-    public void toolCall(String toolName, String inputPreview) {
+    public void toolCall(String toolName, String input) {
         log.append(timestamp())
-                .append(" Tool call: ").append(toolName)
-                .append(" — ").append(truncate(inputPreview, 300))
-                .append("\n");
+                .append(" Tool call: ").append(toolName).append("\n");
+        if (input != null && !input.isBlank()) {
+            log.append(indent(prettyPrintJson(input), "    ")).append("\n");
+        }
     }
 
     /**
@@ -132,11 +151,11 @@ public class ExecutionLogBuilder {
     /**
      * Appends a text output entry with timestamp.
      *
-     * @param preview truncated preview of the assistant's text
+     * @param text the full assistant text output
      */
-    public void text(String preview) {
+    public void text(String text) {
         log.append(timestamp())
-                .append(" Text: ").append(truncate(preview, 300))
+                .append(" Text: ").append(text != null ? text : "")
                 .append("\n");
     }
 
@@ -212,5 +231,25 @@ public class ExecutionLogBuilder {
         if (s == null) return "";
         if (s.length() <= maxLength) return s;
         return s.substring(0, maxLength - 3) + "...";
+    }
+
+    private String prettyPrintJson(String json) {
+        if (json == null || json.isBlank()) return json;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper =
+                    new com.fasterxml.jackson.databind.ObjectMapper();
+            Object parsed = mapper.readValue(json, Object.class);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
+        } catch (Exception e) {
+            // Not valid JSON — return as-is
+            return json;
+        }
+    }
+
+    private String indent(String text, String prefix) {
+        if (text == null || text.isEmpty()) return "";
+        return text.lines()
+                .map(line -> prefix + line)
+                .collect(java.util.stream.Collectors.joining("\n"));
     }
 }

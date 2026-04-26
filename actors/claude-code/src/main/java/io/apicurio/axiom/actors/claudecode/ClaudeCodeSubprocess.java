@@ -267,7 +267,7 @@ public class ClaudeCodeSubprocess {
                                         ? input.substring(0, 147) + "..."
                                         : input;
                                 LOG.infof("  [claude] Tool call: %s — %s", toolName, inputPreview);
-                                logBuilder.toolCall(toolName, inputPreview);
+                                logBuilder.toolCall(toolName, input);
                             } else if ("text".equals(blockType)) {
                                 String text = block.path("text").asText("");
                                 if (!text.isBlank()) {
@@ -275,7 +275,7 @@ public class ClaudeCodeSubprocess {
                                             ? text.substring(0, 117) + "..."
                                             : text;
                                     LOG.debugf("  [claude] Text: %s", preview);
-                                    logBuilder.text(preview);
+                                    logBuilder.text(text);
                                 }
                             }
                         }
