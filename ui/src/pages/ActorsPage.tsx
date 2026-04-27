@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Button,
     EmptyState,
@@ -32,6 +33,7 @@ import {
 } from "../config/api";
 
 export function ActorsPage() {
+    const navigate = useNavigate();
     const [actors, setActors] = useState<Actor[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,7 +94,8 @@ export function ActorsPage() {
                         <Thead><Tr><Th>Name</Th><Th>Type</Th><Th>Description</Th><Th>Capabilities</Th><Th /></Tr></Thead>
                         <Tbody>
                             {actors.map((a) => (
-                                <Tr key={a.id}>
+                                <Tr key={a.id} isClickable
+                                    onRowClick={() => navigate(`/actors/${a.id}`)}>
                                     <Td>{a.name}</Td>
                                     <Td><Label isCompact color={a.type === "ai-agent" ? "blue" : "green"}>{a.type}</Label></Td>
                                     <Td>{a.description || "—"}</Td>

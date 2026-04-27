@@ -3,13 +3,23 @@ package io.apicurio.axiom.app.rest;
 import io.apicurio.axiom.api.ActorsResource;
 import io.apicurio.axiom.api.beans.Actor;
 import io.apicurio.axiom.api.beans.NewActor;
+import io.apicurio.axiom.api.beans.Task;
+import io.apicurio.axiom.api.beans.TaskSearchResults;
 import io.apicurio.axiom.core.entities.ActorEntity;
+import io.apicurio.axiom.core.entities.TaskEntity;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of the Actors REST API.
@@ -70,6 +80,53 @@ public class ActorsResourceImpl implements ActorsResource {
         entity.delete();
     }
 
+    // ── Actor Tasks ───────────────────────────────────────────────────
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TaskSearchResults listActorTasks(long actorId, BigInteger page, BigInteger limit,
+                                             String filterActionType, String filterStatus) {
+        findOrThrow(actorId);
+
+        int pageNum = page != null ? page.intValue() : 1;
+        int pageSize = limit != null ? limit.intValue() : 20;
+
+        StringBuilder hql = new StringBuilder("assignedActor = :actorId");
+        Map<String, Object> params = new HashMap<>();
+        params.put("actorId", actorId);
+
+        if (filterActionType != null && !filterActionType.isBlank()) {
+            hql.append(" and lower(actionType) like :actionType");
+            params.put("actionType", "%" + filterActionType.toLowerCase() + "%");
+        }
+        if (filterStatus != null && !filterStatus.isBlank()) {
+            List<String> statuses = Arrays.stream(filterStatus.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
+            hql.append(" and status in :statuses");
+            params.put("statuses", statuses);
+        }
+
+        long totalCount = TaskEntity.count(hql.toString(), params);
+        List<Task> items = TaskEntity.<TaskEntity>find(hql.toString(),
+                        Sort.descending("createdOn"), params)
+                .page(Page.of(pageNum - 1, pageSize))
+                .list()
+                .stream()
+                .map(this::toTaskBean)
+                .toList();
+
+        TaskSearchResults results = new TaskSearchResults();
+        results.setItems(items);
+        results.setTotalCount(totalCount);
+        results.setPage(pageNum);
+        results.setLimit(pageSize);
+        return results;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
     private void applyFields(ActorEntity entity, NewActor body) {
         entity.name = body.getName();
         entity.description = body.getDescription();
@@ -97,5 +154,23 @@ public class ActorsResourceImpl implements ActorsResource {
             actor.setCapabilities(List.of(entity.capabilities.split(",")));
         }
         return actor;
+    }
+
+    private Task toTaskBean(TaskEntity entity) {
+        Task task = new Task();
+        task.setId(entity.id);
+        task.setProjectId(entity.projectId);
+        task.setEventId(entity.eventId);
+        task.setActionType(entity.actionType);
+        task.setCreatedBy(Task.CreatedBy.fromValue(entity.createdBy));
+        task.setAssignedActor(entity.assignedActor);
+        task.setStatus(Task.Status.fromValue(entity.status));
+        task.setInput(entity.input);
+        task.setOutput(entity.output);
+        task.setCreatedOn(Date.from(entity.createdOn));
+        if (entity.completedOn != null) {
+            task.setCompletedOn(Date.from(entity.completedOn));
+        }
+        return task;
     }
 }

@@ -34,6 +34,7 @@ import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclam
 import { DashboardPage } from "./pages/DashboardPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ActorsPage } from "./pages/ActorsPage";
+import { ActorDetailPage } from "./pages/ActorDetailPage";
 import { PoliciesPage } from "./pages/PoliciesPage";
 import { ActionTypesPage } from "./pages/ActionTypesPage";
 import { ActivityLogPage } from "./pages/ActivityLogPage";
@@ -293,6 +294,7 @@ export function App() {
                     <Route path="/projects" element={<ProjectsPage />} />
                     <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
                     <Route path="/actors" element={<ActorsPage />} />
+                    <Route path="/actors/:actorId" element={<ActorDetailPage />} />
                     <Route path="/policies" element={<PoliciesPage />} />
                     <Route path="/action-types" element={<ActionTypesPage />} />
                     <Route path="/action-types/:actionTypeId" element={<ActionTypeDetailPage />} />

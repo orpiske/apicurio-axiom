@@ -301,6 +301,26 @@ export async function deleteActor(id: number): Promise<void> {
     if (!response.ok) throw new Error(`Failed to delete actor: ${response.status}`);
 }
 
+export async function fetchActor(id: number): Promise<Actor> {
+    const response = await fetch(`${API}/actors/${id}`);
+    if (!response.ok) throw new Error(`Failed to fetch actor: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchActorTasks(
+    actorId: number, page = 1, limit = 20,
+    filterActionType?: string, filterStatus?: string
+): Promise<SearchResults<Task>> {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    if (filterActionType) params.set("filterActionType", filterActionType);
+    if (filterStatus) params.set("filterStatus", filterStatus);
+    const response = await fetch(`${API}/actors/${actorId}/tasks?${params}`);
+    if (!response.ok) throw new Error(`Failed to fetch actor tasks: ${response.status}`);
+    return response.json();
+}
+
 // ── Tool Definitions ──────────────────────────────────────────────
 
 export interface ToolParameter {

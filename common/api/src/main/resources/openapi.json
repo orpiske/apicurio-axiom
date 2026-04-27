@@ -478,6 +478,71 @@
         }
       ]
     },
+    "/actors/{actorId}/tasks": {
+      "get": {
+        "tags": [
+          "Actors"
+        ],
+        "summary": "List tasks assigned to an actor (paginated)",
+        "operationId": "listActorTasks",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "filterActionType",
+            "in": "query",
+            "description": "Filter by action type name (substring match)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterStatus",
+            "in": "query",
+            "description": "Comma-separated list of task statuses to include",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of tasks assigned to this actor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSearchResults"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ActorId"
+        }
+      ]
+    },
     "/action-types": {
       "get": {
         "tags": [
@@ -1965,6 +2030,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Project"
+            }
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        }
+      },
+      "TaskSearchResults": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
             }
           },
           "totalCount": {
