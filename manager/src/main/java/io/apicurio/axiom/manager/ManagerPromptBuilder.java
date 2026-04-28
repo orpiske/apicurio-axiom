@@ -3,7 +3,6 @@ package io.apicurio.axiom.manager;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ActorEntity;
 import io.apicurio.axiom.core.entities.EventEntity;
-import io.apicurio.axiom.core.entities.PolicyEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 
@@ -11,8 +10,21 @@ import java.util.List;
 
 /**
  * Builds the system prompt and user prompt for the AI Manager.
- * Assembles event data, project context, policies, action types, and actors
- * into a comprehensive prompt that guides the Manager's decision-making.
+ * The system prompt is user-configurable. The user prompt is built from a
+ * configurable template with placeholder substitution for action types,
+ * actors, event details, and project context.
+ *
+ * <p>Supported placeholders in the prompt template:</p>
+ * <ul>
+ *   <li>{@code {{actionTypes}}} — formatted list of available action types</li>
+ *   <li>{@code {{actors}}} — formatted list of available actors</li>
+ *   <li>{@code {{source}}} — event source (e.g. "github")</li>
+ *   <li>{@code {{eventType}}} — event type (e.g. "issue-created")</li>
+ *   <li>{@code {{issueRef}}} — issue reference (e.g. "owner/repo#42")</li>
+ *   <li>{@code {{repository}}} — repository (e.g. "owner/repo")</li>
+ *   <li>{@code {{payload}}} — raw event payload JSON</li>
+ *   <li>{@code {{projectContext}}} — existing project and recent task details</li>
+ * </ul>
  */
 public final class ManagerPromptBuilder {
 
@@ -20,74 +32,39 @@ public final class ManagerPromptBuilder {
     }
 
     /**
-     * Builds the system prompt that defines the Manager's role and available tools.
+     * Formats the list of action types for inclusion in a prompt.
      *
-     * @param policies the configured policies
      * @param actionTypes the registered action types
-     * @param actors the configured actors
-     * @return the system prompt
+     * @return a formatted markdown list
      */
-    public static String buildSystemPrompt(List<PolicyEntity> policies,
-                                            List<ActionTypeEntity> actionTypes,
-                                            List<ActorEntity> actors) {
+    public static String formatActionTypes(List<ActionTypeEntity> actionTypes) {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("""
-                You are the Axiom Manager — an AI agent responsible for triaging events \
-                from issue trackers (GitHub, Jira) and deciding what actions to take.
-
-                When you receive an event, you must analyze it and return a JSON response \
-                containing one or more decisions. Each decision must include:
-                - "decision": one of "create_task", "ignore", "system_action", "escalate"
-                - "actionType": the action type name (for create_task/system_action)
-                - "actorHint": optional preferred actor name
-                - "inputContext": context/instructions for the actor
-                - "confidence": your confidence in this decision (0.0 to 1.0)
-                - "reasoning": brief explanation of why you made this decision
-
-                ## Guidelines
-                - Multiple decisions are allowed for a single event (e.g., both auto-tag and analyze)
-                - If you are uncertain, set a low confidence score
-                - If you don't know what to do, use "escalate"
-                - For trivial events (bot comments, automated labels), use "ignore"
-                - System actions are: "close-project", "reopen-project"
-
-                """);
-
-        // Policies
-        sb.append("## Policies\n\n");
-        sb.append("These are your decision guidelines. Evaluate each policy against the event:\n\n");
-        if (policies.isEmpty()) {
-            sb.append("No policies configured.\n\n");
+        sb.append("## Available Action Types\n\n");
+        if (actionTypes.isEmpty()) {
+            sb.append("No action types configured.\n");
         } else {
-            for (PolicyEntity policy : policies) {
-                sb.append("### ").append(policy.name).append("\n");
-                sb.append(policy.guideline).append("\n");
-                if (policy.actionType != null) {
-                    sb.append("Action type: ").append(policy.actionType).append("\n");
-                }
-                if (policy.actorHint != null) {
-                    sb.append("Preferred actor: ").append(policy.actorHint).append("\n");
+            for (ActionTypeEntity at : actionTypes) {
+                sb.append("- **").append(at.name).append("** (").append(at.executionMode).append(")");
+                if (at.description != null) {
+                    sb.append(": ").append(at.description);
                 }
                 sb.append("\n");
             }
         }
+        return sb.toString();
+    }
 
-        // Action types
-        sb.append("## Available Action Types\n\n");
-        for (ActionTypeEntity at : actionTypes) {
-            sb.append("- **").append(at.name).append("** (").append(at.executionMode).append(")");
-            if (at.description != null) {
-                sb.append(": ").append(at.description);
-            }
-            sb.append("\n");
-        }
-        sb.append("\n");
-
-        // Actors
+    /**
+     * Formats the list of actors for inclusion in a prompt.
+     *
+     * @param actors the configured actors
+     * @return a formatted markdown list
+     */
+    public static String formatActors(List<ActorEntity> actors) {
+        StringBuilder sb = new StringBuilder();
         sb.append("## Available Actors\n\n");
         if (actors.isEmpty()) {
-            sb.append("No actors configured.\n\n");
+            sb.append("No actors configured.\n");
         } else {
             for (ActorEntity actor : actors) {
                 sb.append("- **").append(actor.name).append("** (").append(actor.type).append(")");
@@ -99,48 +76,26 @@ public final class ManagerPromptBuilder {
                 }
                 sb.append("\n");
             }
-            sb.append("\n");
         }
-
         return sb.toString();
     }
 
     /**
-     * Builds the user prompt containing the event to evaluate.
+     * Formats the project context section for inclusion in a prompt.
      *
-     * @param event the event to evaluate
-     * @param project the existing project for this issue (may be null)
+     * @param project the existing project (may be null)
      * @param recentTasks recent tasks for the project (may be empty)
-     * @return the user prompt
+     * @return the project context section
      */
-    public static String buildUserPrompt(EventEntity event, ProjectEntity project,
-                                          List<TaskEntity> recentTasks) {
+    public static String formatProjectContext(ProjectEntity project,
+                                               List<TaskEntity> recentTasks) {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("## Event to Evaluate\n\n");
-        sb.append("- **Source:** ").append(event.source).append("\n");
-        sb.append("- **Event type:** ").append(event.eventType).append("\n");
-        if (event.issueRef != null) {
-            sb.append("- **Issue:** ").append(event.issueRef).append("\n");
-        }
-        if (event.repository != null) {
-            sb.append("- **Repository:** ").append(event.repository).append("\n");
-        }
-        sb.append("\n");
-
-        sb.append("### Event Payload\n\n");
-        sb.append("```json\n");
-        sb.append(event.payload != null ? event.payload : "{}");
-        sb.append("\n```\n\n");
-
-        // Project context
         if (project != null) {
             sb.append("## Existing Project\n\n");
             sb.append("- **ID:** ").append(project.id).append("\n");
             sb.append("- **Name:** ").append(project.name).append("\n");
             sb.append("- **Status:** ").append(project.status).append("\n");
-            sb.append("- **Type:** ").append(project.type).append("\n");
-            sb.append("\n");
+            sb.append("- **Type:** ").append(project.type).append("\n\n");
 
             if (!recentTasks.isEmpty()) {
                 sb.append("### Recent Tasks\n\n");
@@ -158,17 +113,37 @@ public final class ManagerPromptBuilder {
                 sb.append("\n");
             }
         } else {
-            sb.append("No existing project for this issue.\n\n");
+            sb.append("No existing project for this issue.\n");
         }
-
-        sb.append("""
-                Analyze this event and return ONLY a JSON object (no other text, no \
-                markdown, no explanation) with a "decisions" array. Each element must \
-                have: decision, actionType, actorHint, inputContext, confidence, reasoning. \
-                Your entire response must be valid JSON and nothing else.
-                """);
-
         return sb.toString();
+    }
+
+    /**
+     * Builds the user prompt by substituting placeholders in the prompt template.
+     *
+     * @param promptTemplate the configurable prompt template with placeholders
+     * @param event the event to evaluate
+     * @param actionTypes the registered action types
+     * @param actors the configured actors
+     * @param project the existing project (may be null)
+     * @param recentTasks recent tasks for the project
+     * @return the resolved user prompt
+     */
+    public static String buildUserPrompt(String promptTemplate, EventEntity event,
+                                          List<ActionTypeEntity> actionTypes,
+                                          List<ActorEntity> actors,
+                                          ProjectEntity project,
+                                          List<TaskEntity> recentTasks) {
+        String resolved = promptTemplate;
+        resolved = resolved.replace("{{actionTypes}}", formatActionTypes(actionTypes));
+        resolved = resolved.replace("{{actors}}", formatActors(actors));
+        resolved = resolved.replace("{{source}}", event.source != null ? event.source : "");
+        resolved = resolved.replace("{{eventType}}", event.eventType != null ? event.eventType : "");
+        resolved = resolved.replace("{{issueRef}}", event.issueRef != null ? event.issueRef : "");
+        resolved = resolved.replace("{{repository}}", event.repository != null ? event.repository : "");
+        resolved = resolved.replace("{{payload}}", event.payload != null ? event.payload : "{}");
+        resolved = resolved.replace("{{projectContext}}", formatProjectContext(project, recentTasks));
+        return resolved;
     }
 
     /**
@@ -176,7 +151,63 @@ public final class ManagerPromptBuilder {
      * Used with Claude Code's {@code --json-schema} flag.
      */
     public static String getResponseJsonSchema() {
-        // Must be a single-line compact JSON string for the CLI argument
-        return "{\"type\":\"object\",\"required\":[\"decisions\"],\"properties\":{\"decisions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"decision\",\"confidence\",\"reasoning\"],\"properties\":{\"decision\":{\"type\":\"string\",\"enum\":[\"create_task\",\"ignore\",\"system_action\",\"escalate\"]},\"actionType\":{\"type\":\"string\"},\"actorHint\":{\"type\":\"string\"},\"inputContext\":{\"type\":\"string\"},\"confidence\":{\"type\":\"number\",\"minimum\":0,\"maximum\":1},\"reasoning\":{\"type\":\"string\"}}}}}}";
+        return "{\"type\":\"object\",\"required\":[\"decisions\"],\"properties\":{\"decisions\":"
+                + "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"decision\","
+                + "\"confidence\",\"reasoning\"],\"properties\":{\"decision\":{\"type\":\"string\","
+                + "\"enum\":[\"create_task\",\"ignore\",\"system_action\",\"escalate\"]},"
+                + "\"actionType\":{\"type\":\"string\"},\"actorHint\":{\"type\":\"string\"},"
+                + "\"inputContext\":{\"type\":\"string\"},\"confidence\":{\"type\":\"number\","
+                + "\"minimum\":0,\"maximum\":1},\"reasoning\":{\"type\":\"string\"}}}}}}";
     }
+
+    /**
+     * Default system prompt used when no custom system prompt is configured.
+     */
+    public static final String DEFAULT_SYSTEM_PROMPT = """
+            You are the Axiom Manager — an AI agent responsible for triaging incoming \
+            events from GitHub and other sources. When an event arrives, you analyze \
+            it and decide what actions (if any) should be taken.
+
+            For each decision, specify:
+            - **decision**: One of: create_task, ignore, system_action, escalate
+            - **actionType**: The action to perform (required for create_task and system_action)
+            - **actorHint**: (Optional) preferred actor name
+            - **inputContext**: Instructions or context for the actor performing the task
+            - **confidence**: 0.0 to 1.0 indicating your confidence
+            - **reasoning**: Brief explanation of why you made this decision
+
+            Guidelines:
+            - You may return multiple decisions for a single event
+            - Use "ignore" for events that don't require action (bot comments, trivial edits)
+            - Use "escalate" when you're unsure what to do
+            - Set a low confidence score if you're uncertain
+            - System actions are: "close-project", "reopen-project"
+            """;
+
+    /**
+     * Default prompt template used when no custom prompt template is configured.
+     */
+    public static final String DEFAULT_PROMPT_TEMPLATE = """
+            {{actionTypes}}
+
+            ## Event to Evaluate
+
+            - **Source:** {{source}}
+            - **Event type:** {{eventType}}
+            - **Issue:** {{issueRef}}
+            - **Repository:** {{repository}}
+
+            ### Event Payload
+
+            ```json
+            {{payload}}
+            ```
+
+            {{projectContext}}
+
+            Analyze this event and return ONLY a JSON object (no other text, no \
+            markdown, no explanation) with a "decisions" array. Each element must \
+            have: decision, actionType, actorHint, inputContext, confidence, reasoning. \
+            Your entire response must be valid JSON and nothing else.
+            """;
 }

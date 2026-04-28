@@ -2,9 +2,10 @@ package io.apicurio.axiom.app;
 
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ActorEntity;
-import io.apicurio.axiom.core.entities.PolicyEntity;
+import io.apicurio.axiom.core.entities.ManagerConfigEntity;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
+import io.apicurio.axiom.manager.ManagerPromptBuilder;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -34,7 +35,11 @@ public class SeedDataInitializer {
         LOG.info("Seeding built-in action types");
 
         seedActionType("analyze",
-                "Read and understand an issue, assess complexity, identify affected components",
+                "Read and understand an issue, assess complexity, and identify affected "
+                        + "components. Use this action when an issue is complex enough to require a "
+                        + "full structured analysis with issue summary, findings, "
+                        + "complexity assessment, and recommended next steps. This is a read-only "
+                        + "action — no code changes are made.",
                 "actor", true, true, READ_ONLY_TOOLS,
                 """
                 You are analyzing a GitHub issue. Read the issue details, examine the \
@@ -49,6 +54,7 @@ public class SeedDataInitializer {
                    - **Complexity Assessment**: Low/Medium/High with justification
                    - **Recommendations**: Suggested next steps
                 4. Do NOT make any code changes — this is a read-only analysis
+                5. Post the analysis as a comment on the GitHub issue
 
                 ## Issue
                 {{issueRef}} in {{repository}}
@@ -58,17 +64,22 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("auto-tag",
-                "Determine appropriate labels/tags for an issue",
+                "Determine and apply appropriate labels/tags to a GitHub issue. Use this "
+                        + "when a new issue is created and needs categorization (e.g. bug, "
+                        + "feature, documentation, question, good-first-issue).",
                 "actor", false, true, READ_PLUS_MCP_TOOLS,
                 """
                 You are tagging a GitHub issue with appropriate labels.
 
                 ## Instructions
                 1. Read the issue title and body
-                2. Determine appropriate labels (e.g. bug, feature, documentation, \
-                   question, good-first-issue, help-wanted)
-                3. Apply the labels using: gh issue edit {{issueRef}} --repo {{repository}} --add-label "label1,label2"
-                4. If suitable labels don't exist in the repository, skip labeling and \
+                2. Use the list_github_labels tool to discover which labels are \
+                   available in the repository
+                3. Choose the most appropriate labels from the available list based \
+                   on the issue content
+                4. Use the apply_github_labels tool to apply the chosen labels to \
+                   the issue
+                5. If no suitable labels exist in the repository, skip labeling and \
                    report what labels you would have applied
 
                 ## Issue
@@ -79,7 +90,12 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("implement",
-                "Write code to address the issue",
+                "Write code to address the issue by creating a feature branch, making "
+                        + "changes, and opening a pull request. Use this when an analysis has "
+                        + "been completed and the issue requires code changes (bug fixes or "
+                        + "feature implementations). Should not be triggered directly from "
+                        + "an incoming event — typically follows a completed 'analyze' or "
+                        + "'propose' task.",
                 "actor", true, true, WRITE_TOOLS,
                 """
                 You are implementing a code change to address a GitHub issue.
@@ -101,7 +117,11 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("propose",
-                "Draft a proposal or design for addressing the issue (read-only, no code changes)",
+                "Draft a proposal or design document for addressing a complex issue. Use "
+                        + "this for issues that require architectural decisions or significant "
+                        + "changes before implementation begins. Produces a design proposal "
+                        + "with approach, files to change, risks, and estimated effort. "
+                        + "Read-only — no code changes are made.",
                 "actor", true, true, READ_ONLY_TOOLS,
                 """
                 You are drafting a proposal for how to address a GitHub issue.
@@ -124,7 +144,11 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("review",
-                "Review a pull request or code change",
+                "Review a pull request or code change for correctness, style, and "
+                        + "potential issues. Use this when a PR is opened or updated, or "
+                        + "when an 'implement' task has been completed and the resulting "
+                        + "code needs review. Read-only — produces a review summary but "
+                        + "does not modify code.",
                 "actor", true, true, READ_ONLY_TOOLS,
                 """
                 You are reviewing code changes related to a GitHub issue.
@@ -146,7 +170,10 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("respond",
-                "Reply to a comment or review feedback",
+                "Reply to a comment or review feedback on a GitHub issue or pull "
+                        + "request. Use this when a previous task failed to post its "
+                        + "findings, or when review feedback requires a follow-up response "
+                        + "with code changes. Can make code changes and post comments.",
                 "actor", true, true, WRITE_TOOLS,
                 """
                 You are responding to feedback on a GitHub issue or pull request.
@@ -167,7 +194,12 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("answer-question",
-                "Answer a question asked by a user on the issue",
+                "Answer a question asked by a user on a GitHub issue. Use this when "
+                        + "the issue body or a comment contains a question (indicated by "
+                        + "question marks, 'how do I', 'what is', etc.). The actor examines "
+                        + "the repository to find the answer and posts it as a comment on "
+                        + "the issue. Can be triggered directly from issue-created events "
+                        + "when the issue is clearly a question.",
                 "actor", false, true, READ_PLUS_MCP_TOOLS,
                 """
                 You are answering a question on a GitHub issue.
@@ -189,19 +221,23 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("close-project",
-                "Mark the project as completed",
+                "Mark the project as completed. Use this system action when an "
+                        + "issue-closed event is received, indicating the issue has "
+                        + "been resolved and the project should be marked as done.",
                 "system", false, false, null, null);
 
         seedActionType("reopen-project",
-                "Re-open a completed project",
+                "Re-open a completed project. Use this system action when an "
+                        + "issue-reopened event is received, indicating the issue "
+                        + "needs further attention after being previously closed.",
                 "system", false, false, null, null);
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
-        // Seed actor, policy, and test repository
+        // Seed tools, actors, manager config, and test repository
         seedTools();
         seedActors();
-        seedPolicy();
+        seedManagerConfig();
         seedRepository();
     }
 
@@ -223,14 +259,26 @@ public class SeedDataInitializer {
         postComment.scriptTemplate = "gh issue comment {{issue_number}} --repo {{repo}} --body-file {{body_file}}";
         postComment.persist();
 
-        // Add GitHub Labels tool
+        // List GitHub Labels tool
+        ToolDefinitionEntity listLabels = new ToolDefinitionEntity();
+        listLabels.name = "list_github_labels";
+        listLabels.description = "List all available labels in a GitHub repository with their "
+                + "names and descriptions, sorted by name. Use this to discover which labels "
+                + "exist before applying them to an issue.";
+        listLabels.type = "script";
+        listLabels.parameters = "[{\"name\":\"repo\",\"type\":\"string\",\"description\":\"Repository in owner/name format\",\"required\":true}]";
+        listLabels.scriptTemplate = "gh label list --repo {{repo}} --sort name --json name,description";
+        listLabels.persist();
+
+        // Apply GitHub Labels tool
         ToolDefinitionEntity addLabels = new ToolDefinitionEntity();
-        addLabels.name = "add_github_labels";
-        addLabels.description = "Add labels to a GitHub issue.";
+        addLabels.name = "apply_github_labels";
+        addLabels.description = "Apply one or more labels to a GitHub issue. Only use labels "
+                + "that exist in the repository — use list_github_labels first to check.";
         addLabels.type = "script";
         addLabels.parameters = "[{\"name\":\"repo\",\"type\":\"string\",\"description\":\"Repository in owner/name format\",\"required\":true},"
                 + "{\"name\":\"issue_number\",\"type\":\"number\",\"description\":\"Issue number\",\"required\":true},"
-                + "{\"name\":\"labels\",\"type\":\"string\",\"description\":\"Comma-separated label names\",\"required\":true}]";
+                + "{\"name\":\"labels\",\"type\":\"string\",\"description\":\"Comma-separated label names to apply\",\"required\":true}]";
         addLabels.scriptTemplate = "gh issue edit {{issue_number}} --repo {{repo}} --add-label \"{{labels}}\"";
         addLabels.persist();
 
@@ -274,22 +322,18 @@ public class SeedDataInitializer {
         LOG.infof("Seeded actor: %s (%s)", actor.name, actor.type);
     }
 
-    private void seedPolicy() {
-        if (PolicyEntity.count() > 0) {
-            LOG.info("Policies already exist, skipping policy seed data");
+    private void seedManagerConfig() {
+        if (ManagerConfigEntity.count() > 0) {
+            LOG.info("Manager config already exists, skipping seed");
             return;
         }
 
-        PolicyEntity policy = new PolicyEntity();
-        policy.name = "Analyze new issues";
-        policy.guideline = "If the event represents a new issue being created (issue-created), " +
-                "perform the \"analyze\" action. The actor should read the issue title and body, " +
-                "understand the problem or request, assess its complexity, and produce a brief " +
-                "summary with recommendations for next steps.";
-        policy.actionType = "analyze";
-        policy.persist();
+        ManagerConfigEntity config = new ManagerConfigEntity();
+        config.systemPrompt = ManagerPromptBuilder.DEFAULT_SYSTEM_PROMPT;
+        config.promptTemplate = ManagerPromptBuilder.DEFAULT_PROMPT_TEMPLATE;
+        config.persist();
 
-        LOG.infof("Seeded policy: %s", policy.name);
+        LOG.info("Seeded default manager configuration");
     }
 
     private void seedRepository() {
@@ -322,7 +366,8 @@ public class SeedDataInitializer {
     private static final String READ_PLUS_MCP_TOOLS = String.join(",",
             READ_ONLY_TOOLS,
             "mcp__axiom-tools__post_github_comment",
-            "mcp__axiom-tools__add_github_labels"
+            "mcp__axiom-tools__list_github_labels",
+            "mcp__axiom-tools__apply_github_labels"
     );
 
     private static final String WRITE_TOOLS = String.join(",",

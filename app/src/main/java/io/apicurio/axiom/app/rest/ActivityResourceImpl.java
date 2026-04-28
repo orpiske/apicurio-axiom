@@ -8,6 +8,7 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.WebApplicationException;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -70,6 +71,22 @@ public class ActivityResourceImpl implements ActivityResource {
         results.setPage(pageNum);
         results.setLimit(pageSize);
         return results;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getActivityLogDetails(long activityId) {
+        ActivityLogEntity entity = ActivityLogEntity.findById(activityId);
+        if (entity == null) {
+            throw new WebApplicationException("Activity entry not found: " + activityId, 404);
+        }
+        if (entity.details == null || entity.details.isEmpty()) {
+            throw new WebApplicationException(
+                    "No execution log available for activity entry: " + activityId, 404);
+        }
+        return entity.details;
     }
 
     private ActivityLogEntry toBean(ActivityLogEntity entity) {

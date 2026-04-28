@@ -33,6 +33,7 @@ const ENTRY_TYPE_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "
     "project-closed": "grey",
     "project-reopened": "orange",
     "event-ignored": "grey",
+    "manager-evaluated": "blue",
     "manager-escalation": "orange",
     "manager-no-decision": "grey",
     "manager-skipped": "grey",
@@ -62,10 +63,19 @@ export function ActivityLogPage() {
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
     const [logProjectId, setLogProjectId] = useState<number | null>(null);
     const [logTaskId, setLogTaskId] = useState<number | null>(null);
+    const [logActivityId, setLogActivityId] = useState<number | null>(null);
 
-    const handleViewLog = (projectId: number, taskId: number) => {
+    const handleViewTaskLog = (projectId: number, taskId: number) => {
         setLogProjectId(projectId);
         setLogTaskId(taskId);
+        setLogActivityId(null);
+        setIsLogModalOpen(true);
+    };
+
+    const handleViewActivityLog = (activityId: number) => {
+        setLogProjectId(null);
+        setLogTaskId(null);
+        setLogActivityId(activityId);
         setIsLogModalOpen(true);
     };
 
@@ -257,11 +267,17 @@ export function ActivityLogPage() {
                                                 && entry.projectId && entry.taskId && (
                                             <>
                                                 {" — "}
-                                                <Button
-                                                    variant="link"
-                                                    isInline
-                                                    onClick={() => handleViewLog(entry.projectId!, entry.taskId!)}
-                                                >
+                                                <Button variant="link" isInline
+                                                    onClick={() => handleViewTaskLog(entry.projectId!, entry.taskId!)}>
+                                                    View Log
+                                                </Button>
+                                            </>
+                                        )}
+                                        {(entry.entryType === "manager-evaluated" || entry.entryType === "manager-error") && (
+                                            <>
+                                                {" — "}
+                                                <Button variant="link" isInline
+                                                    onClick={() => handleViewActivityLog(entry.id)}>
                                                     View Log
                                                 </Button>
                                             </>
@@ -293,6 +309,7 @@ export function ActivityLogPage() {
                 isOpen={isLogModalOpen}
                 projectId={logProjectId}
                 taskId={logTaskId}
+                activityId={logActivityId}
                 onClose={() => setIsLogModalOpen(false)}
             />
         </PageSection>

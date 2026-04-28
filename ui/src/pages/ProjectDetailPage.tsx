@@ -38,12 +38,14 @@ import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlayIcon from "@patternfly/react-icons/dist/esm/icons/play-icon";
 import {
     type ActionType,
+    type AxiomEvent,
     type Project,
     type Task,
     type ThreadEntry,
     fetchActionTypes,
     fetchActors,
     fetchProject,
+    fetchProjectEvents,
     fetchProjectTasks,
     fetchThreadEntries,
     createTask,
@@ -67,6 +69,7 @@ export function ProjectDetailPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [thread, setThread] = useState<ThreadEntry[]>([]);
+    const [events, setEvents] = useState<AxiomEvent[]>([]);
     const [actorNames, setActorNames] = useState<Record<number, string>>({});
     const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -87,12 +90,14 @@ export function ProjectDetailPage() {
             fetchProject(id),
             fetchProjectTasks(id),
             fetchThreadEntries(id),
+            fetchProjectEvents(id),
             fetchActors(),
         ])
-            .then(([p, t, th, actors]) => {
+            .then(([p, t, th, ev, actors]) => {
                 setProject(p);
                 setTasks(t);
                 setThread(th);
+                setEvents(ev);
                 const names: Record<number, string> = {};
                 actors.forEach((a) => { names[a.id] = a.name; });
                 setActorNames(names);
@@ -206,7 +211,14 @@ export function ProjectDetailPage() {
                         <DescriptionListGroup>
                             <DescriptionListTerm>Issue</DescriptionListTerm>
                             <DescriptionListDescription>
-                                {project.issueRef}
+                                {project.issueSource === "github" && project.issueRef ? (
+                                    <a href={`https://github.com/${project.issueRef.replace("#", "/issues/")}`}
+                                        target="_blank" rel="noopener noreferrer">
+                                        {project.issueRef}
+                                    </a>
+                                ) : (
+                                    project.issueRef
+                                )}
                             </DescriptionListDescription>
                         </DescriptionListGroup>
                         <DescriptionListGroup>
@@ -253,6 +265,11 @@ export function ProjectDetailPage() {
                     <Tab eventKey={1} title={<TabTitleText>Thread ({thread.length})</TabTitleText>}>
                         <TabContent id="thread-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "16px" }}>
                             <ThreadTab entries={thread} />
+                        </TabContent>
+                    </Tab>
+                    <Tab eventKey={2} title={<TabTitleText>Events ({events.length})</TabTitleText>}>
+                        <TabContent id="events-tab" eventKey={2} activeKey={activeTab} style={{ marginTop: "16px" }}>
+                            <EventsTab events={events} />
                         </TabContent>
                     </Tab>
                 </Tabs>
@@ -537,5 +554,55 @@ function ThreadTab({ entries }: { entries: ThreadEntry[] }) {
                 </Card>
             ))}
         </div>
+    );
+}
+
+const EVENT_TYPE_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "red"> = {
+    "issue-created": "blue",
+    "issue-updated": "orange",
+    "issue-closed": "grey",
+    "issue-reopened": "green",
+    "comment-added": "blue",
+    "task-completed": "green",
+    "task-failed": "red",
+};
+
+function EventsTab({ events }: { events: AxiomEvent[] }) {
+    if (events.length === 0) {
+        return (
+            <EmptyState>
+                <EmptyStateBody>No events recorded for this project.</EmptyStateBody>
+            </EmptyState>
+        );
+    }
+
+    return (
+        <Table aria-label="Project Events" variant="compact">
+            <Thead>
+                <Tr>
+                    <Th>Time</Th>
+                    <Th>Source</Th>
+                    <Th>Event Type</Th>
+                </Tr>
+            </Thead>
+            <Tbody>
+                {events.map((event) => (
+                    <Tr key={event.id}>
+                        <Td style={{ whiteSpace: "nowrap" }}>
+                            {new Date(event.receivedAt).toLocaleString()}
+                        </Td>
+                        <Td>
+                            <Label isCompact>{event.source}</Label>
+                        </Td>
+                        <Td>
+                            <Label isCompact
+                                color={EVENT_TYPE_COLORS[event.eventType] || "grey"}>
+                                {event.eventType}
+                            </Label>
+                        </Td>
+                    </Tr>
+                ))}
+            </Tbody>
+        </Table>
     );
 }

@@ -349,6 +349,38 @@
         }
       ]
     },
+    "/projects/{projectId}/events": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "List events for a project",
+        "operationId": "listProjectEvents",
+        "responses": {
+          "200": {
+            "description": "List of events related to this project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ]
+    },
     "/actors": {
       "get": {
         "tags": [
@@ -672,134 +704,55 @@
         }
       ]
     },
-    "/policies": {
+    "/manager/config": {
       "get": {
         "tags": [
-          "Policies"
+          "Manager"
         ],
-        "summary": "List all policies",
-        "operationId": "listPolicies",
+        "summary": "Get the Manager configuration",
+        "operationId": "getManagerConfig",
         "responses": {
           "200": {
-            "description": "List of policies",
+            "description": "The Manager configuration",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Policy"
-                  }
+                  "$ref": "#/components/schemas/ManagerConfig"
                 }
               }
             }
           }
         }
       },
-      "post": {
+      "put": {
         "tags": [
-          "Policies"
+          "Manager"
         ],
-        "summary": "Create a new policy",
-        "operationId": "createPolicy",
+        "summary": "Update the Manager configuration",
+        "operationId": "updateManagerConfig",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewPolicy"
+                "$ref": "#/components/schemas/ManagerConfig"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "201": {
-            "description": "Policy created",
+          "200": {
+            "description": "Configuration updated",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Policy"
+                  "$ref": "#/components/schemas/ManagerConfig"
                 }
               }
             }
           }
         }
       }
-    },
-    "/policies/{policyId}": {
-      "get": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Get a policy by ID",
-        "operationId": "getPolicy",
-        "responses": {
-          "200": {
-            "description": "The policy",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Policy"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Update a policy",
-        "operationId": "updatePolicy",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPolicy"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Policy updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Policy"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Delete a policy",
-        "operationId": "deletePolicy",
-        "responses": {
-          "204": {
-            "description": "Policy deleted"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/PolicyId"
-        }
-      ]
     },
     "/repositories": {
       "get": {
@@ -1047,6 +1000,43 @@
           }
         }
       }
+    },
+    "/activity/{activityId}/log": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Get the execution log for an activity entry",
+        "description": "Returns the detailed execution log stored in the activity entry's details field.",
+        "operationId": "getActivityLogDetails",
+        "responses": {
+          "200": {
+            "description": "The execution log",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Activity entry not found or no log available"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "activityId",
+          "in": "path",
+          "description": "Activity log entry ID",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/manager/evaluate/{eventId}": {
       "post": {
@@ -1807,49 +1797,13 @@
           }
         }
       },
-      "Policy": {
-        "required": [
-          "id",
-          "name",
-          "guideline"
-        ],
+      "ManagerConfig": {
         "type": "object",
         "properties": {
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
+          "systemPrompt": {
             "type": "string"
           },
-          "guideline": {
-            "type": "string"
-          },
-          "actionType": {
-            "type": "string"
-          },
-          "actorHint": {
-            "type": "string"
-          }
-        }
-      },
-      "NewPolicy": {
-        "required": [
-          "name",
-          "guideline"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "guideline": {
-            "type": "string"
-          },
-          "actionType": {
-            "type": "string"
-          },
-          "actorHint": {
+          "promptTemplate": {
             "type": "string"
           }
         }
@@ -2392,16 +2346,6 @@
           "type": "integer"
         }
       },
-      "PolicyId": {
-        "name": "policyId",
-        "in": "path",
-        "description": "Policy ID",
-        "required": true,
-        "schema": {
-          "format": "int64",
-          "type": "integer"
-        }
-      },
       "RepositoryId": {
         "name": "repositoryId",
         "in": "path",
@@ -2438,10 +2382,6 @@
     {
       "name": "ActionTypes",
       "description": "Action type registry"
-    },
-    {
-      "name": "Policies",
-      "description": "Manager policy configuration"
     },
     {
       "name": "Repositories",

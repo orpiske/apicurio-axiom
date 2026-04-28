@@ -35,7 +35,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ActorsPage } from "./pages/ActorsPage";
 import { ActorDetailPage } from "./pages/ActorDetailPage";
-import { PoliciesPage } from "./pages/PoliciesPage";
+import { ManagerConfigPage } from "./pages/ManagerConfigPage";
 import { ActionTypesPage } from "./pages/ActionTypesPage";
 import { ActivityLogPage } from "./pages/ActivityLogPage";
 import { RepositoriesPage } from "./pages/RepositoriesPage";
@@ -55,7 +55,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/policies", "/action-types", "/tools", "/repositories"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/repositories"];
 
 let notificationIdCounter = 0;
 
@@ -194,8 +194,8 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/actors")} onClick={() => navigate("/actors")}>
                                 Actors
                             </NavItem>
-                            <NavItem isActive={location.pathname.startsWith("/policies")} onClick={() => navigate("/policies")}>
-                                Policies
+                            <NavItem isActive={location.pathname.startsWith("/manager")} onClick={() => navigate("/manager")}>
+                                Manager
                             </NavItem>
                             <NavItem isActive={location.pathname.startsWith("/action-types")} onClick={() => navigate("/action-types")}>
                                 Action Types
@@ -295,7 +295,7 @@ export function App() {
                     <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
                     <Route path="/actors" element={<ActorsPage />} />
                     <Route path="/actors/:actorId" element={<ActorDetailPage />} />
-                    <Route path="/policies" element={<PoliciesPage />} />
+                    <Route path="/manager" element={<ManagerConfigPage />} />
                     <Route path="/action-types" element={<ActionTypesPage />} />
                     <Route path="/action-types/:actionTypeId" element={<ActionTypeDetailPage />} />
                     <Route path="/tools" element={<ToolsPage />} />

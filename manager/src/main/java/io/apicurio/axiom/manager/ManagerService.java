@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.apicurio.axiom.actors.claudecode.ClaudeCodeCommandBuilder;
 import io.apicurio.axiom.actors.claudecode.ClaudeCodeResult;
 import io.apicurio.axiom.actors.claudecode.ClaudeCodeSubprocess;
+import io.apicurio.axiom.actors.claudecode.ExecutionLogBuilder;
 import io.apicurio.axiom.actors.spi.ActorContext;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ActivityLogEntity;
 import io.apicurio.axiom.core.entities.ActorEntity;
 import io.apicurio.axiom.core.entities.EventEntity;
-import io.apicurio.axiom.core.entities.PolicyEntity;
+import io.apicurio.axiom.core.entities.ManagerConfigEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,8 +30,8 @@ import java.util.Optional;
 
 /**
  * Service that invokes the AI Manager to evaluate events and produce decisions.
- * Launches Claude Code as a subprocess with a specialized prompt containing
- * the event, project context, policies, and available actions/actors.
+ * Launches Claude Code as a subprocess with a configurable system prompt and
+ * prompt template containing the event, project context, action types, and actors.
  */
 @ApplicationScoped
 public class ManagerService {
@@ -61,15 +62,7 @@ public class ManagerService {
     public List<ManagerDecision> evaluate(EventEntity event) {
         LOG.infof("Manager evaluating event %d: %s [%s]", event.id, event.eventType, event.issueRef);
 
-        // Gather context
-        List<PolicyEntity> policies = PolicyEntity.listAll();
-        if (policies.isEmpty()) {
-            LOG.warnf("Skipping Manager evaluation for event %d: no policies configured", event.id);
-            logManagerActivity(event.id, "manager-skipped",
-                    "Manager evaluation skipped: no policies configured");
-            return Collections.emptyList();
-        }
-
+        // Load context
         List<ActionTypeEntity> actionTypes = ActionTypeEntity.listAll();
         List<ActorEntity> actors = ActorEntity.listAll();
 
@@ -85,10 +78,30 @@ public class ManagerService {
             }
         }
 
-        // Build prompts
-        String systemPrompt = ManagerPromptBuilder.buildSystemPrompt(policies, actionTypes, actors);
-        String userPrompt = ManagerPromptBuilder.buildUserPrompt(event, project, recentTasks);
+        // Load manager configuration (system prompt + prompt template)
+        String systemPrompt = ManagerPromptBuilder.DEFAULT_SYSTEM_PROMPT;
+        String promptTemplate = ManagerPromptBuilder.DEFAULT_PROMPT_TEMPLATE;
+        ManagerConfigEntity config = ManagerConfigEntity.<ManagerConfigEntity>findAll()
+                .firstResult();
+        if (config != null) {
+            if (config.systemPrompt != null && !config.systemPrompt.isBlank()) {
+                systemPrompt = config.systemPrompt;
+            }
+            if (config.promptTemplate != null && !config.promptTemplate.isBlank()) {
+                promptTemplate = config.promptTemplate;
+            }
+        }
+
+        // Build user prompt from template with placeholder substitution
+        String userPrompt = ManagerPromptBuilder.buildUserPrompt(
+                promptTemplate, event, actionTypes, actors, project, recentTasks);
         String jsonSchema = ManagerPromptBuilder.getResponseJsonSchema();
+
+        // Create execution log builder
+        ExecutionLogBuilder logBuilder = new ExecutionLogBuilder();
+        logBuilder.header(0, "manager-evaluate", Instant.now());
+        logBuilder.prompt(userPrompt);
+        logBuilder.allowedTools(List.of("StructuredOutput"));
 
         // Build command — Manager needs no tools, just reasoning
         ActorContext context = ActorContext.builder()
@@ -113,35 +126,48 @@ public class ManagerService {
         ClaudeCodeSubprocess subprocess = new ClaudeCodeSubprocess(
                 command, null, Map.of(),
                 Duration.ofSeconds(timeoutSeconds), null,
-                new io.apicurio.axiom.actors.claudecode.ExecutionLogBuilder()
+                logBuilder
         );
 
         try {
             ClaudeCodeResult result = subprocess.execute().join();
+            String executionLog = result.executionLog();
 
             if (!result.isSuccess()) {
                 LOG.errorf("Manager subprocess failed (exit %d): %s",
                         result.exitCode(), result.result());
                 logManagerActivity(event.id, "manager-error",
-                        "Manager failed to evaluate event: " + result.result());
+                        "Manager failed to evaluate event: " + result.result(),
+                        executionLog);
                 return Collections.emptyList();
             }
 
             List<ManagerDecision> decisions = parseDecisions(result.result());
 
-            // Log decisions
+            // Build summary of decisions for the activity log
+            StringBuilder summary = new StringBuilder();
             for (ManagerDecision decision : decisions) {
                 LOG.infof("Manager decision for event %d: %s (action: %s, confidence: %.2f) — %s",
                         event.id, decision.decision(), decision.actionType(),
                         decision.confidence(), decision.reasoning());
+                if (!summary.isEmpty()) summary.append("; ");
+                summary.append(decision.decision());
+                if (decision.actionType() != null) {
+                    summary.append("(").append(decision.actionType()).append(")");
+                }
             }
+
+            String summaryText = decisions.isEmpty()
+                    ? "Manager returned no decisions for event " + event.id
+                    : "Manager decisions for event " + event.id + ": " + summary;
+            logManagerActivity(event.id, "manager-evaluated", summaryText, executionLog);
 
             return decisions;
 
         } catch (Exception e) {
             LOG.errorf(e, "Manager evaluation failed for event %d", event.id);
             logManagerActivity(event.id, "manager-error",
-                    "Manager evaluation error: " + e.getMessage());
+                    "Manager evaluation error: " + e.getMessage(), null);
             return Collections.emptyList();
         }
     }
@@ -167,11 +193,8 @@ public class ManagerService {
         try {
             JsonNode root = objectMapper.readTree(jsonOutput);
 
-            // Handle structured output with "decisions" array
             JsonNode decisionsNode = root.path("decisions");
             if (decisionsNode.isMissingNode() || !decisionsNode.isArray()) {
-                // Maybe the entire output is the structured response
-                // wrapped in a result field
                 if (root.has("result")) {
                     String resultText = root.get("result").asText();
                     return parseDecisions(resultText);
@@ -203,12 +226,23 @@ public class ManagerService {
         }
     }
 
+    /**
+     * Logs a manager activity entry with optional execution log details.
+     *
+     * @param eventId the event ID
+     * @param entryType the activity log entry type
+     * @param summary a brief summary
+     * @param details the full execution log (may be null)
+     */
     @Transactional
-    void logManagerActivity(Long eventId, String entryType, String summary) {
+    void logManagerActivity(Long eventId, String entryType, String summary, String details) {
         ActivityLogEntity log = new ActivityLogEntity();
         log.eventId = eventId;
         log.entryType = entryType;
-        log.summary = summary;
+        log.summary = summary != null && summary.length() > 1024
+                ? summary.substring(0, 1021) + "..."
+                : summary;
+        log.details = details;
         log.createdOn = Instant.now();
         log.persist();
     }

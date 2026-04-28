@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>These tests use the seeded tool data from {@link SeedDataInitializer},
  * which includes three built-in script tools: post_github_comment,
- * add_github_labels, and create_github_pr.</p>
+ * apply_github_labels, and create_github_pr.</p>
  */
 @QuarkusTest
 class McpConfigGeneratorTest {
@@ -125,20 +125,23 @@ class McpConfigGeneratorTest {
         JsonNode tools = objectMapper.readTree(toolsContent);
 
         assertTrue(tools.isArray(), "Tools should be a JSON array");
-        assertTrue(tools.size() >= 3, "Should have at least 3 seeded script tools");
+        assertTrue(tools.size() >= 4, "Should have at least 4 seeded script tools");
 
         // Verify expected tool names are present
         boolean hasPostComment = false;
-        boolean hasAddLabels = false;
+        boolean hasListLabels = false;
+        boolean hasApplyLabels = false;
         boolean hasCreatePr = false;
         for (JsonNode tool : tools) {
             String name = tool.get("name").asText();
             if ("post_github_comment".equals(name)) hasPostComment = true;
-            if ("add_github_labels".equals(name)) hasAddLabels = true;
+            if ("list_github_labels".equals(name)) hasListLabels = true;
+            if ("apply_github_labels".equals(name)) hasApplyLabels = true;
             if ("create_github_pr".equals(name)) hasCreatePr = true;
         }
         assertTrue(hasPostComment, "Should contain post_github_comment tool");
-        assertTrue(hasAddLabels, "Should contain add_github_labels tool");
+        assertTrue(hasListLabels, "Should contain list_github_labels tool");
+        assertTrue(hasApplyLabels, "Should contain apply_github_labels tool");
         assertTrue(hasCreatePr, "Should contain create_github_pr tool");
     }
 

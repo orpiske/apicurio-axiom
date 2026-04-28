@@ -388,47 +388,27 @@ export async function fetchActionTypeTools(actionTypeId: number): Promise<ToolDe
     return response.json();
 }
 
-// ── Policies ──────────────────────────────────────────────────────
+// ── Manager Configuration ────────────────────────────────────────
 
-export interface Policy {
-    id: number;
-    name: string;
-    guideline: string;
-    actionType?: string;
-    actorHint?: string;
+export interface ManagerConfig {
+    systemPrompt?: string;
+    promptTemplate?: string;
 }
 
-export type NewPolicy = Omit<Policy, "id">;
-
-export async function fetchPolicies(): Promise<Policy[]> {
-    const response = await fetch(`${API}/policies`);
-    if (!response.ok) throw new Error(`Failed to fetch policies: ${response.status}`);
+export async function fetchManagerConfig(): Promise<ManagerConfig> {
+    const response = await fetch(`${API}/manager/config`);
+    if (!response.ok) throw new Error(`Failed to fetch manager config: ${response.status}`);
     return response.json();
 }
 
-export async function createPolicy(policy: NewPolicy): Promise<Policy> {
-    const response = await fetch(`${API}/policies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(policy),
-    });
-    if (!response.ok) throw new Error(`Failed to create policy: ${response.status}`);
-    return response.json();
-}
-
-export async function updatePolicy(id: number, policy: NewPolicy): Promise<Policy> {
-    const response = await fetch(`${API}/policies/${id}`, {
+export async function updateManagerConfig(config: ManagerConfig): Promise<ManagerConfig> {
+    const response = await fetch(`${API}/manager/config`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(policy),
+        body: JSON.stringify(config),
     });
-    if (!response.ok) throw new Error(`Failed to update policy: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to update manager config: ${response.status}`);
     return response.json();
-}
-
-export async function deletePolicy(id: number): Promise<void> {
-    const response = await fetch(`${API}/policies/${id}`, { method: "DELETE" });
-    if (!response.ok) throw new Error(`Failed to delete policy: ${response.status}`);
 }
 
 // ── Repositories ──────────────────────────────────────────────────
@@ -485,6 +465,25 @@ export async function fetchThreadEntries(projectId: number): Promise<ThreadEntry
     return response.json();
 }
 
+// ── Events ───────────────────────────────────────────────────────
+
+export interface AxiomEvent {
+    id: number;
+    source: string;
+    eventType: string;
+    issueRef?: string;
+    repository?: string;
+    projectId?: number;
+    taskId?: number;
+    receivedAt: string;
+}
+
+export async function fetchProjectEvents(projectId: number): Promise<AxiomEvent[]> {
+    const response = await fetch(`${API}/projects/${projectId}/events`);
+    if (!response.ok) throw new Error(`Failed to fetch project events: ${response.status}`);
+    return response.json();
+}
+
 // ── Activity Log ──────────────────────────────────────────────────
 
 export async function fetchActivityLog(
@@ -502,4 +501,10 @@ export async function fetchActivityLog(
     const response = await fetch(`${API}/activity?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch activity log: ${response.status}`);
     return response.json();
+}
+
+export async function fetchActivityLogDetails(activityId: number): Promise<string> {
+    const response = await fetch(`${API}/activity/${activityId}/log`);
+    if (!response.ok) throw new Error(`Failed to fetch activity log details: ${response.status}`);
+    return response.text();
 }

@@ -9,43 +9,64 @@ import {
     ModalHeader,
 } from "@patternfly/react-core";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
-import { fetchTaskExecutionLog } from "../config/api";
+import { fetchTaskExecutionLog, fetchActivityLogDetails } from "../config/api";
 
 interface ExecutionLogModalProps {
     isOpen: boolean;
-    projectId: number | null;
-    taskId: number | null;
+    /** For task logs: the project ID */
+    projectId?: number | null;
+    /** For task logs: the task ID */
+    taskId?: number | null;
+    /** For activity log details (e.g. manager evaluations): the activity entry ID */
+    activityId?: number | null;
     onClose: () => void;
 }
 
 /**
- * Modal that displays the execution log for a completed or failed task.
- * Fetches the log from the REST API when opened and displays it in a
- * read-only Monaco code editor.
+ * Modal that displays an execution log. Supports two fetch modes:
+ * - By projectId + taskId (for task execution logs)
+ * - By activityId (for manager evaluation logs stored in activity entry details)
  */
-export function ExecutionLogModal({ isOpen, projectId, taskId, onClose }: ExecutionLogModalProps) {
+export function ExecutionLogModal({ isOpen, projectId, taskId, activityId,
+                                     onClose }: ExecutionLogModalProps) {
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (isOpen && projectId != null && taskId != null) {
-            setLoading(true);
-            setContent("");
-            fetchTaskExecutionLog(projectId, taskId)
-                .then(setContent)
-                .catch((err) => setContent("Error loading log: " + err.message))
-                .finally(() => setLoading(false));
+        if (!isOpen) return;
+
+        setLoading(true);
+        setContent("");
+
+        let fetchPromise: Promise<string>;
+        if (activityId != null) {
+            fetchPromise = fetchActivityLogDetails(activityId);
+        } else if (projectId != null && taskId != null) {
+            fetchPromise = fetchTaskExecutionLog(projectId, taskId);
+        } else {
+            setContent("No log source specified.");
+            setLoading(false);
+            return;
         }
-    }, [isOpen, projectId, taskId]);
+
+        fetchPromise
+            .then(setContent)
+            .catch((err) => setContent("Error loading log: " + err.message))
+            .finally(() => setLoading(false));
+    }, [isOpen, projectId, taskId, activityId]);
 
     const handleClose = () => {
         onClose();
         setContent("");
     };
 
+    const title = activityId != null
+        ? `Execution Log — Activity #${activityId}`
+        : `Execution Log — Task #${taskId}`;
+
     return (
         <Modal isOpen={isOpen} onClose={handleClose} variant="large">
-            <ModalHeader title={`Execution Log — Task #${taskId}`} />
+            <ModalHeader title={title} />
             <ModalBody>
                 {loading ? (
                     <EmptyState>

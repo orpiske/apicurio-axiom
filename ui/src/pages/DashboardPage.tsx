@@ -29,7 +29,6 @@ import {
     fetchActivityLog,
     fetchActionTypes,
     fetchActors,
-    fetchPolicies,
     fetchRepositories,
     fetchTools,
 } from "../config/api";
@@ -78,7 +77,7 @@ export function DashboardPage() {
     const [requirements, setRequirements] = useState<SetupRequirement[]>([]);
     const [setupChecked, setSetupChecked] = useState(false);
     const [configCounts, setConfigCounts] = useState({
-        actors: 0, policies: 0, actionTypes: 0, tools: 0, repositories: 0,
+        actors: 0, actionTypes: 0, tools: 0, repositories: 0,
     });
 
     const loadData = useCallback(() => {
@@ -88,16 +87,14 @@ export function DashboardPage() {
             fetchActivityLog(1, 10),
             fetchRepositories(),
             fetchActors(),
-            fetchPolicies(),
             fetchActionTypes(),
             fetchTools(),
         ])
-            .then(([p, a, repos, actors, policies, actionTypes, tools]) => {
+            .then(([p, a, repos, actors, actionTypes, tools]) => {
                 setProjects(p.items);
                 setRecentActivity(a.items);
                 setConfigCounts({
                     actors: actors.length,
-                    policies: policies.length,
                     actionTypes: actionTypes.length,
                     tools: tools.length,
                     repositories: repos.length,
@@ -121,15 +118,6 @@ export function DashboardPage() {
                             "perform tasks assigned by the Manager.",
                         navPath: "/actors",
                         navLabel: "Configure Actors",
-                    },
-                    {
-                        name: "Policy",
-                        met: policies.length > 0,
-                        description:
-                            "At least one policy must be configured to guide the Manager's " +
-                            "decision-making when evaluating events.",
-                        navPath: "/policies",
-                        navLabel: "Configure Policies",
                     },
                     {
                         name: "Action Type",
@@ -362,10 +350,6 @@ export function DashboardPage() {
                         <GalleryItem>
                             <ConfigCard label="Actors" count={configCounts.actors}
                                 path="/actors" />
-                        </GalleryItem>
-                        <GalleryItem>
-                            <ConfigCard label="Policies" count={configCounts.policies}
-                                path="/policies" />
                         </GalleryItem>
                         <GalleryItem>
                             <ConfigCard label="Action Types" count={configCounts.actionTypes}

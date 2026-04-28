@@ -2,6 +2,7 @@ package io.apicurio.axiom.app.rest;
 
 import io.apicurio.axiom.actors.human.HumanActor;
 import io.apicurio.axiom.api.ProjectsResource;
+import io.apicurio.axiom.api.beans.Event;
 import io.apicurio.axiom.api.beans.NewProject;
 import io.apicurio.axiom.api.beans.NewTask;
 import io.apicurio.axiom.api.beans.Project;
@@ -10,6 +11,7 @@ import io.apicurio.axiom.api.beans.Task;
 import io.apicurio.axiom.api.beans.TaskResponse;
 import io.apicurio.axiom.api.beans.ThreadEntry;
 import io.apicurio.axiom.api.beans.UpdateProject;
+import io.apicurio.axiom.core.entities.EventEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
@@ -212,6 +214,20 @@ public class ProjectsResourceImpl implements ProjectsResource {
                 .toList();
     }
 
+    // ── Project Events ─────────────────────────────────────────────────
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Event> listProjectEvents(long projectId) {
+        ProjectEntity project = findProjectOrThrow(projectId);
+        return EventEntity.<EventEntity>list("issueRef", project.issueRef)
+                .stream()
+                .map(this::toEventBean)
+                .toList();
+    }
+
     // ── Task Response ──────────────────────────────────────────────────
 
     /**
@@ -315,5 +331,18 @@ public class ProjectsResourceImpl implements ProjectsResource {
         entry.setContent(entity.content);
         entry.setCreatedOn(Date.from(entity.createdOn));
         return entry;
+    }
+
+    private Event toEventBean(EventEntity entity) {
+        Event event = new Event();
+        event.setId(entity.id);
+        event.setSource(entity.source);
+        event.setEventType(entity.eventType);
+        event.setIssueRef(entity.issueRef);
+        event.setRepository(entity.repository);
+        event.setProjectId(entity.projectId);
+        event.setTaskId(entity.taskId);
+        event.setReceivedAt(Date.from(entity.receivedAt));
+        return event;
     }
 }
