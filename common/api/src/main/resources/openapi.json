@@ -1216,6 +1216,58 @@
         }
       ]
     },
+    "/projects/{projectId}/metrics": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Get metrics for a project",
+        "description": "Returns per-project disk usage and AI cost metrics.",
+        "operationId": "getProjectMetrics",
+        "responses": {
+          "200": {
+            "description": "Project metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMetrics"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ]
+    },
+    "/metrics/summary": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Get aggregate metrics across all projects",
+        "description": "Returns total disk usage, AI cost, and per-project breakdown.",
+        "operationId": "getMetricsSummary",
+        "responses": {
+          "200": {
+            "description": "Aggregate metrics summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools": {
       "get": {
         "tags": [
@@ -2086,6 +2138,42 @@
           "limit": {
             "type": "integer"
           }
+        }
+      },
+      "ProjectMetrics": {
+        "type": "object",
+        "properties": {
+          "projectId": { "format": "int64", "type": "integer" },
+          "diskUsageBytes": { "format": "int64", "type": "integer" },
+          "totalCostUsd": { "format": "double", "type": "number" },
+          "totalInputTokens": { "format": "int64", "type": "integer" },
+          "totalOutputTokens": { "format": "int64", "type": "integer" },
+          "invocationCount": { "format": "int64", "type": "integer" }
+        }
+      },
+      "MetricsSummary": {
+        "type": "object",
+        "properties": {
+          "totalDiskUsageBytes": { "format": "int64", "type": "integer" },
+          "totalCostUsd": { "format": "double", "type": "number" },
+          "totalInputTokens": { "format": "int64", "type": "integer" },
+          "totalOutputTokens": { "format": "int64", "type": "integer" },
+          "totalInvocations": { "format": "int64", "type": "integer" },
+          "projectCount": { "type": "integer" },
+          "projects": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProjectMetricsSummary" }
+          }
+        }
+      },
+      "ProjectMetricsSummary": {
+        "type": "object",
+        "properties": {
+          "projectId": { "format": "int64", "type": "integer" },
+          "projectName": { "type": "string" },
+          "diskUsageBytes": { "format": "int64", "type": "integer" },
+          "costUsd": { "format": "double", "type": "number" },
+          "invocationCount": { "format": "int64", "type": "integer" }
         }
       },
       "AiUsage": {

@@ -88,6 +88,48 @@ public class WorkspaceService {
         }
     }
 
+    /**
+     * Computes the total disk usage of a project's workspace directory in bytes.
+     * Walks the directory tree and sums the sizes of all files.
+     *
+     * @param project the project whose workspace size to compute
+     * @return the total size in bytes, or 0 if the workspace doesn't exist
+     */
+    public long computeDiskUsage(ProjectEntity project) {
+        Path workspace = getWorkspacePath(project);
+        if (!Files.exists(workspace)) {
+            return 0;
+        }
+        try {
+            // Use du -sb for accurate disk usage (matches what the OS reports)
+            ProcessBuilder pb = new ProcessBuilder("du", "-sb", workspace.toAbsolutePath().toString());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String output = new String(process.getInputStream().readAllBytes()).trim();
+            boolean completed = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            if (completed && process.exitValue() == 0 && !output.isEmpty()) {
+                // du -sb outputs: <bytes>\t<path>
+                return Long.parseLong(output.split("\\s+")[0]);
+            }
+        } catch (Exception e) {
+            LOG.debugf("du command failed for project %d, falling back to file walk", project.id);
+        }
+
+        // Fallback: walk directory and sum file sizes
+        try (var stream = Files.walk(workspace)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .mapToLong(p -> {
+                        try { return Files.size(p); }
+                        catch (IOException e) { return 0; }
+                    })
+                    .sum();
+        } catch (IOException e) {
+            LOG.warnf(e, "Failed to compute disk usage for project %d", project.id);
+            return 0;
+        }
+    }
+
     private RepositoryEntity findRepository(ProjectEntity project) {
         String[] parts = project.repository.split("/", 2);
         if (parts.length == 2) {

@@ -43,4 +43,7 @@ public class ProjectEntity extends PanacheEntity {
 
     @Column(columnDefinition = "TEXT")
     public String metadata;
+
+    @Column(name = "disk_usage_bytes")
+    public Long diskUsageBytes;
 }

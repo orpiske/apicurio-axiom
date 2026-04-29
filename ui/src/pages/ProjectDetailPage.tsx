@@ -18,6 +18,8 @@ import {
     Flex,
     FlexItem,
     Form,
+    Gallery,
+    GalleryItem,
     FormGroup,
     FormSelect,
     FormSelectOption,
@@ -36,19 +38,23 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlayIcon from "@patternfly/react-icons/dist/esm/icons/play-icon";
+import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import {
     type ActionType,
     type AxiomEvent,
     type Project,
+    type ProjectMetrics,
     type Task,
     type ThreadEntry,
     fetchActionTypes,
     fetchActors,
     fetchProject,
     fetchProjectEvents,
+    fetchProjectMetrics,
     fetchProjectTasks,
     fetchThreadEntries,
     createTask,
+    formatBytes,
     respondToTask,
 } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
@@ -70,6 +76,7 @@ export function ProjectDetailPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [thread, setThread] = useState<ThreadEntry[]>([]);
     const [events, setEvents] = useState<AxiomEvent[]>([]);
+    const [metrics, setMetrics] = useState<ProjectMetrics | null>(null);
     const [actorNames, setActorNames] = useState<Record<number, string>>({});
     const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -91,13 +98,15 @@ export function ProjectDetailPage() {
             fetchProjectTasks(id),
             fetchThreadEntries(id),
             fetchProjectEvents(id),
+            fetchProjectMetrics(id),
             fetchActors(),
         ])
-            .then(([p, t, th, ev, actors]) => {
+            .then(([p, t, th, ev, m, actors]) => {
                 setProject(p);
                 setTasks(t);
                 setThread(th);
                 setEvents(ev);
+                setMetrics(m);
                 const names: Record<number, string> = {};
                 actors.forEach((a) => { names[a.id] = a.name; });
                 setActorNames(names);
@@ -185,6 +194,14 @@ export function ProjectDetailPage() {
                 </FlexItem>
                 <FlexItem>
                     <Button
+                        variant="plain"
+                        aria-label="Refresh"
+                        onClick={loadData}
+                        style={{ marginRight: "8px" }}
+                    >
+                        <SyncAltIcon />
+                    </Button>
+                    <Button
                         variant="secondary"
                         icon={<PlayIcon />}
                         onClick={openActionModal}
@@ -199,60 +216,68 @@ export function ProjectDetailPage() {
             </Flex>
 
             {/* Project metadata */}
-            <Card style={{ marginTop: "16px" }}>
-                <CardBody>
-                    <DescriptionList isHorizontal columnModifier={{ default: "3Col" }}>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Type</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                <Label isCompact>{project.type}</Label>
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Issue</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                {project.issueSource === "github" && project.issueRef ? (
-                                    <a href={`https://github.com/${project.issueRef.replace("#", "/issues/")}`}
-                                        target="_blank" rel="noopener noreferrer">
-                                        {project.issueRef}
-                                    </a>
-                                ) : (
-                                    project.issueRef
-                                )}
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Repository</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                {project.repository}
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Source</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                {project.issueSource}
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Created</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                {new Date(project.createdOn).toLocaleString()}
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                            <DescriptionListTerm>Updated</DescriptionListTerm>
-                            <DescriptionListDescription>
-                                {new Date(project.updatedOn).toLocaleString()}
-                            </DescriptionListDescription>
-                        </DescriptionListGroup>
-                    </DescriptionList>
-                    {project.description && (
-                        <p style={{ marginTop: "12px", color: "#6a6e73" }}>
+            <DescriptionList isHorizontal isCompact columnModifier={{ default: "3Col" }}
+                style={{ marginTop: "16px" }}>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Type</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        <Label isCompact>{project.type}</Label>
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Issue</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        {project.issueSource === "github" && project.issueRef ? (
+                            <a href={`https://github.com/${project.issueRef.replace("#", "/issues/")}`}
+                                target="_blank" rel="noopener noreferrer">
+                                {project.issueRef}
+                            </a>
+                        ) : (
+                            project.issueRef
+                        )}
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Repository</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        {project.repository}
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Source</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        {project.issueSource}
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Created</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        {new Date(project.createdOn).toLocaleString()}
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Updated</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        {new Date(project.updatedOn).toLocaleString()}
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Workspace</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        <code style={{ fontSize: "13px" }}>
+                            ~/.axiom/workspaces/project-{project.id}
+                        </code>
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
+                {project.description && (
+                    <DescriptionListGroup>
+                        <DescriptionListTerm>Description</DescriptionListTerm>
+                        <DescriptionListDescription>
                             {project.description}
-                        </p>
-                    )}
-                </CardBody>
-            </Card>
+                        </DescriptionListDescription>
+                    </DescriptionListGroup>
+                )}
+            </DescriptionList>
 
             {/* Tabs */}
             <div style={{ marginTop: "24px" }}>
@@ -272,13 +297,12 @@ export function ProjectDetailPage() {
                             <EventsTab events={events} />
                         </TabContent>
                     </Tab>
+                    <Tab eventKey={3} title={<TabTitleText>Metrics</TabTitleText>}>
+                        <TabContent id="metrics-tab" eventKey={3} activeKey={activeTab} style={{ marginTop: "16px" }}>
+                            <MetricsTab metrics={metrics} />
+                        </TabContent>
+                    </Tab>
                 </Tabs>
-            </div>
-
-            <div style={{ marginTop: "16px" }}>
-                <Button variant="secondary" onClick={loadData}>
-                    Refresh
-                </Button>
             </div>
 
             {/* Trigger Action Modal */}
@@ -598,5 +622,70 @@ function EventsTab({ events }: { events: AxiomEvent[] }) {
                 ))}
             </Tbody>
         </Table>
+    );
+}
+
+function MetricsTab({ metrics }: { metrics: ProjectMetrics | null }) {
+    if (!metrics) {
+        return (
+            <EmptyState>
+                <EmptyStateBody>Loading metrics...</EmptyStateBody>
+            </EmptyState>
+        );
+    }
+
+    return (
+        <Gallery hasGutter minWidths={{ default: "180px" }}>
+            <GalleryItem>
+                <Card isCompact>
+                    <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                            {formatBytes(metrics.diskUsageBytes)}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6a6e73" }}>Disk Usage</div>
+                    </CardBody>
+                </Card>
+            </GalleryItem>
+            <GalleryItem>
+                <Card isCompact>
+                    <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                            ${metrics.totalCostUsd.toFixed(4)}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6a6e73" }}>AI Cost</div>
+                    </CardBody>
+                </Card>
+            </GalleryItem>
+            <GalleryItem>
+                <Card isCompact>
+                    <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                            {metrics.invocationCount}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6a6e73" }}>AI Invocations</div>
+                    </CardBody>
+                </Card>
+            </GalleryItem>
+            <GalleryItem>
+                <Card isCompact>
+                    <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                            {metrics.totalInputTokens.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6a6e73" }}>Input Tokens</div>
+                    </CardBody>
+                </Card>
+            </GalleryItem>
+            <GalleryItem>
+                <Card isCompact>
+                    <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                            {metrics.totalOutputTokens.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6a6e73" }}>Output Tokens</div>
+                    </CardBody>
+                </Card>
+            </GalleryItem>
+        </Gallery>
     );
 }

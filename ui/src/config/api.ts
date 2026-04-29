@@ -482,6 +482,55 @@ export async function fetchThreadEntries(projectId: number): Promise<ThreadEntry
     return response.json();
 }
 
+// ── Metrics ──────────────────────────────────────────────────────
+
+export interface ProjectMetrics {
+    projectId: number;
+    diskUsageBytes: number;
+    totalCostUsd: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    invocationCount: number;
+}
+
+export interface ProjectMetricsSummary {
+    projectId: number;
+    projectName: string;
+    diskUsageBytes: number;
+    costUsd: number;
+    invocationCount: number;
+}
+
+export interface MetricsSummary {
+    totalDiskUsageBytes: number;
+    totalCostUsd: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalInvocations: number;
+    projectCount: number;
+    projects: ProjectMetricsSummary[];
+}
+
+export async function fetchProjectMetrics(projectId: number): Promise<ProjectMetrics> {
+    const response = await fetch(`${API}/projects/${projectId}/metrics`);
+    if (!response.ok) throw new Error(`Failed to fetch project metrics: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchMetricsSummary(): Promise<MetricsSummary> {
+    const response = await fetch(`${API}/metrics/summary`);
+    if (!response.ok) throw new Error(`Failed to fetch metrics summary: ${response.status}`);
+    return response.json();
+}
+
+export function formatBytes(bytes: number): string {
+    if (bytes === 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const value = bytes / Math.pow(1024, i);
+    return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
 // ── AI Usage ─────────────────────────────────────────────────────
 
 export interface AiUsage {

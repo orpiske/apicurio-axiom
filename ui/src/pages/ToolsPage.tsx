@@ -93,7 +93,6 @@ export function ToolsPage() {
                                 <Th>Name</Th>
                                 <Th>Type</Th>
                                 <Th>Description</Th>
-                                <Th>Parameters</Th>
                                 <Th />
                             </Tr>
                         </Thead>
@@ -111,7 +110,6 @@ export function ToolsPage() {
                                         </Label>
                                     </Td>
                                     <Td>{tool.description || "—"}</Td>
-                                    <Td>{tool.parameters?.length || 0} params</Td>
                                     <Td>
                                         <Button variant="plain" onClick={(e) => handleDelete(e, tool.id)}>
                                             <TrashIcon />

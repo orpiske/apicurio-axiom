@@ -42,7 +42,7 @@ import { RepositoriesPage } from "./pages/RepositoriesPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ActionTypeDetailPage } from "./pages/ActionTypeDetailPage";
 import { ToolsPage } from "./pages/ToolsPage";
-import { UsagePage } from "./pages/UsagePage";
+import { MetricsPage } from "./pages/MetricsPage";
 import { ToolDetailPage } from "./pages/ToolDetailPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
@@ -191,8 +191,8 @@ export function App() {
                         <NavItem isActive={location.pathname === "/activity"} onClick={() => navigate("/activity")}>
                             Activity Log
                         </NavItem>
-                        <NavItem isActive={location.pathname === "/usage"} onClick={() => navigate("/usage")}>
-                            AI Usage
+                        <NavItem isActive={location.pathname === "/metrics"} onClick={() => navigate("/metrics")}>
+                            Metrics
                         </NavItem>
                         <NavExpandable title="Configuration" isActive={isConfigActive} isExpanded={isConfigActive}>
                             <NavItem isActive={location.pathname.startsWith("/actors")} onClick={() => navigate("/actors")}>
@@ -305,7 +305,7 @@ export function App() {
                     <Route path="/tools" element={<ToolsPage />} />
                     <Route path="/tools/:toolId" element={<ToolDetailPage />} />
                     <Route path="/activity" element={<ActivityLogPage />} />
-                    <Route path="/usage" element={<UsagePage />} />
+                    <Route path="/metrics" element={<MetricsPage />} />
                     <Route path="/repositories" element={<RepositoriesPage />} />
                 </Routes>
             )}

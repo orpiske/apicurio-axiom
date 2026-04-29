@@ -4,6 +4,7 @@ import io.apicurio.axiom.actors.human.HumanActor;
 import io.apicurio.axiom.api.ProjectsResource;
 import io.apicurio.axiom.api.beans.Event;
 import io.apicurio.axiom.api.beans.NewProject;
+import io.apicurio.axiom.api.beans.ProjectMetrics;
 import io.apicurio.axiom.api.beans.NewTask;
 import io.apicurio.axiom.api.beans.Project;
 import io.apicurio.axiom.api.beans.ProjectSearchResults;
@@ -22,6 +23,7 @@ import io.quarkus.panache.common.Sort;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 
@@ -43,6 +45,9 @@ public class ProjectsResourceImpl implements ProjectsResource {
 
     @Inject
     HumanActor humanActor;
+
+    @Inject
+    EntityManager entityManager;
 
     // ── Projects ──────────────────────────────────────────────────────
 
@@ -212,6 +217,33 @@ public class ProjectsResourceImpl implements ProjectsResource {
                 .stream()
                 .map(this::toThreadEntryBean)
                 .toList();
+    }
+
+    // ── Project Metrics ────────────────────────────────────────────────
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ProjectMetrics getProjectMetrics(long projectId) {
+        ProjectEntity project = findProjectOrThrow(projectId);
+
+        // Aggregate AI usage for this project
+        Object[] aggregates = (Object[]) entityManager.createQuery(
+                "SELECT COUNT(id), COALESCE(SUM(costUsd), 0), "
+                        + "COALESCE(SUM(inputTokens), 0), COALESCE(SUM(outputTokens), 0) "
+                        + "FROM AiUsageEntity WHERE projectId = :pid")
+                .setParameter("pid", projectId)
+                .getSingleResult();
+
+        ProjectMetrics metrics = new ProjectMetrics();
+        metrics.setProjectId(project.id);
+        metrics.setDiskUsageBytes(project.diskUsageBytes != null ? project.diskUsageBytes : 0L);
+        metrics.setInvocationCount(((Number) aggregates[0]).longValue());
+        metrics.setTotalCostUsd(((Number) aggregates[1]).doubleValue());
+        metrics.setTotalInputTokens(((Number) aggregates[2]).longValue());
+        metrics.setTotalOutputTokens(((Number) aggregates[3]).longValue());
+        return metrics;
     }
 
     // ── Project Events ─────────────────────────────────────────────────

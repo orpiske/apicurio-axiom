@@ -19,15 +19,22 @@ import {
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
-import { type AiUsage, type AiUsageSearchResults, fetchUsage } from "../config/api";
+import {
+    type AiUsage,
+    type MetricsSummary,
+    fetchUsage,
+    fetchMetricsSummary,
+    formatBytes,
+} from "../config/api";
 
 const TYPE_COLORS: Record<string, "blue" | "green"> = {
     task: "green",
     manager: "blue",
 };
 
-export function UsagePage() {
+export function MetricsPage() {
     const [records, setRecords] = useState<AiUsage[]>([]);
+    const [summary, setSummary] = useState<MetricsSummary | null>(null);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
@@ -41,6 +48,10 @@ export function UsagePage() {
     const [totalCost, setTotalCost] = useState(0);
     const [totalInputTokens, setTotalInputTokens] = useState(0);
     const [totalOutputTokens, setTotalOutputTokens] = useState(0);
+
+    const loadSummary = useCallback(() => {
+        fetchMetricsSummary().then(setSummary).catch(console.error);
+    }, []);
 
     const loadData = useCallback(() => {
         setLoading(true);
@@ -62,6 +73,7 @@ export function UsagePage() {
     }, [page, perPage, filterActionType, filterInvocationType]);
 
     useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => { loadSummary(); }, [loadSummary]);
 
     const hasActiveFilters = filterActionType || filterInvocationType;
 
@@ -74,7 +86,7 @@ export function UsagePage() {
     return (
         <PageSection>
             <Title headingLevel="h1" size="lg" style={{ marginBottom: "16px" }}>
-                AI Usage
+                Metrics
             </Title>
 
             {/* Summary cards */}
@@ -83,10 +95,22 @@ export function UsagePage() {
                     <Card isCompact>
                         <CardBody style={{ textAlign: "center", padding: "16px" }}>
                             <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                                {summary ? formatBytes(summary.totalDiskUsageBytes) : "—"}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#6a6e73" }}>
+                                Total Disk Usage
+                            </div>
+                        </CardBody>
+                    </Card>
+                </GalleryItem>
+                <GalleryItem>
+                    <Card isCompact>
+                        <CardBody style={{ textAlign: "center", padding: "16px" }}>
+                            <div style={{ fontSize: "24px", fontWeight: "bold" }}>
                                 {totalCount}
                             </div>
                             <div style={{ fontSize: "13px", color: "#6a6e73" }}>
-                                Total Invocations
+                                Total AI Invocations
                             </div>
                         </CardBody>
                     </Card>
@@ -98,7 +122,7 @@ export function UsagePage() {
                                 ${totalCost.toFixed(4)}
                             </div>
                             <div style={{ fontSize: "13px", color: "#6a6e73" }}>
-                                Total Cost
+                                Total AI Cost
                             </div>
                         </CardBody>
                     </Card>
@@ -129,6 +153,10 @@ export function UsagePage() {
                 </GalleryItem>
             </Gallery>
 
+            {/* AI Usage Detail */}
+            <Title headingLevel="h3" size="md" style={{ marginBottom: "8px" }}>
+                AI Usage Detail
+            </Title>
             <Toolbar clearAllFilters={clearFilters}>
                 <ToolbarContent>
                     <ToolbarItem>

@@ -399,8 +399,13 @@ public class TaskExecutionService {
         long pendingTasks = TaskEntity.count(
                 "projectId = ?1 and status = 'Pending'", projectId);
 
+        // Update disk usage for the project workspace
+        ProjectEntity project = ProjectEntity.findById(projectId);
+        if (project != null) {
+            project.diskUsageBytes = workspaceService.computeDiskUsage(project);
+        }
+
         if (activeTasks == 0) {
-            ProjectEntity project = ProjectEntity.findById(projectId);
             if (project != null && "InProgress".equals(project.status)) {
                 project.status = "Idle";
                 project.updatedOn = Instant.now();
