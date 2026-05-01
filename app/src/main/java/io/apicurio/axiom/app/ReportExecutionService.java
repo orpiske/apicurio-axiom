@@ -10,6 +10,7 @@ import io.apicurio.axiom.core.entities.AiUsageEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.ReportEntity;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
+import io.apicurio.axiom.core.services.ToolsetResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -41,6 +42,9 @@ public class ReportExecutionService {
 
     @Inject
     McpConfigGenerator mcpConfigGenerator;
+
+    @Inject
+    ToolsetResolver toolsetResolver;
 
     @ConfigProperty(name = "axiom.claude-code.model")
     Optional<String> model;
@@ -213,10 +217,14 @@ public class ReportExecutionService {
         };
     }
 
+    /**
+     * Resolves the allowed tools for a report definition, expanding any
+     * {@code @ToolsetName} references into their constituent tools.
+     * Falls back to default report tools if none are configured.
+     */
     private List<String> resolveAllowedTools(ReportDefinitionEntity definition) {
         if (definition.allowedTools != null && !definition.allowedTools.isBlank()) {
-            return java.util.Arrays.stream(definition.allowedTools.split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
+            return toolsetResolver.resolve(definition.allowedTools);
         }
         return DEFAULT_REPORT_TOOLS;
     }

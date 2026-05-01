@@ -50,6 +50,8 @@ import { ReportDefinitionsPage } from "./pages/ReportDefinitionsPage";
 import { ReportDefinitionDetailPage } from "./pages/ReportDefinitionDetailPage";
 import { MetricsPage } from "./pages/MetricsPage";
 import { ToolDetailPage } from "./pages/ToolDetailPage";
+import { ToolsetsPage } from "./pages/ToolsetsPage";
+import { ToolsetDetailPage } from "./pages/ToolsetDetailPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
 import { sseClient, type AxiomSseEvent } from "./config/sse";
@@ -62,7 +64,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/mcp-servers", "/repositories", "/report-definitions"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/repositories", "/report-definitions"];
 
 let notificationIdCounter = 0;
 
@@ -213,8 +215,11 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/action-types")} onClick={() => navigate("/action-types")}>
                                 Action Types
                             </NavItem>
-                            <NavItem isActive={location.pathname.startsWith("/tools")} onClick={() => navigate("/tools")}>
+                            <NavItem isActive={location.pathname.startsWith("/tools") && !location.pathname.startsWith("/toolsets")} onClick={() => navigate("/tools")}>
                                 Tools
+                            </NavItem>
+                            <NavItem isActive={location.pathname.startsWith("/toolsets")} onClick={() => navigate("/toolsets")}>
+                                Toolsets
                             </NavItem>
                             <NavItem isActive={location.pathname.startsWith("/mcp-servers")} onClick={() => navigate("/mcp-servers")}>
                                 MCP Servers
@@ -319,6 +324,8 @@ export function App() {
                     <Route path="/action-types/:actionTypeId" element={<ActionTypeDetailPage />} />
                     <Route path="/tools" element={<ToolsPage />} />
                     <Route path="/tools/:toolId" element={<ToolDetailPage />} />
+                    <Route path="/toolsets" element={<ToolsetsPage />} />
+                    <Route path="/toolsets/:toolsetId" element={<ToolsetDetailPage />} />
                     <Route path="/mcp-servers" element={<McpServersPage />} />
                     <Route path="/mcp-servers/:mcpServerId" element={<McpServerDetailPage />} />
                     <Route path="/activity" element={<ActivityLogPage />} />

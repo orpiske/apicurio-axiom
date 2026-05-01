@@ -13,8 +13,6 @@ import {
     FormGroup,
     FormSelect,
     FormSelectOption,
-    InputGroup,
-    InputGroupItem,
     PageSection,
     Tab,
     TabContent,
@@ -26,6 +24,7 @@ import {
 } from "@patternfly/react-core";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, ACTION_TYPE_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
+import { ToolSearchInput } from "../components/ToolSearchInput";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import {
@@ -44,7 +43,6 @@ export function ActionTypeDetailPage() {
         name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true,
     });
     const [tools, setTools] = useState<string[]>([]);
-    const [newTool, setNewTool] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
@@ -82,11 +80,9 @@ export function ActionTypeDetailPage() {
         setDirty(true);
     };
 
-    const addTool = () => {
-        const trimmed = newTool.trim();
-        if (trimmed && !tools.includes(trimmed)) {
-            setTools([...tools, trimmed]);
-            setNewTool("");
+    const addTool = (tool: string) => {
+        if (tool && !tools.includes(tool)) {
+            setTools([...tools, tool]);
             setDirty(true);
         }
     };
@@ -168,8 +164,6 @@ export function ActionTypeDetailPage() {
                     <TabContent id="tools-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "24px" }}>
                         <AllowedToolsTab
                             tools={tools}
-                            newTool={newTool}
-                            setNewTool={setNewTool}
                             addTool={addTool}
                             removeTool={removeTool}
                         />
@@ -238,11 +232,9 @@ function InfoTab({ form, updateForm }: {
     );
 }
 
-function AllowedToolsTab({ tools, newTool, setNewTool, addTool, removeTool }: {
+function AllowedToolsTab({ tools, addTool, removeTool }: {
     tools: string[];
-    newTool: string;
-    setNewTool: (v: string) => void;
-    addTool: () => void;
+    addTool: (tool: string) => void;
     removeTool: (tool: string) => void;
 }) {
     return (
@@ -250,30 +242,14 @@ function AllowedToolsTab({ tools, newTool, setNewTool, addTool, removeTool }: {
             <p style={{ color: "#6a6e73", marginBottom: "16px" }}>
                 Define which tools the AI agent is allowed to use when performing this
                 action type. Use patterns like <code>Bash(git log *)</code> to allow
-                specific shell commands. Tools not in this list will be denied.
+                specific shell commands. Reference a toolset using{" "}
+                <code>@ToolsetName</code> (e.g. <code>@Read-Only Tools</code>) to include
+                all tools from that collection. Tools not in this list will be denied.
             </p>
 
-            <InputGroup style={{ marginBottom: "16px" }}>
-                <InputGroupItem isFill>
-                    <TextInput
-                        id="newTool"
-                        value={newTool}
-                        onChange={(_e, v) => setNewTool(v)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                addTool();
-                            }
-                        }}
-                        placeholder="Type a tool name and press Enter or click Add"
-                    />
-                </InputGroupItem>
-                <InputGroupItem>
-                    <Button variant="control" onClick={addTool} isDisabled={!newTool.trim()}>
-                        Add
-                    </Button>
-                </InputGroupItem>
-            </InputGroup>
+            <div style={{ marginBottom: "16px" }}>
+                <ToolSearchInput onAdd={addTool} existingTools={tools} />
+            </div>
 
             {tools.length === 0 ? (
                 <EmptyState>
@@ -289,12 +265,22 @@ function AllowedToolsTab({ tools, newTool, setNewTool, addTool, removeTool }: {
                             alignItems={{ default: "alignItemsCenter" }}
                             style={{
                                 padding: "8px 12px",
-                                backgroundColor: "var(--pf-t--global--background--color--secondary--default)",
+                                backgroundColor: tool.startsWith("@")
+                                    ? "var(--pf-t--global--background--color--primary--default)"
+                                    : "var(--pf-t--global--background--color--secondary--default)",
                                 borderRadius: "4px",
+                                border: tool.startsWith("@")
+                                    ? "1px solid var(--pf-t--global--border--color--default)"
+                                    : "none",
                             }}
                         >
                             <FlexItem grow={{ default: "grow" }}>
-                                <code style={{ fontSize: "13px" }}>{tool}</code>
+                                <code style={{
+                                    fontSize: "13px",
+                                    color: tool.startsWith("@")
+                                        ? "var(--pf-t--global--color--brand--default)"
+                                        : "inherit",
+                                }}>{tool}</code>
                             </FlexItem>
                             <FlexItem>
                                 <Button

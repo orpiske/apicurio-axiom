@@ -13,6 +13,7 @@ import io.apicurio.axiom.core.entities.ProjectEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
 import io.apicurio.axiom.core.events.SseEvent;
+import io.apicurio.axiom.core.services.ToolsetResolver;
 import io.apicurio.axiom.core.services.WorkspaceService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -44,6 +45,9 @@ public class TaskExecutionService {
 
     @Inject
     WorkspaceService workspaceService;
+
+    @Inject
+    ToolsetResolver toolsetResolver;
 
     @Inject
     Event<SseEvent> sseEvents;
@@ -187,10 +191,7 @@ public class TaskExecutionService {
         if (actionTypeEntity != null
                 && actionTypeEntity.allowedTools != null
                 && !actionTypeEntity.allowedTools.isBlank()) {
-            return java.util.Arrays.stream(actionTypeEntity.allowedTools.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
+            return toolsetResolver.resolve(actionTypeEntity.allowedTools);
         }
         // Fallback: minimal read-only tools
         LOG.warnf("No allowed tools configured for action type '%s', using minimal read-only defaults",

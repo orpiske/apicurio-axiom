@@ -1619,6 +1619,53 @@
         "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
       },
       "parameters": [{ "name": "mcpServerId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+    },
+    "/toolsets": {
+      "get": {
+        "tags": ["Toolsets"],
+        "summary": "List all toolsets",
+        "operationId": "listToolsets",
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Toolset" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Toolsets"],
+        "summary": "Create a new toolset",
+        "operationId": "createToolset",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewToolset" } } }, "required": true },
+        "responses": {
+          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } }
+        }
+      }
+    },
+    "/toolsets/{toolsetId}": {
+      "get": {
+        "tags": ["Toolsets"],
+        "summary": "Get a toolset by ID",
+        "operationId": "getToolset",
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Toolsets"],
+        "summary": "Update a toolset",
+        "operationId": "updateToolset",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewToolset" } } }, "required": true },
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Toolsets"],
+        "summary": "Delete a toolset",
+        "operationId": "deleteToolset",
+        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "parameters": [{ "name": "toolsetId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
     }
   },
   "components": {
@@ -2641,6 +2688,25 @@
           "serverArgs": { "type": "array", "items": { "type": "string" } },
           "serverEnv": { "type": "object", "additionalProperties": { "type": "string" } },
           "serverUrl": { "type": "string" }
+        }
+      },
+      "Toolset": {
+        "required": ["id", "name", "tools"],
+        "type": "object",
+        "properties": {
+          "id": { "format": "int64", "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "NewToolset": {
+        "required": ["name", "tools"],
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
         }
       },
       "ToolAiEditRequest": {

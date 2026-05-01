@@ -449,6 +449,54 @@ export async function fetchActionTypeTools(actionTypeId: number): Promise<ToolDe
     return response.json();
 }
 
+// ── Toolsets ─────────────────────────────────────────────────────
+
+export interface Toolset {
+    id: number;
+    name: string;
+    description?: string;
+    tools: string[];
+}
+
+export type NewToolset = Omit<Toolset, "id">;
+
+export async function fetchToolsets(): Promise<Toolset[]> {
+    const response = await fetch(`${API}/toolsets`);
+    if (!response.ok) throw new Error(`Failed to fetch toolsets: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchToolset(id: number): Promise<Toolset> {
+    const response = await fetch(`${API}/toolsets/${id}`);
+    if (!response.ok) throw new Error(`Failed to fetch toolset: ${response.status}`);
+    return response.json();
+}
+
+export async function createToolset(toolset: NewToolset): Promise<Toolset> {
+    const response = await fetch(`${API}/toolsets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toolset),
+    });
+    if (!response.ok) throw new Error(`Failed to create toolset: ${response.status}`);
+    return response.json();
+}
+
+export async function updateToolset(id: number, toolset: NewToolset): Promise<Toolset> {
+    const response = await fetch(`${API}/toolsets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toolset),
+    });
+    if (!response.ok) throw new Error(`Failed to update toolset: ${response.status}`);
+    return response.json();
+}
+
+export async function deleteToolset(id: number): Promise<void> {
+    const response = await fetch(`${API}/toolsets/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete toolset: ${response.status}`);
+}
+
 // ── Manager Configuration ────────────────────────────────────────
 
 export interface ManagerConfig {

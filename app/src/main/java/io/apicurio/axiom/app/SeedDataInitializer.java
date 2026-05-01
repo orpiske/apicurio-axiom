@@ -8,6 +8,7 @@ import io.apicurio.axiom.core.entities.ManagerConfigEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
+import io.apicurio.axiom.core.entities.ToolsetEntity;
 import io.apicurio.axiom.manager.ManagerPromptBuilder;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -237,8 +238,9 @@ public class SeedDataInitializer {
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
-        // Seed tools, actors, manager config, test repository, and report definitions
+        // Seed tools, toolsets, actors, manager config, test repository, and report definitions
         seedTools();
+        seedToolsets();
         seedActors();
         seedManagerConfig();
         seedRepository();
@@ -329,6 +331,60 @@ public class SeedDataInitializer {
 
     }
 
+    private void seedToolsets() {
+        if (ToolsetEntity.count() > 0) {
+            LOG.info("Toolsets already exist, skipping toolset seed data");
+            return;
+        }
+
+        seedToolset("Read-Only Tools",
+                "Read-only file and git tools for analysis tasks",
+                String.join(",",
+                        "Read", "Glob", "Grep",
+                        "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)",
+                        "Bash(find *)", "Bash(wc *)", "Bash(file *)",
+                        "Bash(git log *)", "Bash(git diff *)", "Bash(git show *)",
+                        "Bash(git status *)", "Bash(git branch *)"));
+
+        seedToolset("Read + MCP Tools",
+                "Read-only tools plus MCP tools for commenting and labeling",
+                String.join(",",
+                        "@Read-Only Tools",
+                        "mcp__axiom-tools__post_github_comment",
+                        "mcp__axiom-tools__list_github_labels",
+                        "mcp__axiom-tools__apply_github_labels"));
+
+        seedToolset("Write Tools",
+                "Full read/write tools plus git and MCP tools for implementation tasks",
+                String.join(",",
+                        "@Read-Only Tools",
+                        "Edit", "Write",
+                        "Bash(git add *)", "Bash(git commit *)", "Bash(git checkout *)",
+                        "Bash(git switch *)", "Bash(git push *)", "Bash(git merge *)",
+                        "Bash(mkdir *)", "Bash(cp *)", "Bash(mv *)",
+                        "mcp__axiom-tools__post_github_comment",
+                        "mcp__axiom-tools__create_github_pr"));
+
+        seedToolset("Report Tools",
+                "Read-only tools plus GitHub CLI and MCP tools for report generation",
+                String.join(",",
+                        "@Read-Only Tools",
+                        "Bash(gh issue *)", "Bash(gh pr *)", "Bash(gh api *)",
+                        "Bash(gh repo *)", "Bash(date *)",
+                        "mcp__axiom-tools__list_github_issues",
+                        "mcp__axiom-tools__list_github_prs"));
+
+        LOG.infof("Seeded %d toolsets", ToolsetEntity.count());
+    }
+
+    private void seedToolset(String name, String description, String tools) {
+        ToolsetEntity entity = new ToolsetEntity();
+        entity.name = name;
+        entity.description = description;
+        entity.tools = tools;
+        entity.persist();
+    }
+
     private void seedActors() {
         if (ActorEntity.count() > 0) {
             LOG.info("Actors already exist, skipping actor seed data");
@@ -385,30 +441,11 @@ public class SeedDataInitializer {
                 repo.owner, repo.name, repo.pollInterval);
     }
 
-    private static final String READ_ONLY_TOOLS = String.join(",",
-            "Read", "Glob", "Grep",
-            "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)",
-            "Bash(find *)", "Bash(wc *)", "Bash(file *)",
-            "Bash(git log *)", "Bash(git diff *)", "Bash(git show *)",
-            "Bash(git status *)", "Bash(git branch *)"
-    );
-
-    private static final String READ_PLUS_MCP_TOOLS = String.join(",",
-            READ_ONLY_TOOLS,
-            "mcp__axiom-tools__post_github_comment",
-            "mcp__axiom-tools__list_github_labels",
-            "mcp__axiom-tools__apply_github_labels"
-    );
-
-    private static final String WRITE_TOOLS = String.join(",",
-            READ_ONLY_TOOLS,
-            "Edit", "Write",
-            "Bash(git add *)", "Bash(git commit *)", "Bash(git checkout *)",
-            "Bash(git switch *)", "Bash(git push *)", "Bash(git merge *)",
-            "Bash(mkdir *)", "Bash(cp *)", "Bash(mv *)",
-            "mcp__axiom-tools__post_github_comment",
-            "mcp__axiom-tools__create_github_pr"
-    );
+    // Action types reference toolsets by name using the @ToolsetName syntax.
+    // At execution time, ToolsetResolver expands these into individual tools.
+    private static final String READ_ONLY_TOOLS = "@Read-Only Tools";
+    private static final String READ_PLUS_MCP_TOOLS = "@Read + MCP Tools";
+    private static final String WRITE_TOOLS = "@Write Tools";
 
     private void seedReportDefinitions() {
         if (ReportDefinitionEntity.count() > 0) {
@@ -418,15 +455,7 @@ public class SeedDataInitializer {
 
         Instant now = Instant.now();
 
-        String reportTools = String.join(",",
-                "Read", "Glob", "Grep",
-                "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)",
-                "Bash(find *)", "Bash(wc *)", "Bash(file *)",
-                "Bash(gh issue *)", "Bash(gh pr *)", "Bash(gh api *)",
-                "Bash(gh repo *)", "Bash(date *)",
-                "mcp__axiom-tools__list_github_issues",
-                "mcp__axiom-tools__list_github_prs"
-        );
+        String reportTools = "@Report Tools";
 
         ReportDefinitionEntity daily = new ReportDefinitionEntity();
         daily.name = "Daily GitHub Activity";
