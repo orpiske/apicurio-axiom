@@ -19,6 +19,7 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
+import { registerPlaceholderCompletions, MANAGER_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import {
@@ -161,6 +162,9 @@ export function ManagerConfigPage() {
                             language={Language.markdown}
                             height="500px"
                             isLineNumbersVisible
+                            onEditorDidMount={(editor, monaco) => {
+                                registerPlaceholderCompletions(editor, monaco, "markdown", MANAGER_PLACEHOLDERS);
+                            }}
                         />
                     </TabContent>
                 </Tab>

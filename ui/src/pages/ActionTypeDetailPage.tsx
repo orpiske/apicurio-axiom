@@ -25,6 +25,7 @@ import {
     Title,
 } from "@patternfly/react-core";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
+import { registerPlaceholderCompletions, ACTION_TYPE_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import {
@@ -333,6 +334,9 @@ function PromptTemplateTab({ value, onChange }: {
                 language={Language.markdown}
                 height="500px"
                 isLineNumbersVisible
+                onEditorDidMount={(editor, monaco) => {
+                    registerPlaceholderCompletions(editor, monaco, "markdown", ACTION_TYPE_PLACEHOLDERS);
+                }}
             />
         </div>
     );
