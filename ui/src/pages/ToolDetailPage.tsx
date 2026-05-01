@@ -34,7 +34,7 @@ import {
     fetchTool,
     updateTool,
 } from "../config/api";
-import { ToolAiPanel } from "../components/ToolAiPanel";
+import { ToolAiModal } from "../components/ToolAiModal";
 
 export function ToolDetailPage() {
     const { toolId } = useParams<{ toolId: string }>();
@@ -47,7 +47,7 @@ export function ToolDetailPage() {
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
-    const [aiPanelOpen, setAiPanelOpen] = useState(false);
+    const [aiModalOpen, setAiModalOpen] = useState(false);
 
     // Warn on browser close/refresh with unsaved changes
     useEffect(() => {
@@ -154,9 +154,9 @@ export function ToolDetailPage() {
                         {saving ? "Saving..." : "Save Changes"}
                     </Button>
                     <Button
-                        variant={aiPanelOpen ? "secondary" : "tertiary"}
+                        variant="tertiary"
                         icon={<MagicIcon />}
-                        onClick={() => setAiPanelOpen(!aiPanelOpen)}
+                        onClick={() => setAiModalOpen(true)}
                         style={{ marginLeft: "8px" }}
                     >
                         AI Assistant
@@ -164,47 +164,43 @@ export function ToolDetailPage() {
                 </FlexItem>
             </Flex>
 
-            <div style={{ display: "flex", gap: "0", minHeight: "500px" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
-                        <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
-                            <TabContent id="info-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                                <InfoTab form={form} updateForm={updateForm} />
-                            </TabContent>
-                        </Tab>
-                        <Tab eventKey={1} title={<TabTitleText>Parameters ({params.length})</TabTitleText>}>
-                            <TabContent id="params-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                                <ParametersTab
-                                    params={params}
-                                    addParam={addParam}
-                                    updateParam={updateParam}
-                                    removeParam={removeParam}
-                                />
-                            </TabContent>
-                        </Tab>
-                        <Tab eventKey={2} title={<TabTitleText>Script Template</TabTitleText>}>
-                            <TabContent id="script-tab" eventKey={2} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                                <ScriptTemplateTab
-                                    value={form.scriptTemplate || ""}
-                                    onChange={(v) => updateForm({ scriptTemplate: v })}
-                                />
-                            </TabContent>
-                        </Tab>
-                    </Tabs>
-                </div>
-                {aiPanelOpen && (
-                    <ToolAiPanel
-                        form={form}
-                        params={params}
-                        onUpdate={(updates, newParams) => {
-                            setForm((prev) => ({ ...prev, ...updates }));
-                            setParams(newParams);
-                            setDirty(true);
-                        }}
-                        onClose={() => setAiPanelOpen(false)}
-                    />
-                )}
-            </div>
+            <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
+                <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
+                    <TabContent id="info-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                        <InfoTab form={form} updateForm={updateForm} />
+                    </TabContent>
+                </Tab>
+                <Tab eventKey={1} title={<TabTitleText>Parameters ({params.length})</TabTitleText>}>
+                    <TabContent id="params-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                        <ParametersTab
+                            params={params}
+                            addParam={addParam}
+                            updateParam={updateParam}
+                            removeParam={removeParam}
+                        />
+                    </TabContent>
+                </Tab>
+                <Tab eventKey={2} title={<TabTitleText>Script Template</TabTitleText>}>
+                    <TabContent id="script-tab" eventKey={2} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                        <ScriptTemplateTab
+                            value={form.scriptTemplate || ""}
+                            onChange={(v) => updateForm({ scriptTemplate: v })}
+                        />
+                    </TabContent>
+                </Tab>
+            </Tabs>
+
+            <ToolAiModal
+                isOpen={aiModalOpen}
+                form={form}
+                params={params}
+                onApply={(updates, newParams) => {
+                    setForm((prev) => ({ ...prev, ...updates }));
+                    setParams(newParams);
+                    setDirty(true);
+                }}
+                onClose={() => setAiModalOpen(false)}
+            />
         </PageSection>
     );
 }
