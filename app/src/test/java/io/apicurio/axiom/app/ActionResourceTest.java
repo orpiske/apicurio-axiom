@@ -49,7 +49,7 @@ class ActionResourceTest {
     }
 
     @Test
-    void testSystemActionType() {
+    void testScriptActionType() {
         int id = given()
             .when()
                 .get(ACTION_TYPES_PATH)
@@ -63,8 +63,8 @@ class ActionResourceTest {
             .then()
                 .statusCode(200)
                 .body("name", equalTo("close-project"))
-                .body("executionMode", equalTo("system"))
-                .body("userTriggerable", equalTo(false))
+                .body("executionMode", equalTo("script"))
+                .body("userTriggerable", equalTo(true))
                 .body("emitsEvent", equalTo(false));
     }
 
@@ -109,7 +109,7 @@ class ActionResourceTest {
                 {
                     "name": "updated-action",
                     "description": "Updated description",
-                    "executionMode": "system",
+                    "executionMode": "script",
                     "emitsEvent": true
                 }
                 """)
@@ -119,7 +119,7 @@ class ActionResourceTest {
                 .statusCode(200)
                 .body("name", equalTo("updated-action"))
                 .body("description", equalTo("Updated description"))
-                .body("executionMode", equalTo("system"))
+                .body("executionMode", equalTo("script"))
                 .body("emitsEvent", equalTo(true));
     }
 

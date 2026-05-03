@@ -154,7 +154,7 @@ public final class ManagerPromptBuilder {
         return "{\"type\":\"object\",\"required\":[\"decisions\"],\"properties\":{\"decisions\":"
                 + "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"decision\","
                 + "\"confidence\",\"reasoning\"],\"properties\":{\"decision\":{\"type\":\"string\","
-                + "\"enum\":[\"create_task\",\"ignore\",\"system_action\",\"escalate\"]},"
+                + "\"enum\":[\"create_task\",\"ignore\",\"script_action\",\"escalate\"]},"
                 + "\"actionType\":{\"type\":\"string\"},\"actorHint\":{\"type\":\"string\"},"
                 + "\"inputContext\":{\"type\":\"string\"},\"confidence\":{\"type\":\"number\","
                 + "\"minimum\":0,\"maximum\":1},\"reasoning\":{\"type\":\"string\"}}}}}}";
@@ -169,8 +169,8 @@ public final class ManagerPromptBuilder {
             it and decide what actions (if any) should be taken.
 
             For each decision, specify:
-            - **decision**: One of: create_task, ignore, system_action, escalate
-            - **actionType**: The action to perform (required for create_task and system_action)
+            - **decision**: One of: create_task, ignore, script_action, escalate
+            - **actionType**: The action to perform (required for create_task and script_action)
             - **actorHint**: (Optional) preferred actor name
             - **inputContext**: Instructions or context for the actor performing the task
             - **confidence**: 0.0 to 1.0 indicating your confidence
@@ -181,7 +181,7 @@ public final class ManagerPromptBuilder {
             - Use "ignore" for events that don't require action (bot comments, trivial edits)
             - Use "escalate" when you're unsure what to do
             - Set a low confidence score if you're uncertain
-            - System actions are: "close-project", "reopen-project"
+            - Script actions run a predefined script (e.g. "close-project", "reopen-project")
             """;
 
     /**

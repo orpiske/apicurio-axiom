@@ -55,6 +55,9 @@ public class TaskExecutionService {
     @Inject
     McpConfigGenerator mcpConfigGenerator;
 
+    @Inject
+    ScriptExecutionService scriptExecutionService;
+
     @ConfigProperty(name = "axiom.github.token")
     Optional<String> githubToken;
 
@@ -91,6 +94,13 @@ public class TaskExecutionService {
      * @param task the task to execute
      */
     public void executeTask(TaskEntity task) {
+        // Check if this is a script action type
+        ActionTypeEntity actionTypeEntity = ActionTypeEntity.find("name", task.actionType).firstResult();
+        if (actionTypeEntity != null && "script".equals(actionTypeEntity.executionMode)) {
+            scriptExecutionService.executeScript(task);
+            return;
+        }
+
         // Find the actor implementation
         Actor actor = resolveActor(task);
         if (actor == null) {
@@ -112,7 +122,6 @@ public class TaskExecutionService {
 
         // Build the actor context
         ProjectEntity project = ProjectEntity.findById(task.projectId);
-        ActionTypeEntity actionTypeEntity = ActionTypeEntity.find("name", task.actionType).firstResult();
         Path workspace = workspaceService.getWorkspacePath(project);
         Map<String, String> env = buildEnvironment();
 

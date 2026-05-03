@@ -17,7 +17,7 @@ class ManagerDecisionTest {
 
         assertTrue(decision.isCreateTask());
         assertFalse(decision.isIgnore());
-        assertFalse(decision.isSystemAction());
+        assertFalse(decision.isScriptAction());
         assertFalse(decision.isEscalate());
         assertEquals("analyze", decision.actionType());
         assertEquals("claude-agent", decision.actorHint());
@@ -35,11 +35,11 @@ class ManagerDecisionTest {
     }
 
     @Test
-    void testSystemActionDecision() {
+    void testScriptActionDecision() {
         ManagerDecision decision = new ManagerDecision(
-                "system_action", "close-project", null, null, 0.85, "Issue closed");
+                "script_action", "close-project", null, null, 0.85, "Issue closed");
 
-        assertTrue(decision.isSystemAction());
+        assertTrue(decision.isScriptAction());
         assertEquals("close-project", decision.actionType());
     }
 

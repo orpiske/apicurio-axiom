@@ -174,7 +174,7 @@ class PipelineOrchestratorTest {
 
     @Test
     @Transactional
-    void testCloseProjectSystemAction() {
+    void testCloseProjectScriptAction() {
         ProjectEntity project = createProject("TestOrg/pipeline-test#20", "TestOrg/pipeline-test");
         project.status = "Idle";
 
@@ -184,22 +184,22 @@ class PipelineOrchestratorTest {
                 "{\"action\":\"closed\"}");
 
         ManagerDecision decision = new ManagerDecision(
-                "system_action", "close-project", null, null, 0.9, "Issue closed");
+                "script_action", "close-project", null, null, 0.9, "Issue closed");
         when(managerService.evaluate(any())).thenReturn(List.of(decision));
 
         orchestrator.processEvent(queueEntry);
 
-        ProjectEntity updated = ProjectEntity.findById(project.id);
-        assertEquals("Completed", updated.status);
+        // Script actions create a task rather than changing status directly
+        List<TaskEntity> tasks = TaskEntity.list("projectId", project.id);
+        assertTrue(tasks.stream().anyMatch(t -> "close-project".equals(t.actionType)));
 
-        // Activity log should record the close
-        List<ActivityLogEntity> logs = ActivityLogEntity.list("entryType", "project-closed");
+        List<ActivityLogEntity> logs = ActivityLogEntity.list("entryType", "task-created");
         assertTrue(logs.stream().anyMatch(l -> l.projectId.equals(project.id)));
     }
 
     @Test
     @Transactional
-    void testReopenProjectSystemAction() {
+    void testReopenProjectScriptAction() {
         ProjectEntity project = createProject("TestOrg/pipeline-test#21", "TestOrg/pipeline-test");
         project.status = "Completed";
 
@@ -209,13 +209,13 @@ class PipelineOrchestratorTest {
                 "{\"action\":\"reopened\"}");
 
         ManagerDecision decision = new ManagerDecision(
-                "system_action", "reopen-project", null, null, 0.85, "Issue reopened");
+                "script_action", "reopen-project", null, null, 0.85, "Issue reopened");
         when(managerService.evaluate(any())).thenReturn(List.of(decision));
 
         orchestrator.processEvent(queueEntry);
 
-        ProjectEntity updated = ProjectEntity.findById(project.id);
-        assertEquals("InProgress", updated.status);
+        List<TaskEntity> tasks = TaskEntity.list("projectId", project.id);
+        assertTrue(tasks.stream().anyMatch(t -> "reopen-project".equals(t.actionType)));
     }
 
     // ── Escalation ────────────────────────────────────────────────────

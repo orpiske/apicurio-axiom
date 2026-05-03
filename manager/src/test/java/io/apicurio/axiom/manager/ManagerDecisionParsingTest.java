@@ -105,12 +105,12 @@ class ManagerDecisionParsingTest {
     }
 
     @Test
-    void testParseSystemAction() {
+    void testParseScriptAction() {
         String json = """
                 {
                     "decisions": [
                         {
-                            "decision": "system_action",
+                            "decision": "script_action",
                             "actionType": "close-project",
                             "confidence": 0.85,
                             "reasoning": "Issue has been closed"
@@ -122,7 +122,7 @@ class ManagerDecisionParsingTest {
         List<ManagerDecision> decisions = service.parseDecisions(json);
 
         assertEquals(1, decisions.size());
-        assertTrue(decisions.getFirst().isSystemAction());
+        assertTrue(decisions.getFirst().isScriptAction());
         assertEquals("close-project", decisions.getFirst().actionType());
     }
 

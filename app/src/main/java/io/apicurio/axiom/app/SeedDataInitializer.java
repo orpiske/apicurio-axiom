@@ -225,16 +225,28 @@ public class SeedDataInitializer {
                 """);
 
         seedActionType("close-project",
-                "Mark the project as completed. Use this system action when an "
+                "Mark the project as completed. Use this script action when an "
                         + "issue-closed event is received, indicating the issue has "
                         + "been resolved and the project should be marked as done.",
-                "system", false, false, null, null);
+                "script", true, false, null, null,
+                """
+                #!/bin/bash
+                curl -s -X PUT "{{apiBaseUrl}}/projects/{{projectId}}" \
+                  -H "Content-Type: application/json" \
+                  -d '{"status": "Completed"}'
+                """);
 
         seedActionType("reopen-project",
-                "Re-open a completed project. Use this system action when an "
+                "Re-open a completed project. Use this script action when an "
                         + "issue-reopened event is received, indicating the issue "
                         + "needs further attention after being previously closed.",
-                "system", false, false, null, null);
+                "script", true, false, null, null,
+                """
+                #!/bin/bash
+                curl -s -X PUT "{{apiBaseUrl}}/projects/{{projectId}}" \
+                  -H "Content-Type: application/json" \
+                  -d '{"status": "InProgress"}'
+                """);
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
@@ -545,6 +557,13 @@ public class SeedDataInitializer {
     private void seedActionType(String name, String description, String executionMode,
                                 boolean userTriggerable, boolean emitsEvent, String allowedTools,
                                 String promptTemplate) {
+        seedActionType(name, description, executionMode, userTriggerable, emitsEvent,
+                allowedTools, promptTemplate, null);
+    }
+
+    private void seedActionType(String name, String description, String executionMode,
+                                boolean userTriggerable, boolean emitsEvent, String allowedTools,
+                                String promptTemplate, String scriptTemplate) {
         ActionTypeEntity entity = new ActionTypeEntity();
         entity.name = name;
         entity.description = description;
@@ -553,6 +572,7 @@ public class SeedDataInitializer {
         entity.emitsEvent = emitsEvent;
         entity.allowedTools = allowedTools;
         entity.promptTemplate = promptTemplate;
+        entity.scriptTemplate = scriptTemplate;
         entity.persist();
     }
 }

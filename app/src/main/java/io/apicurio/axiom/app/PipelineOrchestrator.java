@@ -51,6 +51,9 @@ public class PipelineOrchestrator {
     @Inject
     Event<SseEvent> sseEvents;
 
+    @Inject
+    ScriptExecutionService scriptExecutionService;
+
     /**
      * Polls the event queue every 5 seconds and processes one pending event at a time.
      * Events are processed sequentially to avoid race conditions in the Manager.
@@ -129,8 +132,8 @@ public class PipelineOrchestrator {
             handleCreateTask(event, decision);
         } else if (decision.isIgnore()) {
             handleIgnore(event, decision);
-        } else if (decision.isSystemAction()) {
-            handleSystemAction(event, decision);
+        } else if (decision.isScriptAction()) {
+            handleScriptAction(event, decision);
         } else if (decision.isEscalate()) {
             handleEscalation(event, decision, decision.reasoning());
         } else {
@@ -179,38 +182,36 @@ public class PipelineOrchestrator {
                 "Event ignored: " + event.eventType + " — " + decision.reasoning());
     }
 
-    private void handleSystemAction(EventEntity event, ManagerDecision decision) {
-        ProjectEntity project = findProjectForEvent(event);
-        if (project == null) {
-            LOG.warnf("Cannot execute system action %s: no project for event %d",
-                    decision.actionType(), event.id);
-            return;
-        }
+    private void handleScriptAction(EventEntity event, ManagerDecision decision) {
+        ProjectEntity project = findOrCreateProject(event);
 
-        String actionType = decision.actionType();
-        LOG.infof("Executing system action %s on project %d", actionType, project.id);
+        TaskEntity task = new TaskEntity();
+        task.projectId = project.id;
+        task.eventId = event.id;
+        task.actionType = decision.actionType();
+        task.createdBy = "manager";
+        task.status = "Pending";
+        task.input = decision.inputContext();
+        task.createdOn = Instant.now();
+        task.persist();
 
-        if ("close-project".equals(actionType)) {
-            project.status = ProjectStatus.Completed.name();
-            project.updatedOn = Instant.now();
-            logActivity(project.id, null, event.id, "project-closed",
-                    "Project closed — " + decision.reasoning());
-            addThreadEntry(project.id, "system", "message",
-                    "Project closed: " + decision.reasoning());
-            sseEvents.fire(SseEvent.projectUpdated(project.id));
-            sseEvents.fire(SseEvent.notification("Project closed: " + project.name, "info"));
-        } else if ("reopen-project".equals(actionType)) {
-            project.status = ProjectStatus.InProgress.name();
-            project.updatedOn = Instant.now();
-            logActivity(project.id, null, event.id, "project-reopened",
-                    "Project reopened — " + decision.reasoning());
-            addThreadEntry(project.id, "system", "message",
-                    "Project reopened: " + decision.reasoning());
-            sseEvents.fire(SseEvent.projectUpdated(project.id));
-            sseEvents.fire(SseEvent.notification("Project reopened: " + project.name, "info"));
-        } else {
-            LOG.warnf("Unknown system action: %s", actionType);
-        }
+        LOG.infof("Created script task %d (%s) for project %d from event %d",
+                task.id, task.actionType, project.id, event.id);
+
+        event.projectId = project.id;
+
+        logActivity(project.id, task.id, event.id, "task-created",
+                "Manager created script task: " + task.actionType
+                        + " — " + decision.reasoning());
+        addThreadEntry(project.id, "manager", "decision",
+                "Script action: " + task.actionType
+                        + "\n\nReasoning: " + decision.reasoning());
+
+        sseEvents.fire(SseEvent.taskUpdated(project.id, task.id, "Pending"));
+        sseEvents.fire(SseEvent.projectUpdated(project.id));
+        sseEvents.fire(SseEvent.threadEntry(project.id));
+
+        scriptExecutionService.executeScript(task);
     }
 
     private void handleEscalation(EventEntity event, ManagerDecision decision, String reason) {

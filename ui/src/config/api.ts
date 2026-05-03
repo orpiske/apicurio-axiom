@@ -213,6 +213,7 @@ export interface ActionType {
     inputSchema?: string;
     allowedTools?: string[];
     promptTemplate?: string;
+    scriptTemplate?: string;
     emitsEvent: boolean;
 }
 

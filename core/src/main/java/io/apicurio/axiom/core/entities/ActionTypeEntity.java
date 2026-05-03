@@ -33,6 +33,13 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "prompt_template", columnDefinition = "TEXT")
     public String promptTemplate;
 
+    /**
+     * Bash script template for script-mode action types.
+     * Supports placeholders like {{projectId}}, {{apiBaseUrl}}, etc.
+     */
+    @Column(name = "script_template", columnDefinition = "TEXT")
+    public String scriptTemplate;
+
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;
 }

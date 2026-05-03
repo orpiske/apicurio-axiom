@@ -83,6 +83,7 @@ public class ActionResourceImpl implements ActionResource {
         entity.allowedTools = data.getAllowedTools() != null
                 ? String.join(", ", data.getAllowedTools()) : null;
         entity.promptTemplate = data.getPromptTemplate();
+        entity.scriptTemplate = data.getScriptTemplate();
         entity.emitsEvent = data.getEmitsEvent() != null ? data.getEmitsEvent() : false;
     }
 
@@ -107,6 +108,7 @@ public class ActionResourceImpl implements ActionResource {
                     .map(String::trim).filter(s -> !s.isEmpty()).toList());
         }
         actionType.setPromptTemplate(entity.promptTemplate);
+        actionType.setScriptTemplate(entity.scriptTemplate);
         actionType.setEmitsEvent(entity.emitsEvent);
         return actionType;
     }

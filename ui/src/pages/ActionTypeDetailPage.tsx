@@ -63,6 +63,7 @@ export function ActionTypeDetailPage() {
                     inputSchema: at.inputSchema,
                     allowedTools: at.allowedTools,
                     promptTemplate: at.promptTemplate,
+                    scriptTemplate: at.scriptTemplate,
                 });
                 setTools(at.allowedTools || []);
                 setDirty(false);
@@ -160,23 +161,37 @@ export function ActionTypeDetailPage() {
                         <InfoTab form={form} updateForm={updateForm} />
                     </TabContent>
                 </Tab>
-                <Tab eventKey={1} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
-                    <TabContent id="tools-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                        <AllowedToolsTab
-                            tools={tools}
-                            addTool={addTool}
-                            removeTool={removeTool}
-                        />
-                    </TabContent>
-                </Tab>
-                <Tab eventKey={2} title={<TabTitleText>Prompt Template</TabTitleText>}>
-                    <TabContent id="prompt-tab" eventKey={2} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                        <PromptTemplateTab
-                            value={form.promptTemplate || ""}
-                            onChange={(v) => updateForm({ promptTemplate: v })}
-                        />
-                    </TabContent>
-                </Tab>
+                {form.executionMode === "actor" && (
+                    <Tab eventKey={1} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
+                        <TabContent id="tools-tab" eventKey={1} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                            <AllowedToolsTab
+                                tools={tools}
+                                addTool={addTool}
+                                removeTool={removeTool}
+                            />
+                        </TabContent>
+                    </Tab>
+                )}
+                {form.executionMode === "actor" && (
+                    <Tab eventKey={2} title={<TabTitleText>Prompt Template</TabTitleText>}>
+                        <TabContent id="prompt-tab" eventKey={2} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                            <PromptTemplateTab
+                                value={form.promptTemplate || ""}
+                                onChange={(v) => updateForm({ promptTemplate: v })}
+                            />
+                        </TabContent>
+                    </Tab>
+                )}
+                {form.executionMode === "script" && (
+                    <Tab eventKey={3} title={<TabTitleText>Script</TabTitleText>}>
+                        <TabContent id="script-tab" eventKey={3} activeKey={activeTab} style={{ marginTop: "24px" }}>
+                            <ScriptTab
+                                value={form.scriptTemplate || ""}
+                                onChange={(v) => updateForm({ scriptTemplate: v })}
+                            />
+                        </TabContent>
+                    </Tab>
+                )}
             </Tabs>
         </PageSection>
     );
@@ -211,7 +226,7 @@ function InfoTab({ form, updateForm }: {
                     onChange={(_e, v) => updateForm({ executionMode: v })}
                 >
                     <FormSelectOption value="actor" label="Actor — executed by an AI agent or human" />
-                    <FormSelectOption value="system" label="System — executed directly by the application" />
+                    <FormSelectOption value="script" label="Script — executes a bash script" />
                 </FormSelect>
             </FormGroup>
             <FormGroup fieldId="flags">
@@ -323,6 +338,35 @@ function PromptTemplateTab({ value, onChange }: {
                 onEditorDidMount={(editor, monaco) => {
                     registerPlaceholderCompletions(editor, monaco, "markdown", ACTION_TYPE_PLACEHOLDERS);
                 }}
+            />
+        </div>
+    );
+}
+
+function ScriptTab({ value, onChange }: {
+    value: string;
+    onChange: (v: string) => void;
+}) {
+    return (
+        <div>
+            <p style={{ color: "#6a6e73", marginBottom: "16px" }}>
+                A bash script that runs when this action type is triggered.
+                Supports placeholders:{" "}
+                <code>{"{{projectId}}"}</code>,{" "}
+                <code>{"{{eventId}}"}</code>,{" "}
+                <code>{"{{taskId}}"}</code>,{" "}
+                <code>{"{{issueRef}}"}</code>,{" "}
+                <code>{"{{repository}}"}</code>,{" "}
+                <code>{"{{projectName}}"}</code>,{" "}
+                <code>{"{{managerInput}}"}</code>,{" "}
+                <code>{"{{apiBaseUrl}}"}</code>
+            </p>
+            <CodeEditor
+                code={value}
+                onCodeChange={(v) => onChange(v)}
+                language={Language.shellscript}
+                height="500px"
+                isLineNumbersVisible
             />
         </div>
     );

@@ -24,7 +24,7 @@ class ManagerPromptBuilderTest {
         assertTrue(prompt.contains("Axiom Manager"));
         assertTrue(prompt.contains("create_task"));
         assertTrue(prompt.contains("ignore"));
-        assertTrue(prompt.contains("system_action"));
+        assertTrue(prompt.contains("script_action"));
         assertTrue(prompt.contains("escalate"));
     }
 

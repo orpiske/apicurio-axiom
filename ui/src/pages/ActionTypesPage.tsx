@@ -97,7 +97,7 @@ export function ActionTypesPage() {
                                 <Th>User Triggerable</Th>
                                 <Th>Emits Event</Th>
                                 <Th>Tools</Th>
-                                <Th>Prompt Template</Th>
+                                <Th>Template</Th>
                                 <Th />
                             </Tr>
                         </Thead>
@@ -110,14 +110,16 @@ export function ActionTypesPage() {
                                 >
                                     <Td>{at.name}</Td>
                                     <Td>
-                                        <Label isCompact color={at.executionMode === "actor" ? "blue" : "grey"}>
+                                        <Label isCompact color={at.executionMode === "actor" ? "blue" : "orange"}>
                                             {at.executionMode}
                                         </Label>
                                     </Td>
                                     <Td>{at.userTriggerable ? "Yes" : "No"}</Td>
                                     <Td>{at.emitsEvent ? "Yes" : "No"}</Td>
-                                    <Td>{at.allowedTools?.length || 0} tools</Td>
-                                    <Td>{at.promptTemplate ? "Configured" : "—"}</Td>
+                                    <Td>{at.executionMode === "actor" ? `${at.allowedTools?.length || 0} tools` : "—"}</Td>
+                                    <Td>{at.executionMode === "actor"
+                                        ? (at.promptTemplate ? "Configured" : "—")
+                                        : (at.scriptTemplate ? "Configured" : "—")}</Td>
                                     <Td>
                                         <Button variant="plain" onClick={(e) => handleDelete(e, at.id)}>
                                             <TrashIcon />
@@ -155,8 +157,8 @@ export function ActionTypesPage() {
                                 value={newMode}
                                 onChange={(_e, v) => setNewMode(v)}
                             >
-                                <FormSelectOption value="actor" label="Actor" />
-                                <FormSelectOption value="system" label="System" />
+                                <FormSelectOption value="actor" label="Actor — AI agent or human" />
+                                <FormSelectOption value="script" label="Script — bash script" />
                             </FormSelect>
                         </FormGroup>
                     </Form>

@@ -6,13 +6,13 @@ package io.apicurio.axiom.manager;
  */
 public record ManagerDecision(
         /**
-         * The type of decision: "create_task", "ignore", "system_action", "escalate"
+         * The type of decision: "create_task", "ignore", "script_action", "escalate"
          */
         String decision,
 
         /**
-         * The action type for the task (for create_task decisions), or the system
-         * action name (for system_action decisions). Null for ignore/escalate.
+         * The action type name for create_task and script_action decisions.
+         * Null for ignore/escalate.
          */
         String actionType,
 
@@ -52,10 +52,10 @@ public record ManagerDecision(
     }
 
     /**
-     * @return true if this is a system action decision
+     * @return true if this is a script action decision
      */
-    public boolean isSystemAction() {
-        return "system_action".equals(decision);
+    public boolean isScriptAction() {
+        return "script_action".equals(decision);
     }
 
     /**
