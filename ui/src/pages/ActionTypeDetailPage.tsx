@@ -25,7 +25,9 @@ import {
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, ACTION_TYPE_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import { ToolSearchInput } from "../components/ToolSearchInput";
+import { ScriptAiModal } from "../components/ScriptAiModal";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
+import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import {
     type ActionType,
@@ -47,6 +49,7 @@ export function ActionTypeDetailPage() {
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
+    const [aiModalOpen, setAiModalOpen] = useState(false);
 
     const loadData = useCallback(() => {
         if (!id) return;
@@ -143,6 +146,13 @@ export function ActionTypeDetailPage() {
                     </Title>
                 </FlexItem>
                 <FlexItem>
+                    {form.executionMode === "script" && (
+                        <Button variant="secondary" icon={<MagicIcon />}
+                            onClick={() => setAiModalOpen(true)}
+                            style={{ marginRight: "8px" }}>
+                            AI Assistant
+                        </Button>
+                    )}
                     <Button
                         variant="primary"
                         icon={<SaveIcon />}
@@ -193,6 +203,17 @@ export function ActionTypeDetailPage() {
                     </Tab>
                 )}
             </Tabs>
+
+            <ScriptAiModal
+                isOpen={aiModalOpen}
+                script={form.scriptTemplate || ""}
+                actionTypeName={form.name}
+                actionTypeDescription={form.description}
+                onApply={(script) => {
+                    updateForm({ scriptTemplate: script });
+                }}
+                onClose={() => setAiModalOpen(false)}
+            />
         </PageSection>
     );
 }
@@ -364,7 +385,7 @@ function ScriptTab({ value, onChange }: {
             <CodeEditor
                 code={value}
                 onCodeChange={(v) => onChange(v)}
-                language={Language.shellscript}
+                language={Language.shell}
                 height="500px"
                 isLineNumbersVisible
             />

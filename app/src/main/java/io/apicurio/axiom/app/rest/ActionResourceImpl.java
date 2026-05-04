@@ -3,11 +3,15 @@ package io.apicurio.axiom.app.rest;
 import io.apicurio.axiom.api.ActionResource;
 import io.apicurio.axiom.api.beans.ActionType;
 import io.apicurio.axiom.api.beans.NewActionType;
+import io.apicurio.axiom.api.beans.ScriptAiEditRequest;
+import io.apicurio.axiom.api.beans.ScriptAiEditResponse;
+import io.apicurio.axiom.app.ScriptAiService;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -21,6 +25,9 @@ import java.util.List;
 @ApplicationScoped
 @RunOnVirtualThread
 public class ActionResourceImpl implements ActionResource {
+
+    @Inject
+    ScriptAiService scriptAiService;
 
     /**
      * {@inheritDoc}
@@ -111,6 +118,14 @@ public class ActionResourceImpl implements ActionResource {
         actionType.setScriptTemplate(entity.scriptTemplate);
         actionType.setEmitsEvent(entity.emitsEvent);
         return actionType;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ScriptAiEditResponse aiEditScript(ScriptAiEditRequest data) {
+        return scriptAiService.editScript(data);
     }
 
     // ── Action Type Tool Associations (deprecated — use allowedTools) ──

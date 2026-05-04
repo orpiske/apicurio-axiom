@@ -1602,6 +1602,23 @@
         }
       ]
     },
+    "/action-types/ai-edit-script": {
+      "post": {
+        "tags": ["ActionTypes"],
+        "summary": "AI-assisted script editing",
+        "description": "Invokes Claude Code to generate or update a script template for a script-mode action type.",
+        "operationId": "aiEditScript",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScriptAiEditRequest" } } },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScriptAiEditResponse" } } }
+          }
+        }
+      }
+    },
     "/mcp-servers": {
       "get": {
         "tags": ["McpServers"],
@@ -2747,6 +2764,23 @@
           "name": { "type": "string" },
           "description": { "type": "string" },
           "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ScriptAiEditRequest": {
+        "required": ["message"],
+        "type": "object",
+        "properties": {
+          "message": { "description": "The user's instruction for creating or modifying the script", "type": "string" },
+          "currentScript": { "description": "The current script template, if any", "type": "string" },
+          "actionTypeName": { "description": "The action type name for context", "type": "string" },
+          "actionTypeDescription": { "description": "The action type description for context", "type": "string" }
+        }
+      },
+      "ScriptAiEditResponse": {
+        "type": "object",
+        "properties": {
+          "script": { "description": "The generated or updated bash script template", "type": "string" },
+          "explanation": { "description": "AI's explanation of what was generated or changed", "type": "string" }
         }
       },
       "ToolAiEditRequest": {

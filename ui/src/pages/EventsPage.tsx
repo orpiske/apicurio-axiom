@@ -179,6 +179,7 @@ export function EventsPage() {
                     <Table aria-label="Events" variant="compact">
                         <Thead>
                             <Tr>
+                                <Th>#</Th>
                                 <Th>Time</Th>
                                 <Th>Source</Th>
                                 <Th>Event Type</Th>
@@ -191,6 +192,7 @@ export function EventsPage() {
                             {events.map((event) => (
                                 <Tr key={event.id} isClickable
                                     onRowClick={() => setSelectedEvent(event)}>
+                                    <Td>{event.id}</Td>
                                     <Td style={{ whiteSpace: "nowrap" }}>
                                         {new Date(event.receivedAt).toLocaleString()}
                                     </Td>
