@@ -115,6 +115,12 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
     return response.json();
 }
 
+export async function fetchModels(): Promise<string[]> {
+    const response = await fetch(`${API}/system/models`);
+    if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);
+    return response.json();
+}
+
 // ── Projects ──────────────────────────────────────────────────────
 
 export async function fetchProjects(
@@ -214,6 +220,7 @@ export interface ActionType {
     allowedTools?: string[];
     promptTemplate?: string;
     scriptTemplate?: string;
+    model?: string;
     emitsEvent: boolean;
 }
 

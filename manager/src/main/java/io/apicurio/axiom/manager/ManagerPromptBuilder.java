@@ -113,7 +113,7 @@ public final class ManagerPromptBuilder {
                 sb.append("\n");
             }
         } else {
-            sb.append("No existing project for this issue.\n");
+            sb.append("There is no existing Axiom project for this issue (yet).\n");
         }
         return sb.toString();
     }

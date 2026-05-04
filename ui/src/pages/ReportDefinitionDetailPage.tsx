@@ -23,12 +23,12 @@ import {
     Tabs,
     TextArea,
     TextInput,
-    Title,
+    Title, Alert,
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, REPORT_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
-import { ToolSearchInput } from "../components/ToolSearchInput";
+import { AddToolInput } from "../components/AddToolInput";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import PlayIcon from "@patternfly/react-icons/dist/esm/icons/play-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
@@ -313,15 +313,11 @@ function AllowedToolsTab({ tools, addTool, removeTool }: {
             </p>
 
             <div style={{ marginBottom: "16px" }}>
-                <ToolSearchInput onAdd={addTool} existingTools={tools} />
+                <AddToolInput onAdd={addTool} existingTools={tools} />
             </div>
 
             {tools.length === 0 ? (
-                <EmptyState variant="xs">
-                    <EmptyStateBody>
-                        No tools configured. A default set of read-only tools will be used.
-                    </EmptyStateBody>
-                </EmptyState>
+                <Alert variant="info" title="No tools configured. A default set of read-only tools will be used." ouiaId="InfoAlert" />
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     {tools.map((tool) => (
@@ -397,11 +393,7 @@ function RepositoriesTab({ repos, addRepo, removeRepo }: {
             </InputGroup>
 
             {repos.length === 0 ? (
-                <EmptyState variant="xs">
-                    <EmptyStateBody>
-                        No repositories specified — the report will cover all monitored repositories.
-                    </EmptyStateBody>
-                </EmptyState>
+                <Alert variant="info" title="No repositories specified — the report will cover all monitored repositories." ouiaId="InfoAlert" />
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     {repos.map((repo) => (

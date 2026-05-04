@@ -101,14 +101,15 @@ public class WorkspaceService {
             return 0;
         }
         try {
-            // Use du -sb for accurate disk usage (matches what the OS reports)
-            ProcessBuilder pb = new ProcessBuilder("du", "-sb", workspace.toAbsolutePath().toString());
+            // Use du -s --block-size=1 for disk-allocated size in bytes
+            ProcessBuilder pb = new ProcessBuilder("du", "-s", "--block-size=1",
+                    workspace.toAbsolutePath().toString());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             String output = new String(process.getInputStream().readAllBytes()).trim();
             boolean completed = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
             if (completed && process.exitValue() == 0 && !output.isEmpty()) {
-                // du -sb outputs: <bytes>\t<path>
+                // du -s --block-size=1 outputs: <bytes>\t<path>
                 return Long.parseLong(output.split("\\s+")[0]);
             }
         } catch (Exception e) {

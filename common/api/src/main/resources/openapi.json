@@ -59,6 +59,23 @@
         }
       }
     },
+    "/system/models": {
+      "get": {
+        "tags": ["System"],
+        "summary": "List available AI models",
+        "description": "Returns the list of AI models that can be used for action type configuration.",
+        "operationId": "listModels",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects": {
       "get": {
         "tags": [
@@ -2144,6 +2161,10 @@
           "scriptTemplate": {
             "description": "Bash script template for script-mode action types. Supports placeholders: {{projectId}}, {{eventId}}, {{taskId}}, {{issueRef}}, {{repository}}, {{projectName}}, {{managerInput}}, {{apiBaseUrl}}",
             "type": "string"
+          },
+          "model": {
+            "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
+            "type": "string"
           }
         }
       },
@@ -2189,6 +2210,10 @@
           },
           "scriptTemplate": {
             "description": "Bash script template for script-mode action types. Supports placeholders: {{projectId}}, {{eventId}}, {{taskId}}, {{issueRef}}, {{repository}}, {{projectName}}, {{managerInput}}, {{apiBaseUrl}}",
+            "type": "string"
+          },
+          "model": {
+            "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
             "type": "string"
           }
         }

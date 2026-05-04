@@ -15,7 +15,7 @@ import {
     TextInput,
     Title,
 } from "@patternfly/react-core";
-import { ToolSearchInput } from "../components/ToolSearchInput";
+import { AddToolInput } from "../components/AddToolInput";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import {
@@ -141,7 +141,7 @@ export function ToolsetDetailPage() {
                 </p>
 
                 <div style={{ marginBottom: "16px" }}>
-                    <ToolSearchInput onAdd={addTool} existingTools={tools} />
+                    <AddToolInput onAdd={addTool} existingTools={tools} />
                 </div>
 
                 {tools.length === 0 ? (

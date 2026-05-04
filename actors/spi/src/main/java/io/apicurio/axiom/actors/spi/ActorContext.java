@@ -17,6 +17,7 @@ public class ActorContext {
     private final String promptTemplate;
     private final Path mcpConfigFile;
     private final Map<String, String> environment;
+    private final String model;
 
     private ActorContext(Builder builder) {
         this.workingDirectory = builder.workingDirectory;
@@ -26,6 +27,7 @@ public class ActorContext {
         this.promptTemplate = builder.promptTemplate;
         this.mcpConfigFile = builder.mcpConfigFile;
         this.environment = builder.environment;
+        this.model = builder.model;
     }
 
     /**
@@ -77,6 +79,13 @@ public class ActorContext {
         return environment;
     }
 
+    /**
+     * @return the AI model override for this action type, or null to use the global default
+     */
+    public String getModel() {
+        return model;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -89,6 +98,7 @@ public class ActorContext {
         private String promptTemplate;
         private Path mcpConfigFile;
         private Map<String, String> environment = Map.of();
+        private String model;
 
         public Builder workingDirectory(Path workingDirectory) {
             this.workingDirectory = workingDirectory;
@@ -122,6 +132,11 @@ public class ActorContext {
 
         public Builder environment(Map<String, String> environment) {
             this.environment = environment;
+            return this;
+        }
+
+        public Builder model(String model) {
+            this.model = model;
             return this;
         }
 

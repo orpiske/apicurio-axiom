@@ -40,6 +40,13 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "script_template", columnDefinition = "TEXT")
     public String scriptTemplate;
 
+    /**
+     * Optional AI model override (e.g. "claude-sonnet-4-6").
+     * When null, the global default model is used.
+     */
+    @Column(name = "model")
+    public String model;
+
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;
 }

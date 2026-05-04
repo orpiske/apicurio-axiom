@@ -69,7 +69,12 @@ public class ClaudeCodeActor implements Actor {
                 .maxTurns(maxTurns)
                 .maxBudgetUsd(maxBudgetUsd);
 
-        model.ifPresent(cmdBuilder::model);
+        // Per-action-type model takes priority over the global default
+        if (context.getModel() != null && !context.getModel().isBlank()) {
+            cmdBuilder.model(context.getModel());
+        } else {
+            model.ifPresent(cmdBuilder::model);
+        }
 
         if (context.getMcpConfigFile() != null) {
             cmdBuilder.mcpConfigFile(context.getMcpConfigFile());

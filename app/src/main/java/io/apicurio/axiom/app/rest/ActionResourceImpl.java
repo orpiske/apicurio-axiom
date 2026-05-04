@@ -91,6 +91,7 @@ public class ActionResourceImpl implements ActionResource {
                 ? String.join(", ", data.getAllowedTools()) : null;
         entity.promptTemplate = data.getPromptTemplate();
         entity.scriptTemplate = data.getScriptTemplate();
+        entity.model = data.getModel();
         entity.emitsEvent = data.getEmitsEvent() != null ? data.getEmitsEvent() : false;
     }
 
@@ -116,6 +117,7 @@ public class ActionResourceImpl implements ActionResource {
         }
         actionType.setPromptTemplate(entity.promptTemplate);
         actionType.setScriptTemplate(entity.scriptTemplate);
+        actionType.setModel(entity.model);
         actionType.setEmitsEvent(entity.emitsEvent);
         return actionType;
     }

@@ -238,7 +238,7 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/mcp-servers")} onClick={() => navigate("/mcp-servers")}>
                                 MCP Servers
                             </NavItem>
-                            <NavItem isActive={location.pathname === "/report-definitions"} onClick={() => navigate("/report-definitions")}>
+                            <NavItem isActive={location.pathname.startsWith("/report-definitions")} onClick={() => navigate("/report-definitions")}>
                                 Report Definitions
                             </NavItem>
                             <NavItem isActive={location.pathname.startsWith("/repositories")} onClick={() => navigate("/repositories")}>

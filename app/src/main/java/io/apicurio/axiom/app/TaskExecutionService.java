@@ -136,6 +136,7 @@ public class TaskExecutionService {
                 .allowedTools(allowedTools)
                 .mcpConfigFile(mcpConfig)
                 .environment(env)
+                .model(actionTypeEntity != null ? actionTypeEntity.model : null)
                 .build();
 
         // Execute asynchronously

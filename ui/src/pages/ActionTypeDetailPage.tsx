@@ -20,11 +20,11 @@ import {
     Tabs,
     TextArea,
     TextInput,
-    Title,
+    Title, HelperText, HelperTextItem,
 } from "@patternfly/react-core";
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, ACTION_TYPE_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
-import { ToolSearchInput } from "../components/ToolSearchInput";
+import { AddToolInput } from "../components/AddToolInput";
 import { ScriptAiModal } from "../components/ScriptAiModal";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
@@ -34,6 +34,7 @@ import {
     type NewActionType,
     fetchActionType,
     updateActionType,
+    fetchModels,
 } from "../config/api";
 
 export function ActionTypeDetailPage() {
@@ -50,6 +51,7 @@ export function ActionTypeDetailPage() {
     const [dirty, setDirty] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [aiModalOpen, setAiModalOpen] = useState(false);
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
 
     const loadData = useCallback(() => {
         if (!id) return;
@@ -67,6 +69,7 @@ export function ActionTypeDetailPage() {
                     allowedTools: at.allowedTools,
                     promptTemplate: at.promptTemplate,
                     scriptTemplate: at.scriptTemplate,
+                    model: at.model,
                 });
                 setTools(at.allowedTools || []);
                 setDirty(false);
@@ -75,9 +78,10 @@ export function ActionTypeDetailPage() {
             .finally(() => setLoading(false));
     }, [id]);
 
+    useEffect(() => { loadData(); }, [loadData]);
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        fetchModels().then(setAvailableModels).catch(console.error);
+    }, []);
 
     const updateForm = (updates: Partial<NewActionType>) => {
         setForm((prev) => ({ ...prev, ...updates }));
@@ -168,7 +172,7 @@ export function ActionTypeDetailPage() {
             <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
                 <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
                     <TabContent id="info-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                        <InfoTab form={form} updateForm={updateForm} />
+                        <InfoTab form={form} updateForm={updateForm} availableModels={availableModels} />
                     </TabContent>
                 </Tab>
                 {form.executionMode === "actor" && (
@@ -218,9 +222,10 @@ export function ActionTypeDetailPage() {
     );
 }
 
-function InfoTab({ form, updateForm }: {
+function InfoTab({ form, updateForm, availableModels }: {
     form: NewActionType;
     updateForm: (updates: Partial<NewActionType>) => void;
+    availableModels: string[];
 }) {
     return (
         <Form style={{ maxWidth: "600px" }}>
@@ -250,6 +255,23 @@ function InfoTab({ form, updateForm }: {
                     <FormSelectOption value="script" label="Script — executes a bash script" />
                 </FormSelect>
             </FormGroup>
+            {form.executionMode === "actor" && (
+                <FormGroup label="Model" fieldId="model">
+                    <HelperText>
+                        <HelperTextItem>AI model to use for this action type. Select 'Global default' to use the system-wide setting.</HelperTextItem>
+                    </HelperText>
+                    <FormSelect
+                        id="model"
+                        value={form.model || ""}
+                        onChange={(_e, v) => updateForm({ model: v || undefined })}
+                    >
+                        <FormSelectOption value="" label="Global default" />
+                        {availableModels.map((m) => (
+                            <FormSelectOption key={m} value={m} label={m} />
+                        ))}
+                    </FormSelect>
+                </FormGroup>
+            )}
             <FormGroup fieldId="flags">
                 <Checkbox
                     id="userTriggerable"
@@ -284,7 +306,7 @@ function AllowedToolsTab({ tools, addTool, removeTool }: {
             </p>
 
             <div style={{ marginBottom: "16px" }}>
-                <ToolSearchInput onAdd={addTool} existingTools={tools} />
+                <AddToolInput onAdd={addTool} existingTools={tools} />
             </div>
 
             {tools.length === 0 ? (

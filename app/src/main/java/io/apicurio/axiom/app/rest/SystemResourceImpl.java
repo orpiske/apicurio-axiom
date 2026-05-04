@@ -11,7 +11,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Implementation of the System API endpoints.
@@ -22,6 +24,10 @@ public class SystemResourceImpl implements SystemResource {
 
     @ConfigProperty(name = "quarkus.application.version", defaultValue = "1.0.0-SNAPSHOT")
     String applicationVersion;
+
+    @ConfigProperty(name = "axiom.claude-code.available-models",
+            defaultValue = "claude-opus-4-7,claude-sonnet-4-6,claude-opus-4-6,claude-haiku-4-5-20251001,opus,sonnet,haiku")
+    String availableModels;
 
     @Inject
     StartupCheckService startupCheckService;
@@ -56,5 +62,16 @@ public class SystemResourceImpl implements SystemResource {
                 })
                 .toList());
         return config;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> listModels() {
+        return Arrays.stream(availableModels.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 }
