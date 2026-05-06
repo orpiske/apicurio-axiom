@@ -384,32 +384,47 @@ The following items were **not** done and are deferred to a future cleanup:
 | `axiom.opencode.budget-usd` | Phase 5 (Actor & Task Execution) | Budget enforcement requires cost tracking from SSE events |
 | Full MCP server registration via `POST /mcp` | Phase 4 (MCP Server Management) | Requires tool name mapping and `McpServerEntity` integration |
 
-### Phase 3: Permission & Tool Mapping
+### Phase 3: Permission & Tool Mapping — COMPLETED
 
-**Status:** Pending
+**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Branch:** `feature/engine-spi`
 
 **Goal:** Map Axiom's tool restriction model to OpenCode's permission system.
 
-#### Tool Mapping Table
+#### Tool Mapping Table (implemented)
 
 | Axiom Tool Name | OpenCode Permission Key | Notes |
 |-----------------|------------------------|-------|
 | `Read` | `read` | Direct mapping |
 | `Glob` | `glob` | Direct mapping |
 | `Grep` | `grep` | Direct mapping |
-| `Bash` | `bash` | Direct mapping |
-| `Bash(git log *)` | `bash: { "git log*": "allow" }` | Pattern syntax differs slightly |
+| `Bash` | `bash: "allow"` | Unrestricted bash |
+| `Bash(git log *)` | `bash: { "*": "deny", "git log *": "allow" }` | Object syntax with deny-by-default |
 | `Write` | `edit` | OpenCode `edit` covers write, edit, apply_patch |
-| `Edit` | `edit` | Same |
-| `StructuredOutput` | (built-in to SDK) | Not a tool in OpenCode; use `format.type: "json_schema"` |
-| `mcp__<server>__<tool>` | `<server>_<tool>` | OpenCode uses `_` separator, not `__` |
+| `Edit` | `edit` | Same permission key as Write |
+| `StructuredOutput` | *(ignored)* | Not a tool in OpenCode; handled via `format.type: "json_schema"` |
+| `mcp__<server>__<tool>` | `<server>_<tool>` | Double-underscore → single-underscore |
+| Unknown tools | `<lowercase name>` | Passed through as-is |
 
-#### Deliverables
+#### Delivered
 
-- Permission mapping logic in `OpenCodeConfigBuilder.java`.
-- MCP tool name translation (double underscore → single underscore).
-- `ToolsetResolver` integration to expand `@ToolsetName` references before mapping.
-- Unit tests for all mapping edge cases.
+| File | Description |
+|------|-------------|
+| `OpenCodePermissionMapper.java` | Stateless utility class that converts Axiom tool lists to OpenCode permission maps. Handles all 4 tool name formats: simple tools, parameterized Bash, MCP tools, and `StructuredOutput` (ignored). Supports both allowed and disallowed tool lists. Includes `mapMcpToolName()` and `toAxiomMcpToolName()` for bidirectional MCP name translation. |
+| `OpenCodePermissionMapperTest.java` | 20 unit tests covering: simple tools, Write/Edit deduplication, unrestricted Bash, parameterized Bash patterns, mixed Bash, MCP tool translation, MCP reverse mapping, StructuredOutput filtering, disallowed tools, null/empty inputs, realistic action type tool lists, unknown tool passthrough, and edge cases. |
+
+#### Integration
+
+`OpenCodeEngine.executeInternal()` calls `OpenCodePermissionMapper.mapPermissions()`
+on every prompt invocation, passing the resulting permission map to `OpenCodeClient.sendPrompt()`
+which includes the allowed tools in the request body.
+
+#### Design Decision: ToolsetResolver Not Needed
+
+`ToolsetResolver` expansion of `@ToolsetName` references happens upstream in
+`TaskExecutionService.getToolsFromActionType()` and `ReportExecutionService.resolveAllowedTools()`
+before the tool list reaches the engine. The permission mapper only needs to handle the
+four resolved tool name formats — it never sees `@ToolsetName` references.
 
 ### Phase 4: MCP Server Management
 
@@ -549,12 +564,12 @@ Note: Several items originally in this phase were delivered in Phase 1 (marked b
 |-------|-------------|------------------|-----------------------|--------|
 | 1 | Engine Abstraction Layer (SPI) + Claude Code Wrapper | — | 9 new, 12 modified (23 total) | **Completed** |
 | 2 | OpenCode Core Integration Layer | — | 5 new, 3 modified (8 total) | **Completed** |
-| 3 | Permission & Tool Mapping | 1-2 days | 2 files + tests | Pending |
+| 3 | Permission & Tool Mapping | — | 1 new + 1 test + 2 modified (4 total) | **Completed** |
 | 4 | MCP Server Management | 2-3 days | 2 files + tests | Pending |
 | 5 | OpenCode Actor & Task Execution | — | — | **Completed** (merged into Phase 2) |
 | 6 | Configuration & UI Updates | 1-2 days | 3-5 modified files | Pending (partially done) |
-| 7 | Testing | 3-4 days | 10-12 test files | Pending |
-| **Remaining** | | **~7-11 days** | **~17-22 files** | |
+| 7 | Testing | 3-4 days | 10-12 test files | Pending (20 tests delivered in Phase 3) |
+| **Remaining** | | **~6-9 days** | **~15-20 files** | |
 
 ---
 

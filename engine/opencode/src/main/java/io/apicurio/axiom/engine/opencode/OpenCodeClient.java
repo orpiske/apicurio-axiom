@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -92,15 +93,17 @@ public class OpenCodeClient {
     /**
      * Sends a prompt to a session and waits for the response.
      *
-     * @param sessionId the session ID
-     * @param prompt    the prompt text
-     * @param model     the model in provider/model format, or null for default
-     * @param format    structured output format, or null for text
+     * @param sessionId      the session ID
+     * @param prompt         the prompt text
+     * @param model          the model in provider/model format, or null for default
+     * @param format         structured output format, or null for text
+     * @param permissions    OpenCode permission config, or null for defaults
      * @param timeoutSeconds request timeout
      * @return the response JSON
      */
     public JsonNode sendPrompt(String sessionId, String prompt, String model,
-                                JsonNode format, int timeoutSeconds)
+                                JsonNode format, Map<String, Object> permissions,
+                                int timeoutSeconds)
             throws IOException, InterruptedException {
 
         ObjectNode body = MAPPER.createObjectNode();
@@ -122,6 +125,17 @@ public class OpenCodeClient {
         // Structured output format
         if (format != null) {
             body.set("format", format);
+        }
+
+        // Tool restrictions (sent as system context for the session)
+        if (permissions != null && !permissions.isEmpty()) {
+            // Build a tools restriction list for the request
+            ArrayNode toolsArray = body.putArray("tools");
+            for (Map.Entry<String, Object> entry : permissions.entrySet()) {
+                if ("allow".equals(entry.getValue())) {
+                    toolsArray.add(entry.getKey());
+                }
+            }
         }
 
         HttpRequest request = HttpRequest.newBuilder()

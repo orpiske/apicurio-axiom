@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -152,6 +153,13 @@ public class OpenCodeEngine implements AiEngine, AiEngineProvider {
                 // Resolve model
                 String model = config.getModel();
 
+                // Map tool permissions from Axiom format to OpenCode format
+                Map<String, Object> permissions = OpenCodePermissionMapper.mapPermissions(
+                        config.getAllowedTools(), config.getDisallowedTools());
+                if (!permissions.isEmpty()) {
+                    LOG.debugf("OpenCode permissions: %s", permissions);
+                }
+
                 // Build full prompt with system prompt if provided
                 String fullPrompt = prompt;
                 if (config.getSystemPrompt() != null && !config.getSystemPrompt().isBlank()) {
@@ -160,7 +168,8 @@ public class OpenCodeEngine implements AiEngine, AiEngineProvider {
 
                 // Send prompt and wait for response
                 JsonNode response = client.sendPrompt(
-                        sessionId, fullPrompt, model, format, config.getTimeoutSeconds());
+                        sessionId, fullPrompt, model, format, permissions,
+                        config.getTimeoutSeconds());
 
                 // Parse response
                 return parseResponse(response, sessionId);
