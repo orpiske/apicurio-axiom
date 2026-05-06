@@ -5,11 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.apicurio.axiom.actors.claudecode.ClaudeCodeMcpManager;
 import io.apicurio.axiom.core.entities.McpServerEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
-import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
-import io.apicurio.axiom.engine.spi.AiEngineType;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
@@ -56,24 +53,18 @@ public class McpConfigGenerator {
     ObjectMapper objectMapper;
 
     @Inject
-    Instance<AiEngineMcpManager> mcpManagers;
+    ClaudeCodeMcpManager claudeCodeMcpManager;
 
     /** Lazily resolved path to the installed MCP server project directory. */
     private volatile Path mcpServerDir;
 
     /**
-     * Registers this McpConfigGenerator as the delegate for the ClaudeCodeMcpManager,
-     * if the Claude Code engine is available on the classpath.
+     * Registers this McpConfigGenerator as the delegate for the ClaudeCodeMcpManager.
      */
     @PostConstruct
     void init() {
-        for (AiEngineMcpManager manager : mcpManagers) {
-            if (manager instanceof ClaudeCodeMcpManager claudeMcpManager) {
-                claudeMcpManager.setDelegate(this::generateMcpConfig);
-                LOG.info("Registered McpConfigGenerator as ClaudeCodeMcpManager delegate");
-                break;
-            }
-        }
+        claudeCodeMcpManager.setDelegate(this::generateMcpConfig);
+        LOG.info("Registered McpConfigGenerator as ClaudeCodeMcpManager delegate");
     }
 
     /** Prefix used by Claude Code for tools provided by the axiom-tools MCP server. */

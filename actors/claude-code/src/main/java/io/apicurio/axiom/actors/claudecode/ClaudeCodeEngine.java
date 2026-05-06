@@ -4,9 +4,11 @@ import io.apicurio.axiom.actors.spi.ActorContext;
 import io.apicurio.axiom.engine.spi.AiEngine;
 import io.apicurio.axiom.engine.spi.AiEngineCheckResult;
 import io.apicurio.axiom.engine.spi.AiEngineConfig;
+import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
+import io.apicurio.axiom.engine.spi.AiEngineProvider;
 import io.apicurio.axiom.engine.spi.AiEngineResult;
-import io.apicurio.axiom.engine.spi.AiEngineType;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -20,10 +22,16 @@ import java.util.concurrent.TimeUnit;
  * Claude Code CLI implementation of the {@link AiEngine} SPI. Wraps the existing
  * {@link ClaudeCodeCommandBuilder} and {@link ClaudeCodeSubprocess} to provide
  * engine-agnostic prompt execution with structured output support.
+ *
+ * <p>Also serves as the {@link AiEngineProvider} for CDI discovery — the
+ * {@link io.apicurio.axiom.engine.spi.AiEngineProducer} finds this bean via
+ * the provider interface to avoid CDI bean type recursion.</p>
  */
 @ApplicationScoped
-@AiEngineType("claude-code")
-public class ClaudeCodeEngine implements AiEngine {
+public class ClaudeCodeEngine implements AiEngine, AiEngineProvider {
+
+    @Inject
+    ClaudeCodeMcpManager mcpManager;
 
     @Override
     public String getType() {
@@ -170,5 +178,17 @@ public class ClaudeCodeEngine implements AiEngine {
                 result.isSuccess(),
                 result.executionLog()
         );
+    }
+
+    // --- AiEngineProvider ---
+
+    @Override
+    public AiEngine getEngine() {
+        return this;
+    }
+
+    @Override
+    public AiEngineMcpManager getMcpManager() {
+        return mcpManager;
     }
 }
