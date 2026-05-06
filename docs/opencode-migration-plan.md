@@ -330,40 +330,59 @@ The following items were **not** done and are deferred to a future cleanup:
   Each engine implementation can provide its own logging; the SPI returns the log as a String
   in `AiEngineResult.executionLog()` so no shared base class is needed.
 
-### Phase 2: OpenCode Core Integration Layer
+### Phase 2: OpenCode Core Integration Layer — COMPLETED
 
-**Status:** Pending
+**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Branch:** `feature/engine-spi`
 
 **Goal:** Build the OpenCode engine implementation behind the SPI.
 
 **New module:** `engine/opencode/`
 
-#### Deliverables
+#### Delivered
 
 | File | Description |
 |------|-------------|
-| `OpenCodeEngine.java` | Implements `AiEngine`. Manages server lifecycle, sends prompts via HTTP API, supports structured output via `format: { type: "json_schema" }`. |
-| `OpenCodeActor.java` | Implements `Actor` SPI. Type: `"opencode"`. Creates sessions, sends prompts, streams progress, converts response to `TaskResult`. |
-| `OpenCodeServerManager.java` | Manages `opencode serve` process lifecycle: start, stop, health-check, restart on crash. Configurable port range. One server per workspace or shared. |
-| `OpenCodeClient.java` | Java HTTP client wrapping the OpenCode server API. Methods: `createSession()`, `sendPrompt()`, `sendPromptWithSchema()`, `abortSession()`, `healthCheck()`, `registerMcpServer()`. Uses `java.net.http.HttpClient`. |
-| `OpenCodeResult.java` | Internal result record. `OpenCodeEngine` maps it to `AiEngineResult`. |
-| `OpenCodeConfigBuilder.java` | Builds `opencode.json` config fragments and HTTP request payloads. Handles model name translation (`claude-sonnet-4-6` → `anthropic/claude-sonnet-4-6`). |
-| `OpenCodeAgentBuilder.java` | Generates OpenCode agent configurations (JSON or markdown) from `AiEngineConfig`: system prompt, allowed tools → permissions, model, max steps. |
+| `OpenCodeClient.java` | Java HTTP client wrapping the OpenCode server API using `java.net.http.HttpClient`. Endpoints: `POST /session` (create), `POST /session/:id/message` (prompt with optional `format: { type: "json_schema" }` for structured output), `POST /session/:id/abort` (cancel), `GET /global/health` (health/version), `POST /mcp` (register MCP server). Model specified in `provider/model` format. |
+| `OpenCodeServerManager.java` | Manages `opencode serve` process lifecycle: start with `--port` and `--hostname`, health polling (500ms intervals, 30s timeout), exponential backoff restart (up to 5 attempts), graceful shutdown with 10s grace period. Static helpers: `isOpenCodeAvailable()`, `getCliVersion()`. |
+| `OpenCodeEngine.java` | Implements `AiEngine` + `AiEngineProvider` with `@Typed({OpenCodeEngine.class, AiEngineProvider.class})`. Manages server via lazy-initialized `OpenCodeServerManager`. Creates a new session per invocation, sends prompt, parses response (text parts, `structured_output` field, usage/cost metadata). Supports `prompt()` and `promptWithSchema()`. Server shut down on `@PreDestroy`. |
+| `OpenCodeActor.java` | Implements `Actor` SPI. Type: `"opencode"`. Builds `AiEngineConfig` from `ActorContext`, delegates to `OpenCodeEngine.prompt()`. Tracks sessions in `ConcurrentHashMap<Long, String>` for cancellation via `POST /session/:id/abort`. Config: `axiom.opencode.model`, `axiom.opencode.max-steps`, `axiom.opencode.timeout-seconds`. |
+| `OpenCodeMcpManager.java` | Implements `AiEngineMcpManager` with `@Typed(OpenCodeMcpManager.class)`. Stub implementation — logs MCP tool intent, returns null (no config file needed; full `POST /mcp` registration planned for Phase 4). |
 
-#### Configuration Properties
+#### Design Decisions
+
+- **No `OpenCodeResult.java`**: The `OpenCodeEngine` parses the JSON response directly
+  into `AiEngineResult` — an intermediate record added no value.
+- **No `OpenCodeConfigBuilder.java` / `OpenCodeAgentBuilder.java`**: Config translation
+  (model format, permissions) is handled inline in `OpenCodeEngine` and `OpenCodeClient`.
+  These may be extracted later in Phase 3 (Permission & Tool Mapping) if the mapping logic
+  becomes complex enough to warrant separate classes.
+- **System prompt as prompt prefix**: OpenCode's `POST /session/:id/message` does not have
+  a separate system prompt field. The system prompt is prepended to the user prompt with
+  a `---` separator. A future improvement could use OpenCode's agent configuration for
+  cleaner system prompt injection.
+- **One session per invocation**: Each `prompt()` / `promptWithSchema()` call creates a new
+  session. This matches the Claude Code subprocess-per-invocation model. Session reuse for
+  multi-turn conversations can be added later via `AiEngineConfig.sessionId`.
+
+#### Delivered: Configuration Properties
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `axiom.opencode.server.port` | `4096` | Port for the OpenCode server |
 | `axiom.opencode.server.hostname` | `127.0.0.1` | Hostname for the OpenCode server |
+| `axiom.opencode.server.port` | `4096` | Port for the OpenCode server |
 | `axiom.opencode.model` | (none) | Default model in `provider/model` format |
-| `axiom.opencode.available-models` | (dynamic) | Override model list, or use `GET /config/providers` |
-| `axiom.opencode.max-steps` | `50` | Default max agent steps (replaces `max-turns`) |
+| `axiom.opencode.max-steps` | `50` | Default max agent steps |
 | `axiom.opencode.timeout-seconds` | `600` | HTTP request timeout for task execution |
-| `axiom.opencode.manager.model` | (none) | Model override for Manager evaluations |
-| `axiom.opencode.manager.timeout-seconds` | `120` | Timeout for Manager evaluations |
-| `axiom.opencode.manager.max-steps` | `5` | Max steps for Manager evaluations |
-| `axiom.opencode.budget-usd` | `5.0` | Per-task budget limit (enforced by Axiom) |
+
+#### Deferred to Future Phases
+
+| Item | Deferred To | Reason |
+|------|-------------|--------|
+| `axiom.opencode.available-models` | Phase 6 (Config & UI) | Requires `GET /config/providers` integration in the UI model picker |
+| `axiom.opencode.manager.*` properties | Phase 6 | Manager config is engine-agnostic (`axiom.manager.*`); engine-specific overrides not yet needed |
+| `axiom.opencode.budget-usd` | Phase 5 (Actor & Task Execution) | Budget enforcement requires cost tracking from SSE events |
+| Full MCP server registration via `POST /mcp` | Phase 4 (MCP Server Management) | Requires tool name mapping and `McpServerEntity` integration |
 
 ### Phase 3: Permission & Tool Mapping
 
@@ -424,49 +443,31 @@ file management and allows per-task server sets.
 | `OpenCodeMcpManager.java` | Implements `AiEngineMcpManager`. Registers MCP servers via HTTP API or generates `opencode.json` config. Handles both script-based tools (`axiom-tools`) and external servers. |
 | MCP name mapping | Translate `mcp__<server>__<tool>` convention to OpenCode's `<server>_<tool>` format in allowed tool lists. |
 
-### Phase 5: OpenCode Actor & Task Execution
+### Phase 5: OpenCode Actor & Task Execution — COMPLETED (merged into Phase 2)
 
-**Status:** Pending
+**Status:** Completed (delivered as part of Phase 2)
 
-**Goal:** Implement the `OpenCodeActor` behind the existing `Actor` SPI.
-
-Note: `OpenCodeActor` and `OpenCodeEngine` are both in `engine/opencode/` (Phase 2).
-This phase focuses on wiring up the full task execution flow end-to-end.
-
-#### Execution Flow
+`OpenCodeActor` was implemented alongside `OpenCodeEngine` in Phase 2 since the two are
+tightly coupled — the actor delegates to the engine and both live in `engine/opencode/`.
+The full execution flow is:
 
 ```
-1. Resolve ActionType → build AiEngineConfig (permissions, model, system prompt, max steps)
-2. Ensure OpenCode server is running for this workspace (via OpenCodeServerManager)
-3. Register required MCP servers (via OpenCodeMcpManager)
-4. Create session: POST /session { title: "axiom-task-<id>" }
-5. Send prompt: POST /session/:id/message {
-     model: { providerID, modelID },
-     parts: [{ type: "text", text: prompt }],
-     format: { type: "json_schema", schema } // only for structured output
-   }
-6. Stream progress via GET /event (SSE) — feed to ExecutionLogBuilder
-7. On completion: extract result text, cost, tokens from response
-8. On cancel: POST /session/:id/abort
-9. Return TaskResult with output, sessionId, cost, tokens, executionLog
+1. TaskExecutionService resolves actor type from aiEngine.getActorType() → "opencode"
+2. OpenCodeActor.execute() builds AiEngineConfig from ActorContext
+3. OpenCodeEngine.prompt() lazily starts the OpenCode server via OpenCodeServerManager
+4. Creates session: POST /session { title: "axiom-<timestamp>" }
+5. Sends prompt: POST /session/:id/message { parts, model, format }
+6. On completion: parses response (text parts, structured_output, usage)
+7. On cancel: POST /session/:id/abort
+8. Returns TaskResult with output, sessionId, cost, tokens
 ```
 
-#### Budget Enforcement
+#### Budget Enforcement — Deferred
 
-Since OpenCode lacks `--max-budget-usd`, implement at the Axiom layer (in the `AiEngine`
-SPI or in `TaskExecutionService`):
-
-```java
-// In OpenCodeEngine or TaskExecutionService
-if (cumulativeCostUsd > budgetLimitUsd) {
-    openCodeClient.abortSession(sessionId);
-    return AiEngineResult.failure("Budget exceeded: $" + cumulativeCostUsd);
-}
-```
-
-This can be checked after each SSE event that includes cost data, or after the final response.
-This budget enforcement logic should live in the engine-agnostic layer so it applies to all
-engines.
+Budget enforcement (`--max-budget-usd` equivalent) is deferred. It requires cost data
+from SSE streaming events (`GET /event`), which is not yet implemented. The current
+implementation returns cost data from the final response only. Budget enforcement should
+be implemented in the engine-agnostic layer so it applies to all engines.
 
 ### Phase 6: Configuration & UI Updates
 
@@ -547,13 +548,13 @@ Note: Several items originally in this phase were delivered in Phase 1 (marked b
 | Phase | Description | Estimated Effort | Files Changed/Created | Status |
 |-------|-------------|------------------|-----------------------|--------|
 | 1 | Engine Abstraction Layer (SPI) + Claude Code Wrapper | — | 9 new, 12 modified (23 total) | **Completed** |
-| 2 | OpenCode Core Integration Layer | 3-4 days | 7 new files | Pending |
+| 2 | OpenCode Core Integration Layer | — | 5 new, 3 modified (8 total) | **Completed** |
 | 3 | Permission & Tool Mapping | 1-2 days | 2 files + tests | Pending |
 | 4 | MCP Server Management | 2-3 days | 2 files + tests | Pending |
-| 5 | OpenCode Actor & Task Execution | 2-3 days | 2 files + integration wiring | Pending |
+| 5 | OpenCode Actor & Task Execution | — | — | **Completed** (merged into Phase 2) |
 | 6 | Configuration & UI Updates | 1-2 days | 3-5 modified files | Pending (partially done) |
 | 7 | Testing | 3-4 days | 10-12 test files | Pending |
-| **Remaining** | | **~13-18 days** | **~26-33 files** | |
+| **Remaining** | | **~7-11 days** | **~17-22 files** | |
 
 ---
 
@@ -582,8 +583,9 @@ Items marked with a checkmark have been achieved.
    go through the `AiEngineMcpManager` SPI.
 3. [x] **Claude Code parity**: All existing functionality works identically with
    `axiom.ai-engine=claude-code` (the default). All consumer services refactored.
-4. [ ] **OpenCode parity**: Manager structured output (decisions), task execution, script/tool AI,
+4. [~] **OpenCode parity**: Manager structured output (decisions), task execution, script/tool AI,
    and report generation all work correctly with `axiom.ai-engine=opencode`.
+   Engine implementation complete; pending end-to-end validation with live OpenCode server.
 5. [ ] **Cost and token tracking**: `AiUsageEntity` is populated correctly by both engines.
 6. [ ] **MCP server integration**: Script tools and external MCP servers work with both engines
    via their respective `AiEngineMcpManager` implementations.
