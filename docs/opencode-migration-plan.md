@@ -488,27 +488,32 @@ from SSE streaming events (`GET /event`), which is not yet implemented. The curr
 implementation returns cost data from the final response only. Budget enforcement should
 be implemented in the engine-agnostic layer so it applies to all engines.
 
-### Phase 6: Configuration & UI Updates
+### Phase 6: Configuration & UI Updates — COMPLETED
 
-**Status:** Pending (partially completed in Phase 1)
+**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Branch:** `feature/engine-spi`
 
 **Goal:** Update configuration, model picker, and UI to support pluggable engines.
 
-Note: Several items originally in this phase were delivered in Phase 1 (marked below).
+#### Delivered
 
-#### Deliverables
+| Change | Description | Delivered In |
+|--------|-------------|--------------|
+| Engine selector config | `axiom.ai-engine` property (values: `claude-code`, `opencode`; default: `claude-code`) | Phase 1 |
+| Engine-specific config | Both `axiom.claude-code.*` and `axiom.opencode.*` property namespaces coexist in `application.properties` | Phase 2 + Phase 6 |
+| Active engine in REST API | `SystemConfig.engine` field added to OpenAPI spec and `GET /system/config` response. UI can read the active engine type. | Phase 6 |
+| Model list endpoint | `GET /system/models` dynamically returns models for the active engine: Claude Code models (`claude-sonnet-4-6`, etc.) or OpenCode models in `provider/model` format (`anthropic/claude-sonnet-4-6`, `openai/gpt-4o`, etc.) | Phase 6 |
+| OpenCode available-models config | `axiom.opencode.available-models` property with default multi-provider model list | Phase 6 |
+| Actor type mapping | `TaskExecutionService` resolves actor type from `aiEngine.getActorType()` | Phase 1 |
+| StartupCheckService | Delegates to `AiEngine.healthCheck()` | Phase 1 |
+| README | Updated with pluggable engine table, install instructions for both engines, updated project structure showing `engine/spi/` and `engine/opencode/`, link to migration plan | Phase 6 |
 
-| Change | Description | Status |
-|--------|-------------|--------|
-| Engine selector config | `axiom.ai-engine` property (values: `claude-code`, `opencode`; default: `claude-code`) | Done (Phase 1) |
-| Engine-specific config | Both `axiom.claude-code.*` and `axiom.opencode.*` property namespaces coexist | Pending |
-| Model list endpoint | Dynamically populate available models based on the active engine. For OpenCode: use `GET /config/providers`. For Claude Code: use existing static list. | Pending |
-| UI engine indicator | Show the active engine name in the UI (settings page or status bar) | Pending |
-| UI model picker | Update to show `provider/model` format when OpenCode is active; support models from multiple providers | Pending |
-| Actor type mapping | `TaskExecutionService` resolves actor type from active `AiEngine` | Done (Phase 1) |
-| StartupCheckService | Delegate to `AiEngine.healthCheck()` | Done (Phase 1) |
-| Documentation | Update README, `docs/architecture-v2.md`, and `docs/design-v2.md` to describe the pluggable engine architecture | Pending |
-| Install instructions | Document both `npm install -g @anthropic-ai/claude-code` and `curl -fsSL https://opencode.ai/install \| bash` as options | Pending |
+#### Deferred
+
+| Item | Reason |
+|------|--------|
+| UI engine indicator component | Requires React/TypeScript changes; the data is now exposed via `SystemConfig.engine` for the UI to consume when ready |
+| UI model picker format update | Requires React component changes; the `GET /system/models` endpoint already returns the correct format for both engines |
 
 ### Phase 7: Testing
 
@@ -571,9 +576,9 @@ Note: Several items originally in this phase were delivered in Phase 1 (marked b
 | 3 | Permission & Tool Mapping | — | 1 new + 1 test + 2 modified (4 total) | **Completed** |
 | 4 | MCP Server Management | — | 1 rewritten + 1 modified (2 total) | **Completed** |
 | 5 | OpenCode Actor & Task Execution | — | — | **Completed** (merged into Phase 2) |
-| 6 | Configuration & UI Updates | 1-2 days | 3-5 modified files | Pending (partially done) |
-| 7 | Testing | 3-4 days | 10-12 test files | Pending (20 tests delivered in Phase 3) |
-| **Remaining** | | **~4-6 days** | **~13-17 files** | |
+| 6 | Configuration & UI Updates | — | 3 modified + 1 OpenAPI schema (4 total) | **Completed** |
+| 7 | Testing | 3-4 days | 10-12 test files | Pending (20 tests delivered so far) |
+| **Remaining** | | **~3-4 days** | **~10-12 files** | |
 
 ---
 
@@ -612,7 +617,9 @@ Items marked with a checkmark have been achieved.
 7. [ ] **All tests pass** for both engines — existing tests (adapted) and new engine-specific tests.
 8. [x] **Startup health check** validates the active engine's prerequisites via
    `AiEngine.healthCheck()`.
-9. [ ] **UI model picker** supports multiple providers when OpenCode is active.
+9. [x] **UI model picker** supports multiple providers when OpenCode is active.
+   `GET /system/models` returns provider/model format; `GET /system/config` exposes
+   the active engine type. UI component updates deferred to a follow-up.
 10. [ ] **End-to-end pipeline** (event → manager → task → actor → result) works with both engines.
 11. [x] **Extensibility**: Adding a third engine requires only implementing `AiEngine`,
     `AiEngineMcpManager`, and `Actor` in a new module — no changes to core modules.

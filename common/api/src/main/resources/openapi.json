@@ -1835,6 +1835,10 @@
           "version": {
             "type": "string"
           },
+          "engine": {
+            "description": "The active AI engine type (e.g. claude-code, opencode)",
+            "type": "string"
+          },
           "features": {
             "$ref": "#/components/schemas/Features"
           },

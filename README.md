@@ -7,7 +7,7 @@ long-lived projects around them, and delegates work to human and AI actors.
 
 - Watches GitHub/Jira repositories for issue activity (webhooks or polling)
 - An AI Manager triages events and decides what actions to take
-- Tasks are assigned to Actors (Claude Code AI agents or humans)
+- Tasks are assigned to Actors (AI agents or humans)
 - Projects track the full lifecycle of work tied to each issue
 - A UI provides visibility into projects, tasks, activity, and configuration
 
@@ -18,16 +18,28 @@ long-lived projects around them, and delegates work to human and AI actors.
 | Backend | Java 25 / Quarkus 3.33 LTS |
 | Frontend | TypeScript / React / PatternFly |
 | Database | H2 (dev) / PostgreSQL (prod) |
-| AI | Claude Code CLI |
+| AI | Pluggable: Claude Code CLI or OpenCode (configurable) |
 | API | Contract-first OpenAPI + apicurio-codegen |
+
+## AI Engine
+
+Axiom's AI engine is pluggable. Set `axiom.ai-engine` in `application.properties` to
+select which engine to use:
+
+| Engine | Config Value | Binary | Install |
+|--------|-------------|--------|---------|
+| Claude Code | `claude-code` (default) | `claude` | `npm install -g @anthropic-ai/claude-code` |
+| OpenCode | `opencode` | `opencode` | `curl -fsSL https://opencode.ai/install \| bash` |
+
+Only the selected engine's binary needs to be installed. Both can coexist for testing.
 
 ## Prerequisites
 
 - Java 25+
 - Maven 3.9+
-- Node.js 20+ (for UI)
-- Claude Code CLI (for AI features)
-- `ANTHROPIC_API_KEY` environment variable
+- Node.js 20+ (for UI and MCP tool server)
+- One of the AI engine CLIs (see table above)
+- API key for your LLM provider (e.g. `ANTHROPIC_API_KEY`)
 
 ## Build
 
@@ -54,9 +66,11 @@ cd ui && npm install && npm run dev
 ```
 common/api/          OpenAPI contract + generated JAX-RS interfaces
 core/                Domain entities, lifecycle, workspace management
+engine/spi/          Pluggable AI engine abstraction layer
+engine/opencode/     OpenCode engine implementation
 manager/             AI Manager (event triage and decision-making)
 actors/spi/          Actor interface
-actors/claude-code/  Claude Code CLI subprocess actor
+actors/claude-code/  Claude Code CLI subprocess actor + engine
 actors/human/        Human actor (notification-driven)
 events/core/         Event queue and pipeline orchestrator
 events/github/       GitHub webhooks + API polling
@@ -71,6 +85,7 @@ ui/                  React frontend
 - [Functional Design](docs/design-v2.md)
 - [Architecture](docs/architecture-v2.md)
 - [Implementation Plan](docs/implementation-plan.md)
+- [OpenCode Migration Plan](docs/opencode-migration-plan.md)
 - [Claude Code Integration Research](docs/research-claude-code-integration.md)
 
 ## License
