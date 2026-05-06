@@ -2,6 +2,7 @@ package io.apicurio.axiom.actors.claudecode;
 
 import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Typed;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.Map;
  * Claude-specific code.</p>
  */
 @ApplicationScoped
+@Typed(ClaudeCodeMcpManager.class)
 public class ClaudeCodeMcpManager implements AiEngineMcpManager {
 
     /**

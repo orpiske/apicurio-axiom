@@ -8,6 +8,7 @@ import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
 import io.apicurio.axiom.engine.spi.AiEngineProvider;
 import io.apicurio.axiom.engine.spi.AiEngineResult;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Inject;
 
 import java.time.Duration;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
  * the provider interface to avoid CDI bean type recursion.</p>
  */
 @ApplicationScoped
+@Typed({ClaudeCodeEngine.class, AiEngineProvider.class})
 public class ClaudeCodeEngine implements AiEngine, AiEngineProvider {
 
     @Inject
