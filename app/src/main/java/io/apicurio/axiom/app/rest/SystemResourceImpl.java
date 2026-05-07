@@ -6,6 +6,8 @@ import io.apicurio.axiom.api.beans.SystemConfig;
 import io.apicurio.axiom.api.beans.SystemHealth;
 import io.apicurio.axiom.api.SystemResource;
 import io.apicurio.axiom.app.StartupCheckService;
+import io.apicurio.axiom.engine.spi.AiEngine;
+import io.apicurio.axiom.engine.spi.AiEngineRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,6 +16,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Implementation of the System API endpoints.
@@ -27,7 +30,17 @@ public class SystemResourceImpl implements SystemResource {
 
     @ConfigProperty(name = "axiom.claude-code.available-models",
             defaultValue = "claude-opus-4-7,claude-sonnet-4-6,claude-opus-4-6,claude-haiku-4-5-20251001,opus,sonnet,haiku")
-    String availableModels;
+    String claudeAvailableModels;
+
+    @ConfigProperty(name = "axiom.opencode.available-models",
+            defaultValue = "anthropic/claude-sonnet-4-6,anthropic/claude-opus-4-6,anthropic/claude-haiku-4-5-20251001,openai/gpt-4o,openai/o3-mini")
+    String openCodeAvailableModels;
+
+    @Inject
+    AiEngine aiEngine;
+
+    @Inject
+    AiEngineRegistry engineRegistry;
 
     @Inject
     StartupCheckService startupCheckService;
@@ -51,6 +64,7 @@ public class SystemResourceImpl implements SystemResource {
     public SystemConfig getSystemConfig() {
         SystemConfig config = new SystemConfig();
         config.setVersion(applicationVersion);
+        config.setEngine(aiEngine.getType());
         config.setFeatures(new Features());
         config.setChecks(startupCheckService.getResults().stream()
                 .map(r -> {
@@ -68,8 +82,24 @@ public class SystemResourceImpl implements SystemResource {
      * {@inheritDoc}
      */
     @Override
+    public List<String> listEngines() {
+        return engineRegistry.getAvailableEngineTypes();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Returns the available models for the active AI engine. For Claude Code,
+     * returns the static list from config. For OpenCode, returns models in
+     * provider/model format.
+     */
+    @Override
     public List<String> listModels() {
-        return Arrays.stream(availableModels.split(","))
+        String models = "opencode".equals(aiEngine.getType())
+                ? openCodeAvailableModels
+                : claudeAvailableModels;
+
+        return Arrays.stream(models.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();

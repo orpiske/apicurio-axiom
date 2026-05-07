@@ -17,6 +17,8 @@ import io.apicurio.axiom.core.events.SseEvent;
 import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.core.services.ToolsetResolver;
 import io.apicurio.axiom.core.services.WorkspaceService;
+import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
+import io.apicurio.axiom.engine.spi.AiEngineRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -46,6 +48,9 @@ public class TaskExecutionService {
     Instance<Actor> actors;
 
     @Inject
+    AiEngineRegistry engineRegistry;
+
+    @Inject
     WorkspaceService workspaceService;
 
     @Inject
@@ -53,9 +58,6 @@ public class TaskExecutionService {
 
     @Inject
     Event<SseEvent> sseEvents;
-
-    @Inject
-    McpConfigGenerator mcpConfigGenerator;
 
     @Inject
     ScriptExecutionService scriptExecutionService;
@@ -103,8 +105,11 @@ public class TaskExecutionService {
             return;
         }
 
-        // Find the actor implementation
-        Actor actor = resolveActor(task);
+        // Resolve the engine for this action type (may differ from global default)
+        String engineType = actionTypeEntity != null ? actionTypeEntity.engine : null;
+
+        // Find the actor implementation (using the action type's engine, or default)
+        Actor actor = resolveActor(task, engineType);
         if (actor == null) {
             failTask(task.id, "No actor available for task type: " + task.actionType);
             return;
@@ -129,7 +134,8 @@ public class TaskExecutionService {
 
         // Generate MCP config filtered to only the tools allowed by this action type
         List<String> allowedTools = getToolsFromActionType(task.actionType);
-        Path mcpConfig = mcpConfigGenerator.generateMcpConfig(task.id, env, allowedTools);
+        AiEngineMcpManager mcpManager = engineRegistry.getMcpManager(engineType);
+        Path mcpConfig = mcpManager.configureMcpServers(task.id, env, allowedTools);
 
         ActorContext context = ActorContext.builder()
                 .workingDirectory(workspace)
@@ -154,11 +160,14 @@ public class TaskExecutionService {
     /**
      * Resolves the Actor implementation for a task. Uses the actor entity
      * resolved by {@link #resolveActorEntity} to find the matching CDI bean.
+     *
+     * @param task       the task to resolve an actor for
+     * @param engineType the engine type override from the action type, or null for default
      */
-    private Actor resolveActor(TaskEntity task) {
+    private Actor resolveActor(TaskEntity task, String engineType) {
         ActorEntity actorEntity = resolveActorEntity(task);
         if (actorEntity != null) {
-            return findActorByType(actorEntity.type);
+            return findActorByType(actorEntity.type, engineType);
         }
         return null;
     }
@@ -196,9 +205,11 @@ public class TaskExecutionService {
         return ActorEntity.<ActorEntity>find("type", "ai-agent").firstResult();
     }
 
-    private Actor findActorByType(String type) {
-        // Map entity types to actor implementation types
-        String implType = "ai-agent".equals(type) ? "claude-code" : type;
+    private Actor findActorByType(String type, String engineType) {
+        // Map entity types to actor implementation types using the resolved AI engine
+        String implType = "ai-agent".equals(type)
+                ? engineRegistry.getActorType(engineType)
+                : type;
         for (Actor actor : actors) {
             if (actor.getType().equals(implType)) {
                 return actor;

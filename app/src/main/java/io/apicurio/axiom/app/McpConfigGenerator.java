@@ -2,8 +2,12 @@ package io.apicurio.axiom.app;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.apicurio.axiom.actors.claudecode.ClaudeCodeMcpManager;
 import io.apicurio.axiom.core.entities.McpServerEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
+import io.apicurio.axiom.engine.opencode.OpenCodeMcpManager;
+import io.apicurio.axiom.engine.opencode.OpenCodeMcpManager.McpServerConfig;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -18,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Generates MCP configuration files for Claude Code subprocesses.
+ * Generates MCP configuration files for AI engine subprocesses.
  *
  * <p>For each task execution, this generator:</p>
  * <ol>
@@ -26,13 +30,18 @@ import java.util.Map;
  *   <li>For "script" tools: writes a per-task tools JSON file and references the
  *       pre-built server in the MCP config</li>
  *   <li>For "mcp-server" tools: includes them directly in the config</li>
- *   <li>Writes the --mcp-config JSON file</li>
+ *   <li>Writes the MCP config JSON file</li>
  * </ol>
  *
  * <p>The MCP server project is a Node.js application bundled as a classpath resource
  * at {@code templates/axiom-mcp-server/}. On first use it is copied to
  * {@code ~/.axiom/mcp-server/} and {@code npm install} is run once to resolve
  * dependencies. Subsequent invocations reuse the installed project.</p>
+ *
+ * <p>This class also implements {@link io.apicurio.axiom.engine.spi.AiEngineMcpManager}
+ * for the Claude Code engine, via the {@link io.apicurio.axiom.actors.claudecode.ClaudeCodeMcpManager}
+ * delegate pattern. On initialization, it registers itself as the MCP config delegate
+ * for the active Claude Code engine.</p>
  */
 @ApplicationScoped
 public class McpConfigGenerator {
@@ -45,8 +54,26 @@ public class McpConfigGenerator {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    ClaudeCodeMcpManager claudeCodeMcpManager;
+
+    @Inject
+    OpenCodeMcpManager openCodeMcpManager;
+
     /** Lazily resolved path to the installed MCP server project directory. */
     private volatile Path mcpServerDir;
+
+    /**
+     * Registers this McpConfigGenerator as the delegate for both engine MCP managers.
+     */
+    @PostConstruct
+    void init() {
+        claudeCodeMcpManager.setDelegate(this::generateMcpConfig);
+        LOG.info("Registered McpConfigGenerator as ClaudeCodeMcpManager delegate");
+
+        openCodeMcpManager.setDelegate(this::getMcpServersForOpenCode);
+        LOG.info("Registered McpConfigGenerator as OpenCodeMcpManager delegate");
+    }
 
     /** Prefix used by Claude Code for tools provided by the axiom-tools MCP server. */
     private static final String AXIOM_TOOLS_PREFIX = "mcp__axiom-tools__";
@@ -260,6 +287,89 @@ public class McpConfigGenerator {
             LOG.warnf(e, "Failed to serialize tool definitions");
             return "[]";
         }
+    }
+
+    /**
+     * Provides MCP server configurations for the OpenCode engine. This method
+     * is called by {@link OpenCodeMcpManager} via the delegate pattern to
+     * discover which MCP servers need to be registered with the OpenCode server.
+     *
+     * @param taskId       the task ID
+     * @param environment  environment variables (e.g. GitHub tokens)
+     * @param allowedTools the allowed tools list for filtering
+     * @return list of MCP server configurations
+     */
+    List<McpServerConfig> getMcpServersForOpenCode(Long taskId, Map<String, String> environment,
+                                                    List<String> allowedTools) {
+        boolean hasRestrictions = allowedTools != null && !allowedTools.isEmpty();
+
+        List<McpServerConfig> configs = new ArrayList<>();
+
+        // Script tools → axiom-tools local MCP server
+        List<ToolDefinitionEntity> scriptTools = ToolDefinitionEntity.<ToolDefinitionEntity>listAll()
+                .stream()
+                .filter(t -> !hasRestrictions
+                        || allowedTools.contains(AXIOM_TOOLS_PREFIX + t.name))
+                .toList();
+
+        if (!scriptTools.isEmpty()) {
+            try {
+                Path serverDir = ensureMcpServerInstalled();
+                Path toolsJson = writeToolsJson(scriptTools, taskId);
+
+                List<String> command = List.of(
+                        "node",
+                        serverDir.resolve("server.js").toAbsolutePath().toString(),
+                        toolsJson.toAbsolutePath().toString()
+                );
+                configs.add(McpServerConfig.local("axiom-tools", command, environment));
+
+            } catch (Exception e) {
+                LOG.errorf(e, "Failed to prepare axiom-tools MCP server for task %d", taskId);
+            }
+        }
+
+        // External MCP servers
+        List<McpServerEntity> mcpServers = McpServerEntity.<McpServerEntity>listAll()
+                .stream()
+                .filter(s -> !hasRestrictions
+                        || allowedTools.stream().anyMatch(a -> a.startsWith("mcp__" + s.name + "__")))
+                .toList();
+
+        for (McpServerEntity mcp : mcpServers) {
+            if (mcp.serverUrl != null && !mcp.serverUrl.isBlank()) {
+                // Remote/HTTP server
+                configs.add(McpServerConfig.remote(mcp.name, mcp.serverUrl));
+            } else if (mcp.serverCommand != null) {
+                // Local/stdio server
+                List<String> command = new ArrayList<>();
+                command.add(mcp.serverCommand);
+                if (mcp.serverArgs != null) {
+                    try {
+                        List<String> args = objectMapper.readValue(mcp.serverArgs,
+                                new TypeReference<>() {});
+                        command.addAll(args);
+                    } catch (Exception e) {
+                        LOG.warnf("Failed to parse args for MCP server '%s': %s",
+                                mcp.name, e.getMessage());
+                    }
+                }
+
+                Map<String, String> env = new java.util.LinkedHashMap<>();
+                if (mcp.serverEnv != null) {
+                    try {
+                        env = objectMapper.readValue(mcp.serverEnv, new TypeReference<>() {});
+                    } catch (Exception e) {
+                        LOG.warnf("Failed to parse env for MCP server '%s': %s",
+                                mcp.name, e.getMessage());
+                    }
+                }
+
+                configs.add(McpServerConfig.local(mcp.name, command, env));
+            }
+        }
+
+        return configs;
     }
 
     /**

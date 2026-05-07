@@ -31,6 +31,7 @@ export interface StartupCheck {
 
 export interface SystemConfig {
     version: string;
+    engine?: string;
     features: Record<string, boolean>;
     checks?: StartupCheck[];
 }
@@ -118,6 +119,12 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
 export async function fetchModels(): Promise<string[]> {
     const response = await fetch(`${API}/system/models`);
     if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchEngines(): Promise<string[]> {
+    const response = await fetch(`${API}/system/engines`);
+    if (!response.ok) throw new Error(`Failed to fetch engines: ${response.status}`);
     return response.json();
 }
 
@@ -245,6 +252,7 @@ export interface ActionType {
     promptTemplate?: string;
     scriptTemplate?: string;
     model?: string;
+    engine?: string;
     emitsEvent: boolean;
 }
 
