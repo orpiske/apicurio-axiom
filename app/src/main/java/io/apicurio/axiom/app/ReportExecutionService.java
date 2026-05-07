@@ -10,6 +10,8 @@ import io.apicurio.axiom.core.entities.AiUsageEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.ReportEntity;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
+import io.apicurio.axiom.core.entities.SecretEntity;
+import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.core.services.ToolsetResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -45,6 +47,9 @@ public class ReportExecutionService {
 
     @Inject
     ToolsetResolver toolsetResolver;
+
+    @Inject
+    EncryptionService encryptionService;
 
     @ConfigProperty(name = "axiom.claude-code.model")
     Optional<String> model;
@@ -265,13 +270,14 @@ public class ReportExecutionService {
     }
 
     private Map<String, String> buildEnvironment() {
-        String token = System.getenv("AXIOM_GITHUB_TOKEN");
-        if (token == null || token.isBlank()) token = System.getenv("GH_TOKEN");
-        if (token == null || token.isBlank()) token = System.getenv("GITHUB_TOKEN");
-
-        if (token != null && !token.isBlank()) {
-            return Map.of("GH_TOKEN", token, "GITHUB_TOKEN", token);
+        Map<String, String> env = new java.util.HashMap<>();
+        for (SecretEntity secret : SecretEntity.<SecretEntity>listAll()) {
+            try {
+                env.put(secret.name, encryptionService.decrypt(secret.encryptedValue));
+            } catch (Exception e) {
+                LOG.warnf("Failed to decrypt secret '%s' for report — skipping", secret.name);
+            }
         }
-        return Map.of();
+        return env;
     }
 }

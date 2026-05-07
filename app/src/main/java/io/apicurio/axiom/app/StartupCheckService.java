@@ -1,5 +1,6 @@
 package io.apicurio.axiom.app;
 
+import io.apicurio.axiom.core.entities.SecretEntity;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -60,31 +61,33 @@ public class StartupCheckService {
     }
 
     private void checkGitHubToken() {
-        String token = System.getenv("AXIOM_GITHUB_TOKEN");
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GH_TOKEN");
+        boolean hasGhToken = SecretEntity.find("name", "GH_TOKEN").firstResult() != null
+                || SecretEntity.find("name", "GITHUB_TOKEN").firstResult() != null;
+
+        if (!hasGhToken) {
+            // Fall back to checking environment variables
+            String token = System.getenv("GH_TOKEN");
+            if (token == null || token.isBlank()) token = System.getenv("GITHUB_TOKEN");
+            hasGhToken = token != null && !token.isBlank();
         }
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GITHUB_TOKEN");
-        }
-        if (token == null || token.isBlank()) {
+
+        if (!hasGhToken) {
             results.add(new CheckResult(
                     "GitHub API Token",
-                    "error",
-                    "No GitHub token found. Set one of: AXIOM_GITHUB_TOKEN, GH_TOKEN, "
-                            + "or GITHUB_TOKEN. This token is required for polling GitHub "
-                            + "repositories and for AI agents to post comments on issues. "
+                    "warning",
+                    "No GitHub token found. Add a GH_TOKEN secret via Configuration > Secrets. "
+                            + "This is required for AI agents to use the gh CLI. "
                             + "Create a Personal Access Token at "
                             + "https://github.com/settings/tokens"
             ));
-            LOG.warn("Startup check FAILED: No GitHub token found");
+            LOG.warn("Startup check: No GitHub token secret configured");
         } else {
             results.add(new CheckResult(
                     "GitHub API Token",
                     "ok",
-                    "AXIOM_GITHUB_TOKEN is configured."
+                    "GitHub token is configured."
             ));
-            LOG.info("Startup check OK: AXIOM_GITHUB_TOKEN is set");
+            LOG.info("Startup check OK: GitHub token found");
         }
     }
 

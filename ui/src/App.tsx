@@ -56,6 +56,7 @@ import { DiskUsagePage } from "./pages/DiskUsagePage";
 import { ToolDetailPage } from "./pages/ToolDetailPage";
 import { ToolsetsPage } from "./pages/ToolsetsPage";
 import { ToolsetDetailPage } from "./pages/ToolsetDetailPage";
+import { SecretsPage } from "./pages/SecretsPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
 import { sseClient, type AxiomSseEvent } from "./config/sse";
@@ -68,7 +69,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/repositories", "/report-definitions"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/repositories", "/report-definitions"];
 
 let notificationIdCounter = 0;
 
@@ -248,6 +249,9 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/repositories")} onClick={() => navigate("/repositories")}>
                                 Repositories
                             </NavItem>
+                            <NavItem isActive={location.pathname === "/secrets"} onClick={() => navigate("/secrets")}>
+                                Secrets
+                            </NavItem>
                             <NavItem isActive={location.pathname.startsWith("/tools") && !location.pathname.startsWith("/toolsets")} onClick={() => navigate("/tools")}>
                                 Tools
                             </NavItem>
@@ -363,6 +367,7 @@ export function App() {
                     <Route path="/metrics/ai-usage" element={<AiUsagePage />} />
                     <Route path="/metrics/disk-usage" element={<DiskUsagePage />} />
                     <Route path="/repositories" element={<RepositoriesPage />} />
+                    <Route path="/secrets" element={<SecretsPage />} />
                 </Routes>
             )}
         </Page>

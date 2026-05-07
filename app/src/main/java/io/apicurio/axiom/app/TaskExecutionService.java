@@ -10,9 +10,11 @@ import io.apicurio.axiom.core.entities.ActorEntity;
 import io.apicurio.axiom.core.entities.EventEntity;
 import io.apicurio.axiom.core.entities.EventQueueEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
+import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
 import io.apicurio.axiom.core.events.SseEvent;
+import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.core.services.ToolsetResolver;
 import io.apicurio.axiom.core.services.WorkspaceService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -58,8 +60,8 @@ public class TaskExecutionService {
     @Inject
     ScriptExecutionService scriptExecutionService;
 
-    @ConfigProperty(name = "axiom.github.token")
-    Optional<String> githubToken;
+    @Inject
+    EncryptionService encryptionService;
 
     /**
      * Attempts to execute the next pending task for the given project.
@@ -224,29 +226,25 @@ public class TaskExecutionService {
 
     /**
      * Builds environment variables to pass to the actor subprocess.
-     * Includes the GitHub token so gh CLI commands can authenticate.
+     * Loads all configured secrets, decrypts them, and injects them
+     * as environment variables.
      */
     private Map<String, String> buildEnvironment() {
         Map<String, String> env = new HashMap<>();
 
-        // Try config property first, then fall back to env vars directly
-        String token = githubToken.orElse(null);
-        if (token == null || token.isBlank()) {
-            token = System.getenv("AXIOM_GITHUB_TOKEN");
-        }
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GH_TOKEN");
-        }
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GITHUB_TOKEN");
+        List<SecretEntity> secrets = SecretEntity.listAll();
+        for (SecretEntity secret : secrets) {
+            try {
+                env.put(secret.name, encryptionService.decrypt(secret.encryptedValue));
+            } catch (Exception e) {
+                LOG.warnf("Failed to decrypt secret '%s' — skipping", secret.name);
+            }
         }
 
-        if (token != null && !token.isBlank()) {
-            env.put("GH_TOKEN", token);
-            env.put("GITHUB_TOKEN", token);
-            LOG.debugf("GH_TOKEN set for subprocess (%d chars)", token.length());
+        if (secrets.isEmpty()) {
+            LOG.debug("No secrets configured — subprocess will have no injected credentials");
         } else {
-            LOG.warnf("No GitHub token configured — gh CLI commands will fail");
+            LOG.debugf("Injected %d secret(s) into subprocess environment", secrets.size());
         }
 
         return env;

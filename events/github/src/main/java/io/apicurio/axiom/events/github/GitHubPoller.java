@@ -3,12 +3,13 @@ package io.apicurio.axiom.events.github;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
+import io.apicurio.axiom.core.entities.SecretEntity;
+import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.events.core.EventService;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
@@ -44,8 +45,8 @@ public class GitHubPoller {
     @Inject
     ObjectMapper objectMapper;
 
-    @ConfigProperty(name = "axiom.github.token")
-    Optional<String> githubToken;
+    @Inject
+    EncryptionService encryptionService;
 
     /**
      * Polls all GitHub repositories that have polling enabled.
@@ -68,16 +69,7 @@ public class GitHubPoller {
     }
 
     private void pollRepository(RepositoryEntity repo) {
-        String token = githubToken.orElse(null);
-        if (token == null || token.isBlank()) {
-            token = System.getenv("AXIOM_GITHUB_TOKEN");
-        }
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GH_TOKEN");
-        }
-        if (token == null || token.isBlank()) {
-            token = System.getenv("GITHUB_TOKEN");
-        }
+        String token = resolveGitHubToken();
         Instant pollStartedAt = Instant.now();
         Instant since = repo.lastPolledAt;
 
@@ -286,5 +278,30 @@ public class GitHubPoller {
         if (repo != null) {
             repo.lastPolledAt = polledAt;
         }
+    }
+
+    private String resolveGitHubToken() {
+        // Try secrets store first
+        SecretEntity secret = SecretEntity.find("name", "GH_TOKEN").firstResult();
+        if (secret != null) {
+            try {
+                return encryptionService.decrypt(secret.encryptedValue);
+            } catch (Exception e) {
+                LOG.warn("Failed to decrypt GH_TOKEN secret");
+            }
+        }
+        secret = SecretEntity.find("name", "GITHUB_TOKEN").firstResult();
+        if (secret != null) {
+            try {
+                return encryptionService.decrypt(secret.encryptedValue);
+            } catch (Exception e) {
+                LOG.warn("Failed to decrypt GITHUB_TOKEN secret");
+            }
+        }
+
+        // Fall back to environment variables
+        String token = System.getenv("GH_TOKEN");
+        if (token == null || token.isBlank()) token = System.getenv("GITHUB_TOKEN");
+        return token;
     }
 }

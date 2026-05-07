@@ -551,6 +551,51 @@ export async function deleteToolset(id: number): Promise<void> {
     if (!response.ok) throw new Error(`Failed to delete toolset: ${response.status}`);
 }
 
+// ── Secrets ──────────────────────────────────────────────────────
+
+export interface Secret {
+    id: number;
+    name: string;
+    description?: string;
+}
+
+export interface NewSecret {
+    name: string;
+    description?: string;
+    value: string;
+}
+
+export async function fetchSecrets(): Promise<Secret[]> {
+    const response = await fetch(`${API}/secrets`);
+    if (!response.ok) throw new Error(`Failed to fetch secrets: ${response.status}`);
+    return response.json();
+}
+
+export async function createSecret(secret: NewSecret): Promise<Secret> {
+    const response = await fetch(`${API}/secrets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(secret),
+    });
+    if (!response.ok) throw new Error(`Failed to create secret: ${response.status}`);
+    return response.json();
+}
+
+export async function updateSecret(id: number, secret: NewSecret): Promise<Secret> {
+    const response = await fetch(`${API}/secrets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(secret),
+    });
+    if (!response.ok) throw new Error(`Failed to update secret: ${response.status}`);
+    return response.json();
+}
+
+export async function deleteSecret(id: number): Promise<void> {
+    const response = await fetch(`${API}/secrets/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete secret: ${response.status}`);
+}
+
 // ── Manager Configuration ────────────────────────────────────────
 
 export interface ManagerConfig {

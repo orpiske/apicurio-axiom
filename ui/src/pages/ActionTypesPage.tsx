@@ -52,7 +52,8 @@ export function ActionTypesPage() {
             name: newName,
             executionMode: newMode,
             userTriggerable: false,
-            emitsEvent: true,
+            managerTriggerable: false,
+            emitsEvent: false,
         };
         createActionType(data)
             .then((created) => {

@@ -1759,6 +1759,45 @@
       },
       "parameters": [{ "name": "mcpServerId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
     },
+    "/secrets": {
+      "get": {
+        "tags": ["Secrets"],
+        "summary": "List all secrets",
+        "description": "Returns secret names and descriptions. Values are never returned.",
+        "operationId": "listSecrets",
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Secret" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Secrets"],
+        "summary": "Create a secret",
+        "operationId": "createSecret",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewSecret" } } }, "required": true },
+        "responses": {
+          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Secret" } } } }
+        }
+      }
+    },
+    "/secrets/{secretId}": {
+      "put": {
+        "tags": ["Secrets"],
+        "summary": "Update a secret",
+        "operationId": "updateSecret",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewSecret" } } }, "required": true },
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Secret" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Secrets"],
+        "summary": "Delete a secret",
+        "operationId": "deleteSecret",
+        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "parameters": [{ "name": "secretId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+    },
     "/toolsets": {
       "get": {
         "tags": ["Toolsets"],
@@ -2871,6 +2910,24 @@
           "name": { "type": "string" },
           "description": { "type": "string" },
           "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Secret": {
+        "required": ["id", "name"],
+        "type": "object",
+        "properties": {
+          "id": { "format": "int64", "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "NewSecret": {
+        "required": ["name", "value"],
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "value": { "description": "The secret value (write-only, never returned in responses)", "type": "string" }
         }
       },
       "ReportAiEditRequest": {
