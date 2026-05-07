@@ -239,6 +239,7 @@ export interface ActionType {
     description?: string;
     executionMode: string;
     userTriggerable: boolean;
+    managerTriggerable: boolean;
     inputSchema?: string;
     allowedTools?: string[];
     promptTemplate?: string;

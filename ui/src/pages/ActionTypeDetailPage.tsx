@@ -43,7 +43,7 @@ export function ActionTypeDetailPage() {
 
     const [actionType, setActionType] = useState<ActionType | null>(null);
     const [form, setForm] = useState<NewActionType>({
-        name: "", executionMode: "actor", userTriggerable: false, emitsEvent: true,
+        name: "", executionMode: "actor", userTriggerable: false, managerTriggerable: true, emitsEvent: true,
     });
     const [tools, setTools] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
@@ -64,6 +64,7 @@ export function ActionTypeDetailPage() {
                     description: at.description,
                     executionMode: at.executionMode,
                     userTriggerable: at.userTriggerable,
+                    managerTriggerable: at.managerTriggerable,
                     emitsEvent: at.emitsEvent,
                     inputSchema: at.inputSchema,
                     allowedTools: at.allowedTools,
@@ -278,6 +279,12 @@ function InfoTab({ form, updateForm, availableModels }: {
                     label="User triggerable — can be manually triggered from the project detail page"
                     isChecked={form.userTriggerable}
                     onChange={(_e, v) => updateForm({ userTriggerable: v })}
+                />
+                <Checkbox
+                    id="managerTriggerable"
+                    label="Manager triggerable — can be selected by the AI Manager during event triage"
+                    isChecked={form.managerTriggerable}
+                    onChange={(_e, v) => updateForm({ managerTriggerable: v })}
                 />
                 <Checkbox
                     id="emitsEvent"

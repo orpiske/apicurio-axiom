@@ -86,6 +86,7 @@ public class ActionResourceImpl implements ActionResource {
         entity.description = data.getDescription();
         entity.executionMode = data.getExecutionMode().value();
         entity.userTriggerable = data.getUserTriggerable() != null ? data.getUserTriggerable() : false;
+        entity.managerTriggerable = data.getManagerTriggerable() != null ? data.getManagerTriggerable() : true;
         entity.inputSchema = data.getInputSchema();
         entity.allowedTools = data.getAllowedTools() != null
                 ? String.join(", ", data.getAllowedTools()) : null;
@@ -110,6 +111,7 @@ public class ActionResourceImpl implements ActionResource {
         actionType.setDescription(entity.description);
         actionType.setExecutionMode(ActionType.ExecutionMode.fromValue(entity.executionMode));
         actionType.setUserTriggerable(entity.userTriggerable);
+        actionType.setManagerTriggerable(entity.managerTriggerable);
         actionType.setInputSchema(entity.inputSchema);
         if (entity.allowedTools != null && !entity.allowedTools.isBlank()) {
             actionType.setAllowedTools(java.util.Arrays.stream(entity.allowedTools.split(","))

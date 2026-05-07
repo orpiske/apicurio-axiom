@@ -565,6 +565,7 @@ public class SeedDataInitializer {
         entity.description = description;
         entity.executionMode = executionMode;
         entity.userTriggerable = userTriggerable;
+        entity.managerTriggerable = true;
         entity.emitsEvent = emitsEvent;
         entity.allowedTools = allowedTools;
         entity.promptTemplate = promptTemplate;

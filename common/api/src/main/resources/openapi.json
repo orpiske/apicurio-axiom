@@ -2217,6 +2217,9 @@
           "userTriggerable": {
             "type": "boolean"
           },
+          "managerTriggerable": {
+            "type": "boolean"
+          },
           "inputSchema": {
             "type": "string"
           },
@@ -2265,6 +2268,9 @@
             "type": "string"
           },
           "userTriggerable": {
+            "type": "boolean"
+          },
+          "managerTriggerable": {
             "type": "boolean"
           },
           "inputSchema": {
