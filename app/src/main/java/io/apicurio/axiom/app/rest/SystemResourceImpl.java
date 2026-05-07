@@ -7,6 +7,7 @@ import io.apicurio.axiom.api.beans.SystemHealth;
 import io.apicurio.axiom.api.SystemResource;
 import io.apicurio.axiom.app.StartupCheckService;
 import io.apicurio.axiom.engine.spi.AiEngine;
+import io.apicurio.axiom.engine.spi.AiEngineRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -37,6 +38,9 @@ public class SystemResourceImpl implements SystemResource {
 
     @Inject
     AiEngine aiEngine;
+
+    @Inject
+    AiEngineRegistry engineRegistry;
 
     @Inject
     StartupCheckService startupCheckService;
@@ -72,6 +76,14 @@ public class SystemResourceImpl implements SystemResource {
                 })
                 .toList());
         return config;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> listEngines() {
+        return engineRegistry.getAvailableEngineTypes();
     }
 
     /**

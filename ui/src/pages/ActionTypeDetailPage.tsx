@@ -36,6 +36,7 @@ import {
     fetchActionType,
     updateActionType,
     fetchModels,
+    fetchEngines,
 } from "../config/api";
 
 export function ActionTypeDetailPage() {
@@ -53,6 +54,7 @@ export function ActionTypeDetailPage() {
     const [activeTab, setActiveTab] = useState(0);
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [availableEngines, setAvailableEngines] = useState<string[]>([]);
 
     const loadData = useCallback(() => {
         if (!id) return;
@@ -72,6 +74,7 @@ export function ActionTypeDetailPage() {
                     promptTemplate: at.promptTemplate,
                     scriptTemplate: at.scriptTemplate,
                     model: at.model,
+                    engine: at.engine,
                 });
                 setTools(at.allowedTools || []);
                 setDirty(false);
@@ -83,6 +86,7 @@ export function ActionTypeDetailPage() {
     useEffect(() => { loadData(); }, [loadData]);
     useEffect(() => {
         fetchModels().then(setAvailableModels).catch(console.error);
+        fetchEngines().then(setAvailableEngines).catch(console.error);
     }, []);
 
     const updateForm = (updates: Partial<NewActionType>) => {
@@ -174,7 +178,7 @@ export function ActionTypeDetailPage() {
             <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
                 <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
                     <TabContent id="info-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                        <InfoTab form={form} updateForm={updateForm} availableModels={availableModels} />
+                        <InfoTab form={form} updateForm={updateForm} availableModels={availableModels} availableEngines={availableEngines} />
                     </TabContent>
                 </Tab>
                 {form.executionMode === "actor" && (
@@ -224,10 +228,11 @@ export function ActionTypeDetailPage() {
     );
 }
 
-function InfoTab({ form, updateForm, availableModels }: {
+function InfoTab({ form, updateForm, availableModels, availableEngines }: {
     form: NewActionType;
     updateForm: (updates: Partial<NewActionType>) => void;
     availableModels: string[];
+    availableEngines: string[];
 }) {
     return (
         <Form style={{ maxWidth: "600px" }}>
@@ -257,6 +262,23 @@ function InfoTab({ form, updateForm, availableModels }: {
                     <FormSelectOption value="script" label="Script — executes a bash script" />
                 </FormSelect>
             </FormGroup>
+            {form.executionMode === "actor" && availableEngines.length > 1 && (
+                <FormGroup label="AI Engine" fieldId="engine">
+                    <HelperText>
+                        <HelperTextItem>AI engine to use for this action type. Select 'Global default' to use the system-wide setting.</HelperTextItem>
+                    </HelperText>
+                    <FormSelect
+                        id="engine"
+                        value={form.engine || ""}
+                        onChange={(_e, v) => updateForm({ engine: v || undefined })}
+                    >
+                        <FormSelectOption value="" label="Global default" />
+                        {availableEngines.map((e) => (
+                            <FormSelectOption key={e} value={e} label={e === "opencode" ? "OpenCode" : e === "claude-code" ? "Claude Code" : e} />
+                        ))}
+                    </FormSelect>
+                </FormGroup>
+            )}
             {form.executionMode === "actor" && (
                 <FormGroup label="Model" fieldId="model">
                     <HelperText>

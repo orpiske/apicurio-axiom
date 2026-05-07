@@ -76,6 +76,23 @@
         }
       }
     },
+    "/system/engines": {
+      "get": {
+        "tags": ["System"],
+        "summary": "List available AI engines",
+        "description": "Returns the list of AI engine types that are available (e.g. claude-code, opencode).",
+        "operationId": "listEngines",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects": {
       "get": {
         "tags": [
@@ -2287,6 +2304,10 @@
           "model": {
             "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
             "type": "string"
+          },
+          "engine": {
+            "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
+            "type": "string"
           }
         }
       },
@@ -2339,6 +2360,10 @@
           },
           "model": {
             "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
+            "type": "string"
+          },
+          "engine": {
+            "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
             "type": "string"
           }
         }

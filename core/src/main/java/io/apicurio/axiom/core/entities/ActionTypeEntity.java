@@ -47,6 +47,14 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "model")
     public String model;
 
+    /**
+     * Optional AI engine override (e.g. "opencode", "claude-code").
+     * When null, the global default engine ({@code axiom.ai-engine}) is used.
+     * This allows different action types to use different AI engines.
+     */
+    @Column(name = "engine")
+    public String engine;
+
     @Column(name = "manager_triggerable", nullable = false)
     public boolean managerTriggerable;
 

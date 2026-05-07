@@ -122,6 +122,12 @@ export async function fetchModels(): Promise<string[]> {
     return response.json();
 }
 
+export async function fetchEngines(): Promise<string[]> {
+    const response = await fetch(`${API}/system/engines`);
+    if (!response.ok) throw new Error(`Failed to fetch engines: ${response.status}`);
+    return response.json();
+}
+
 // ── Projects ──────────────────────────────────────────────────────
 
 export async function fetchProjects(
@@ -246,6 +252,7 @@ export interface ActionType {
     promptTemplate?: string;
     scriptTemplate?: string;
     model?: string;
+    engine?: string;
     emitsEvent: boolean;
 }
 
