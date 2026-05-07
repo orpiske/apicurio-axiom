@@ -20,6 +20,8 @@ import {
     Title,
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import MinusCircleIcon from "@patternfly/react-icons/dist/esm/icons/minus-circle-icon";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
 import {
@@ -50,7 +52,8 @@ export function ActionTypesPage() {
             name: newName,
             executionMode: newMode,
             userTriggerable: false,
-            emitsEvent: true,
+            managerTriggerable: false,
+            emitsEvent: false,
         };
         createActionType(data)
             .then((created) => {
@@ -95,6 +98,7 @@ export function ActionTypesPage() {
                                 <Th>Name</Th>
                                 <Th>Mode</Th>
                                 <Th>User Triggerable</Th>
+                                <Th>Manager Triggerable</Th>
                                 <Th>Emits Event</Th>
                                 <Th>Tools</Th>
                                 <Th>Template</Th>
@@ -114,8 +118,15 @@ export function ActionTypesPage() {
                                             {at.executionMode}
                                         </Label>
                                     </Td>
-                                    <Td>{at.userTriggerable ? "Yes" : "No"}</Td>
-                                    <Td>{at.emitsEvent ? "Yes" : "No"}</Td>
+                                    <Td>{at.userTriggerable
+                                        ? <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+                                        : <MinusCircleIcon color="var(--pf-t--global--icon--color--disabled)" />}</Td>
+                                    <Td>{at.managerTriggerable
+                                        ? <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+                                        : <MinusCircleIcon color="var(--pf-t--global--icon--color--disabled)" />}</Td>
+                                    <Td>{at.emitsEvent
+                                        ? <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+                                        : <MinusCircleIcon color="var(--pf-t--global--icon--color--disabled)" />}</Td>
                                     <Td>{at.executionMode === "actor" ? `${at.allowedTools?.length || 0} tools` : "—"}</Td>
                                     <Td>{at.executionMode === "actor"
                                         ? (at.promptTemplate ? "Configured" : "—")

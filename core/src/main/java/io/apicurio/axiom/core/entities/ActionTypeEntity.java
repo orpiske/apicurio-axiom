@@ -47,6 +47,9 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "model")
     public String model;
 
+    @Column(name = "manager_triggerable", nullable = false)
+    public boolean managerTriggerable;
+
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;
 }

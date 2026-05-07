@@ -63,7 +63,7 @@ public class ManagerService {
         LOG.infof("Manager evaluating event %d: %s [%s]", event.id, event.eventType, event.issueRef);
 
         // Load context
-        List<ActionTypeEntity> actionTypes = ActionTypeEntity.listAll();
+        List<ActionTypeEntity> actionTypes = ActionTypeEntity.list("managerTriggerable", true);
         List<ActorEntity> actors = ActorEntity.listAll();
 
         // Find existing project for this issue

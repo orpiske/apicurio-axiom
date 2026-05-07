@@ -7,12 +7,15 @@ import io.apicurio.axiom.core.entities.ActorEntity;
 import io.apicurio.axiom.core.entities.ManagerConfigEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.RepositoryEntity;
+import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
 import io.apicurio.axiom.core.entities.ToolsetEntity;
+import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.manager.ManagerPromptBuilder;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
@@ -23,6 +26,9 @@ import org.jboss.logging.Logger;
 public class SeedDataInitializer {
 
     private static final Logger LOG = Logger.getLogger(SeedDataInitializer.class);
+
+    @Inject
+    EncryptionService encryptionService;
 
     /**
      * Called on application startup to seed built-in action types.
@@ -253,6 +259,7 @@ public class SeedDataInitializer {
         seedManagerConfig();
         seedRepository();
         seedReportDefinitions();
+        seedSecrets();
     }
 
     private void seedTools() {
@@ -451,6 +458,40 @@ public class SeedDataInitializer {
 
     // Action types reference toolsets by name using the @ToolsetName syntax.
     // At execution time, ToolsetResolver expands these into individual tools.
+    private void seedSecrets() {
+        if (SecretEntity.count() > 0) {
+            LOG.info("Secrets already exist, skipping secret seed data");
+            return;
+        }
+
+        // Auto-import GitHub token from environment if available
+        String ghToken = System.getenv("GH_TOKEN");
+        if (ghToken == null || ghToken.isBlank()) {
+            ghToken = System.getenv("GITHUB_TOKEN");
+        }
+        if (ghToken == null || ghToken.isBlank()) {
+            ghToken = System.getenv("AXIOM_GITHUB_TOKEN");
+        }
+
+        if (ghToken != null && !ghToken.isBlank()) {
+            SecretEntity secret = new SecretEntity();
+            secret.name = "GH_TOKEN";
+            secret.description = "GitHub personal access token for gh CLI authentication";
+            secret.encryptedValue = encryptionService.encrypt(ghToken);
+            secret.persist();
+
+            SecretEntity secret2 = new SecretEntity();
+            secret2.name = "GITHUB_TOKEN";
+            secret2.description = "GitHub token (alias for GH_TOKEN)";
+            secret2.encryptedValue = encryptionService.encrypt(ghToken);
+            secret2.persist();
+
+            LOG.info("Auto-imported GitHub token from environment into secrets store");
+        } else {
+            LOG.info("No GitHub token found in environment — add via Configuration > Secrets");
+        }
+    }
+
     private static final String READ_ONLY_TOOLS = "@Read-Only Tools";
     private static final String READ_PLUS_MCP_TOOLS = "@Read + MCP Tools";
     private static final String WRITE_TOOLS = "@Write Tools";
@@ -565,6 +606,7 @@ public class SeedDataInitializer {
         entity.description = description;
         entity.executionMode = executionMode;
         entity.userTriggerable = userTriggerable;
+        entity.managerTriggerable = true;
         entity.emitsEvent = emitsEvent;
         entity.allowedTools = allowedTools;
         entity.promptTemplate = promptTemplate;

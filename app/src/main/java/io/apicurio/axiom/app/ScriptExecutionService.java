@@ -3,9 +3,11 @@ package io.apicurio.axiom.app;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ActivityLogEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
+import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
 import io.apicurio.axiom.core.events.SseEvent;
+import io.apicurio.axiom.core.services.EncryptionService;
 import io.quarkus.arc.Arc;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -33,6 +35,9 @@ public class ScriptExecutionService {
 
     @Inject
     Event<SseEvent> sseEvents;
+
+    @Inject
+    EncryptionService encryptionService;
 
     @ConfigProperty(name = "quarkus.http.port", defaultValue = "8080")
     int httpPort;
@@ -89,6 +94,15 @@ public class ScriptExecutionService {
             pb.environment().put("AXIOM_API_URL", "http://localhost:" + httpPort + "/api/v1");
             pb.environment().put("AXIOM_PROJECT_ID", String.valueOf(task.projectId));
             pb.environment().put("AXIOM_TASK_ID", String.valueOf(task.id));
+
+            // Inject all configured secrets into the process environment
+            for (SecretEntity secret : SecretEntity.<SecretEntity>listAll()) {
+                try {
+                    pb.environment().put(secret.name, encryptionService.decrypt(secret.encryptedValue));
+                } catch (Exception e) {
+                    LOG.warnf("Failed to decrypt secret '%s' for script — skipping", secret.name);
+                }
+            }
 
             Process process = pb.start();
             String output = new String(process.getInputStream().readAllBytes());

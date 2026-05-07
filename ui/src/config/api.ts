@@ -240,6 +240,7 @@ export interface ActionType {
     description?: string;
     executionMode: string;
     userTriggerable: boolean;
+    managerTriggerable: boolean;
     inputSchema?: string;
     allowedTools?: string[];
     promptTemplate?: string;
@@ -551,6 +552,51 @@ export async function deleteToolset(id: number): Promise<void> {
     if (!response.ok) throw new Error(`Failed to delete toolset: ${response.status}`);
 }
 
+// ── Secrets ──────────────────────────────────────────────────────
+
+export interface Secret {
+    id: number;
+    name: string;
+    description?: string;
+}
+
+export interface NewSecret {
+    name: string;
+    description?: string;
+    value: string;
+}
+
+export async function fetchSecrets(): Promise<Secret[]> {
+    const response = await fetch(`${API}/secrets`);
+    if (!response.ok) throw new Error(`Failed to fetch secrets: ${response.status}`);
+    return response.json();
+}
+
+export async function createSecret(secret: NewSecret): Promise<Secret> {
+    const response = await fetch(`${API}/secrets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(secret),
+    });
+    if (!response.ok) throw new Error(`Failed to create secret: ${response.status}`);
+    return response.json();
+}
+
+export async function updateSecret(id: number, secret: NewSecret): Promise<Secret> {
+    const response = await fetch(`${API}/secrets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(secret),
+    });
+    if (!response.ok) throw new Error(`Failed to update secret: ${response.status}`);
+    return response.json();
+}
+
+export async function deleteSecret(id: number): Promise<void> {
+    const response = await fetch(`${API}/secrets/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete secret: ${response.status}`);
+}
+
 // ── Manager Configuration ────────────────────────────────────────
 
 export interface ManagerConfig {
@@ -660,6 +706,30 @@ export interface Report {
     costUsd?: number;
     createdOn: string;
     completedOn?: string;
+}
+
+export interface ReportAiEditRequest {
+    message: string;
+    currentPromptTemplate?: string;
+    currentAllowedTools?: string[];
+    reportName?: string;
+    reportDescription?: string;
+}
+
+export interface ReportAiEditResponse {
+    promptTemplate?: string;
+    allowedTools?: string[];
+    explanation?: string;
+}
+
+export async function aiEditReportPrompt(request: ReportAiEditRequest): Promise<ReportAiEditResponse> {
+    const response = await fetch(`${API}/reports/ai-edit-prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new Error(`Failed to AI edit report prompt: ${response.status}`);
+    return response.json();
 }
 
 export async function fetchReportDefinitions(): Promise<ReportDefinition[]> {

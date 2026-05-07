@@ -17,7 +17,7 @@ long-lived projects around them, and delegates work to human and AI actors.
 |-----------|-----------|
 | Backend | Java 25 / Quarkus 3.33 LTS |
 | Frontend | TypeScript / React / PatternFly |
-| Database | H2 (dev) / PostgreSQL (prod) |
+| Database | H2 (in-memory dev, file-based prod) |
 | AI | Pluggable: Claude Code CLI or OpenCode (configurable) |
 | API | Contract-first OpenAPI + apicurio-codegen |
 
@@ -44,11 +44,11 @@ Only the selected engine's binary needs to be installed. Both can coexist for te
 ## Build
 
 ```bash
-# Standard build (skips Claude CLI integration tests)
+# Standard build (backend only, no UI)
 ./build.sh
 
-# Full build including Claude CLI integration tests
-./build-all.sh
+# Release build (backend + UI bundled into uber-jar)
+./build-release.sh
 ```
 
 ## Development
@@ -78,6 +78,40 @@ events/jira/         Jira integration (planned)
 notifications/       Slack, Telegram channels (planned)
 app/                 Quarkus application (assembles everything)
 ui/                  React frontend
+```
+
+## Database Migrations (Flyway)
+
+Schema migrations are managed by [Flyway](https://flywaydb.org/) and run automatically on
+startup for persistent databases (the `persist` and `prod` profiles). Migration files are
+located in `app/src/main/resources/db/migration/`.
+
+### How it works
+
+- **Dev mode** (`quarkus:dev`): Uses Hibernate's `drop-and-create` — no Flyway, schema is
+  recreated on every restart. Fast for development.
+- **Persist/Prod mode**: Flyway runs migrations at startup. Hibernate schema generation is
+  set to `none` — Flyway owns the schema.
+
+### Adding a new migration
+
+1. Create a new SQL file in `app/src/main/resources/db/migration/` following the naming
+   convention: `V<number>__<description>.sql` (e.g. `V3__add_priority_to_task.sql`)
+2. Write standard SQL DDL statements. Use `IF NOT EXISTS` / `IF EXISTS` guards for safety.
+3. The migration runs automatically on the next startup of a persistent database.
+
+### Existing databases
+
+Flyway is configured with `baseline-on-migrate=true` and `baseline-version=1`. This means
+existing databases that were created before Flyway was introduced will be automatically
+baselined — Flyway skips V1 (the full schema creation) and applies only new migrations
+(V2+).
+
+### Example migration
+
+```sql
+-- V3__add_priority_to_task.sql
+ALTER TABLE task ADD COLUMN IF NOT EXISTS priority VARCHAR(255) DEFAULT 'normal';
 ```
 
 ## Documentation
