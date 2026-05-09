@@ -52,6 +52,13 @@ public class ReportDefinitionEntity extends PanacheEntity {
     @Column(name = "allowed_tools", columnDefinition = "TEXT")
     public String allowedTools;
 
+    /**
+     * Optional JSON object of environment variables for the subprocess.
+     * Values can reference secrets using ${secret:NAME} syntax.
+     */
+    @Column(columnDefinition = "TEXT")
+    public String environment;
+
     @Column(nullable = false)
     public boolean enabled;
 

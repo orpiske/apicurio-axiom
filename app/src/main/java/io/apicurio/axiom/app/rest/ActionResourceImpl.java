@@ -7,6 +7,9 @@ import io.apicurio.axiom.api.beans.ReportAiEditRequest;
 import io.apicurio.axiom.api.beans.ReportAiEditResponse;
 import io.apicurio.axiom.api.beans.ScriptAiEditRequest;
 import io.apicurio.axiom.api.beans.ScriptAiEditResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.apicurio.axiom.api.beans.Environment;
 import io.apicurio.axiom.app.ActionTypeAiService;
 import io.apicurio.axiom.app.ScriptAiService;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
@@ -21,6 +24,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of the Action Types REST API.
@@ -28,6 +32,9 @@ import java.util.List;
 @ApplicationScoped
 @RunOnVirtualThread
 public class ActionResourceImpl implements ActionResource {
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Inject
     ScriptAiService scriptAiService;
@@ -100,6 +107,7 @@ public class ActionResourceImpl implements ActionResource {
         entity.scriptTemplate = data.getScriptTemplate();
         entity.model = data.getModel();
         entity.emitsEvent = data.getEmitsEvent() != null ? data.getEmitsEvent() : false;
+        entity.environment = environmentToJson(data.getEnvironment());
     }
 
     private ActionTypeEntity findOrThrow(long id) {
@@ -127,6 +135,7 @@ public class ActionResourceImpl implements ActionResource {
         actionType.setScriptTemplate(entity.scriptTemplate);
         actionType.setModel(entity.model);
         actionType.setEmitsEvent(entity.emitsEvent);
+        actionType.setEnvironment(jsonToEnvironment(entity.environment));
         return actionType;
     }
 
@@ -160,5 +169,26 @@ public class ActionResourceImpl implements ActionResource {
     @Transactional
     public void updateActionTypeTools(BigInteger actionTypeId) {
         // No-op: tool access is controlled by the action type's allowedTools field
+    }
+
+    private String environmentToJson(Environment env) {
+        if (env == null || env.getAdditionalProperties().isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(env.getAdditionalProperties());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Environment jsonToEnvironment(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            Map<String, String> map = objectMapper.readValue(json, new TypeReference<>() {});
+            Environment env = new Environment();
+            map.forEach(env::setAdditionalProperty);
+            return env;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

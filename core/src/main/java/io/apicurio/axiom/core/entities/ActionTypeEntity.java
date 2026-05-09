@@ -58,6 +58,14 @@ public class ActionTypeEntity extends PanacheEntity {
     @Column(name = "manager_triggerable", nullable = false)
     public boolean managerTriggerable;
 
+    /**
+     * Optional JSON object of environment variables for the subprocess.
+     * Values can reference secrets using ${secret:NAME} syntax.
+     * When set, replaces the default all-secrets injection.
+     */
+    @Column(columnDefinition = "TEXT")
+    public String environment;
+
     @Column(name = "emits_event", nullable = false)
     public boolean emitsEvent;
 }

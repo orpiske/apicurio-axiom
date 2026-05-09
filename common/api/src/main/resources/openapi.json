@@ -2217,6 +2217,11 @@
             "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
             "type": "string"
           },
+          "environment": {
+            "description": "Custom environment variables for the subprocess. Values can reference secrets using ${secret:NAME} syntax. When set, replaces the default all-secrets injection.",
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
           "engine": {
             "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
             "type": "string"
@@ -2273,6 +2278,11 @@
           "model": {
             "description": "AI model override for this action type (e.g. claude-sonnet-4-6). When empty, the global default is used.",
             "type": "string"
+          },
+          "environment": {
+            "description": "Custom environment variables for the subprocess. Values can reference secrets using ${secret:NAME} syntax. When set, replaces the default all-secrets injection.",
+            "type": "object",
+            "additionalProperties": { "type": "string" }
           },
           "engine": {
             "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
@@ -2442,6 +2452,7 @@
 
           "promptTemplate": { "type": "string" },
           "allowedTools": { "type": "array", "items": { "type": "string" } },
+          "environment": { "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.", "type": "object", "additionalProperties": { "type": "string" } },
           "enabled": { "type": "boolean" },
           "nextRunAt": { "format": "date-time", "type": "string" },
           "lastRunAt": { "format": "date-time", "type": "string" },
@@ -2461,6 +2472,7 @@
 
           "promptTemplate": { "type": "string" },
           "allowedTools": { "type": "array", "items": { "type": "string" } },
+          "environment": { "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.", "type": "object", "additionalProperties": { "type": "string" } },
           "enabled": { "type": "boolean" }
         }
       },

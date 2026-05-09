@@ -32,6 +32,7 @@ import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
 import PlayIcon from "@patternfly/react-icons/dist/esm/icons/play-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import {
     type ReportDefinition,
     type NewReportDefinition,
@@ -58,6 +59,7 @@ export function ReportDefinitionDetailPage() {
 
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [tools, setTools] = useState<string[]>([]);
+    const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
     // Generated reports for this definition
     const [reports, setReports] = useState<Report[]>([]);
@@ -79,6 +81,7 @@ export function ReportDefinitionDetailPage() {
                     promptTemplate: def.promptTemplate, enabled: def.enabled,
                 });
                 setTools(def.allowedTools || []);
+                setEnvVars(def.environment || {});
                 setReports(rpts.items);
                 setReportsTotalCount(rpts.totalCount);
                 setDirty(false);
@@ -96,9 +99,11 @@ export function ReportDefinitionDetailPage() {
 
     const handleSave = () => {
         setSaving(true);
+        const envToSend = Object.keys(envVars).length > 0 ? envVars : undefined;
         const data = {
             ...form,
             allowedTools: tools.length > 0 ? tools : undefined,
+            environment: envToSend,
         };
         updateReportDefinition(id, data)
             .then((updated) => { setDefinition(updated); setDirty(false); })
@@ -209,9 +214,20 @@ export function ReportDefinitionDetailPage() {
                     </TabContent>
                 </Tab>
                 <Tab eventKey={3} title={<TabTitleText>
+                    Environment{Object.keys(envVars).length > 0 ? ` (${Object.keys(envVars).length})` : ""}
+                </TabTitleText>}>
+                    <TabContent id="env-tab" eventKey={3} activeKey={activeTab}
+                        style={{ marginTop: "24px" }}>
+                        <EnvironmentTab
+                            envVars={envVars}
+                            onChange={(updated) => { setEnvVars(updated); setDirty(true); }}
+                        />
+                    </TabContent>
+                </Tab>
+                <Tab eventKey={4} title={<TabTitleText>
                     Generated Reports ({reportsTotalCount})
                 </TabTitleText>}>
-                    <TabContent id="reports-tab" eventKey={3} activeKey={activeTab}
+                    <TabContent id="reports-tab" eventKey={4} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
                         <GeneratedReportsTab reports={reports} />
                     </TabContent>
@@ -341,6 +357,111 @@ function AllowedToolsTab({ tools, addTool, removeTool }: {
                             <FlexItem>
                                 <Button variant="plain" size="sm" onClick={() => removeTool(tool)}
                                     aria-label={`Remove ${tool}`}>
+                                    <TimesIcon />
+                                </Button>
+                            </FlexItem>
+                        </Flex>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function EnvironmentTab({ envVars, onChange }: {
+    envVars: Record<string, string>;
+    onChange: (updated: Record<string, string>) => void;
+}) {
+    const [newName, setNewName] = useState("");
+    const [newValue, setNewValue] = useState("");
+
+    const entries = Object.entries(envVars);
+
+    const handleAdd = () => {
+        const trimmed = newName.trim();
+        if (!trimmed || trimmed in envVars) return;
+        onChange({ ...envVars, [trimmed]: newValue });
+        setNewName("");
+        setNewValue("");
+    };
+
+    const handleRemove = (key: string) => {
+        const updated = { ...envVars };
+        delete updated[key];
+        onChange(updated);
+    };
+
+    const handleValueChange = (key: string, value: string) => {
+        onChange({ ...envVars, [key]: value });
+    };
+
+    return (
+        <div style={{ maxWidth: "700px" }}>
+            <p style={{ color: "#6a6e73", marginBottom: "16px" }}>
+                Custom environment variables injected into the subprocess. When configured,
+                these replace the default all-secrets injection. Reference an encrypted secret
+                using <code>{"${secret:SECRET_NAME}"}</code> syntax.
+            </p>
+
+            <Flex alignItems={{ default: "alignItemsFlexEnd" }}
+                style={{ marginBottom: "16px", gap: "8px" }}>
+                <FlexItem style={{ flex: 1 }}>
+                    <FormGroup label="Name" fieldId="env-new-name">
+                        <TextInput id="env-new-name" value={newName}
+                            onChange={(_e, v) => setNewName(v)}
+                            placeholder="e.g. GH_TOKEN"
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+                        />
+                    </FormGroup>
+                </FlexItem>
+                <FlexItem style={{ flex: 2 }}>
+                    <FormGroup label="Value" fieldId="env-new-value">
+                        <TextInput id="env-new-value" value={newValue}
+                            onChange={(_e, v) => setNewValue(v)}
+                            placeholder="e.g. ${secret:GH_TOKEN}"
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+                        />
+                    </FormGroup>
+                </FlexItem>
+                <FlexItem>
+                    <Button variant="secondary" icon={<PlusCircleIcon />}
+                        onClick={handleAdd}
+                        isDisabled={!newName.trim() || newName.trim() in envVars}
+                        style={{ marginBottom: "1px" }}>
+                        Add
+                    </Button>
+                </FlexItem>
+            </Flex>
+
+            {entries.length === 0 ? (
+                <EmptyState>
+                    <EmptyStateBody>
+                        No custom environment configured. All secrets will be injected automatically.
+                    </EmptyStateBody>
+                </EmptyState>
+            ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {entries.map(([key, value]) => (
+                        <Flex key={key} alignItems={{ default: "alignItemsCenter" }}
+                            style={{
+                                padding: "8px 12px",
+                                backgroundColor: "var(--pf-t--global--background--color--secondary--default)",
+                                borderRadius: "4px",
+                            }}>
+                            <FlexItem style={{ minWidth: "160px" }}>
+                                <code style={{ fontSize: "13px", fontWeight: 600 }}>{key}</code>
+                            </FlexItem>
+                            <FlexItem grow={{ default: "grow" }}>
+                                <TextInput value={value}
+                                    onChange={(_e, v) => handleValueChange(key, v)}
+                                    aria-label={`Value for ${key}`}
+                                    style={{ fontSize: "13px" }}
+                                />
+                            </FlexItem>
+                            <FlexItem>
+                                <Button variant="plain" size="sm"
+                                    onClick={() => handleRemove(key)}
+                                    aria-label={`Remove ${key}`}>
                                     <TimesIcon />
                                 </Button>
                             </FlexItem>

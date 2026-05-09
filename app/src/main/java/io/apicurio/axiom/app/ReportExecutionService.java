@@ -8,6 +8,7 @@ import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.ReportEntity;
 import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.services.EncryptionService;
+import io.apicurio.axiom.core.services.EnvironmentResolver;
 import io.apicurio.axiom.core.services.ToolsetResolver;
 import io.apicurio.axiom.engine.spi.AiEngine;
 import io.apicurio.axiom.engine.spi.AiEngineConfig;
@@ -52,6 +53,9 @@ public class ReportExecutionService {
 
     @Inject
     EncryptionService encryptionService;
+
+    @Inject
+    EnvironmentResolver environmentResolver;
 
     @ConfigProperty(name = "axiom.claude-code.model")
     Optional<String> model;
@@ -115,7 +119,7 @@ public class ReportExecutionService {
         List<String> allowedTools = resolveAllowedTools(definition);
 
         // Generate MCP config with report-related tools
-        Map<String, String> env = buildEnvironment();
+        Map<String, String> env = buildEnvironment(definition.environment);
         Path mcpConfig = mcpManager.configureMcpServers(reportId, env, allowedTools);
 
         // Build engine-agnostic config
@@ -266,7 +270,10 @@ public class ReportExecutionService {
         return "Report";
     }
 
-    private Map<String, String> buildEnvironment() {
+    private Map<String, String> buildEnvironment(String customEnvironmentJson) {
+        if (environmentResolver.hasCustomEnvironment(customEnvironmentJson)) {
+            return environmentResolver.resolve(customEnvironmentJson);
+        }
         Map<String, String> env = new java.util.HashMap<>();
         for (SecretEntity secret : SecretEntity.<SecretEntity>listAll()) {
             try {

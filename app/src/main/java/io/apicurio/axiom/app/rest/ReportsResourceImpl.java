@@ -7,6 +7,9 @@ import io.apicurio.axiom.api.beans.ReportAiEditRequest;
 import io.apicurio.axiom.api.beans.ReportAiEditResponse;
 import io.apicurio.axiom.api.beans.ReportDefinition;
 import io.apicurio.axiom.api.beans.ReportSearchResults;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.apicurio.axiom.api.beans.Environment;
 import io.apicurio.axiom.app.ReportAiService;
 import io.apicurio.axiom.app.ReportQueueConsumer;
 import io.apicurio.axiom.app.ReportScheduler;
@@ -33,6 +36,9 @@ import java.util.Map;
 @ApplicationScoped
 @RunOnVirtualThread
 public class ReportsResourceImpl implements ReportsResource {
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Inject
     ReportScheduler reportScheduler;
@@ -220,6 +226,7 @@ public class ReportsResourceImpl implements ReportsResource {
         entity.allowedTools = data.getAllowedTools() != null
                 ? String.join(",", data.getAllowedTools()) : null;
         entity.enabled = data.getEnabled() != null ? data.getEnabled() : false;
+        entity.environment = environmentToJson(data.getEnvironment());
 
         // Compute nextRunAt when enabled (or schedule/time changes)
         if (entity.enabled) {
@@ -243,6 +250,7 @@ public class ReportsResourceImpl implements ReportsResource {
                     .map(String::trim).filter(s -> !s.isEmpty()).toList());
         }
         def.setEnabled(entity.enabled);
+        def.setEnvironment(jsonToEnvironment(entity.environment));
         if (entity.nextRunAt != null) def.setNextRunAt(Date.from(entity.nextRunAt));
         if (entity.lastRunAt != null) def.setLastRunAt(Date.from(entity.lastRunAt));
         def.setCreatedOn(Date.from(entity.createdOn));
@@ -263,5 +271,26 @@ public class ReportsResourceImpl implements ReportsResource {
         report.setCreatedOn(Date.from(entity.createdOn));
         if (entity.completedOn != null) report.setCompletedOn(Date.from(entity.completedOn));
         return report;
+    }
+
+    private String environmentToJson(Environment env) {
+        if (env == null || env.getAdditionalProperties().isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(env.getAdditionalProperties());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Environment jsonToEnvironment(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            Map<String, String> map = objectMapper.readValue(json, new TypeReference<>() {});
+            Environment env = new Environment();
+            map.forEach(env::setAdditionalProperty);
+            return env;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

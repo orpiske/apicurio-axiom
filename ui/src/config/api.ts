@@ -254,6 +254,7 @@ export interface ActionType {
     model?: string;
     engine?: string;
     emitsEvent: boolean;
+    environment?: Record<string, string>;
 }
 
 export type NewActionType = Omit<ActionType, "id">;
@@ -703,6 +704,7 @@ export interface ReportDefinition {
     promptTemplate: string;
     allowedTools?: string[];
     enabled: boolean;
+    environment?: Record<string, string>;
     nextRunAt?: string;
     lastRunAt?: string;
     createdOn: string;

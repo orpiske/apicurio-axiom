@@ -15,6 +15,7 @@ import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
 import io.apicurio.axiom.core.events.SseEvent;
 import io.apicurio.axiom.core.services.EncryptionService;
+import io.apicurio.axiom.core.services.EnvironmentResolver;
 import io.apicurio.axiom.core.services.ToolsetResolver;
 import io.apicurio.axiom.core.services.WorkspaceService;
 import io.apicurio.axiom.engine.spi.AiEngineMcpManager;
@@ -67,6 +68,9 @@ public class TaskExecutionService {
 
     @Inject
     EncryptionService encryptionService;
+
+    @Inject
+    EnvironmentResolver environmentResolver;
 
     /**
      * Attempts to execute the next pending task for the given project.
@@ -133,7 +137,8 @@ public class TaskExecutionService {
         // Build the actor context
         ProjectEntity project = ProjectEntity.findById(task.projectId);
         Path workspace = workspaceService.getWorkspacePath(project);
-        Map<String, String> env = buildEnvironment();
+        Map<String, String> env = buildEnvironment(
+                actionTypeEntity != null ? actionTypeEntity.environment : null);
 
         // Generate MCP config filtered to only the tools allowed by this action type
         List<String> allowedTools = getToolsFromActionType(task.actionType);
@@ -238,13 +243,19 @@ public class TaskExecutionService {
     }
 
     /**
-     * Builds environment variables to pass to the actor subprocess.
-     * Loads all configured secrets, decrypts them, and injects them
-     * as environment variables.
+     * Builds environment variables to pass to the subprocess.
+     * If the action type has a custom environment configured, resolves
+     * that (including ${secret:NAME} references). Otherwise falls back
+     * to injecting all configured secrets.
      */
-    private Map<String, String> buildEnvironment() {
-        Map<String, String> env = new HashMap<>();
+    private Map<String, String> buildEnvironment(String customEnvironmentJson) {
+        if (environmentResolver.hasCustomEnvironment(customEnvironmentJson)) {
+            Map<String, String> env = environmentResolver.resolve(customEnvironmentJson);
+            LOG.debugf("Using custom environment with %d variable(s)", env.size());
+            return env;
+        }
 
+        Map<String, String> env = new HashMap<>();
         List<SecretEntity> secrets = SecretEntity.listAll();
         for (SecretEntity secret : secrets) {
             try {

@@ -8,6 +8,7 @@ import io.apicurio.axiom.core.entities.TaskEntity;
 import io.apicurio.axiom.core.entities.ThreadEntryEntity;
 import io.apicurio.axiom.core.events.SseEvent;
 import io.apicurio.axiom.core.services.EncryptionService;
+import io.apicurio.axiom.core.services.EnvironmentResolver;
 import io.quarkus.arc.Arc;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -38,6 +39,9 @@ public class ScriptExecutionService {
 
     @Inject
     EncryptionService encryptionService;
+
+    @Inject
+    EnvironmentResolver environmentResolver;
 
     @ConfigProperty(name = "quarkus.http.port", defaultValue = "8080")
     int httpPort;
@@ -95,12 +99,16 @@ public class ScriptExecutionService {
             pb.environment().put("AXIOM_PROJECT_ID", String.valueOf(task.projectId));
             pb.environment().put("AXIOM_TASK_ID", String.valueOf(task.id));
 
-            // Inject all configured secrets into the process environment
-            for (SecretEntity secret : SecretEntity.<SecretEntity>listAll()) {
-                try {
-                    pb.environment().put(secret.name, encryptionService.decrypt(secret.encryptedValue));
-                } catch (Exception e) {
-                    LOG.warnf("Failed to decrypt secret '%s' for script — skipping", secret.name);
+            // Inject environment variables (custom or all secrets as fallback)
+            if (environmentResolver.hasCustomEnvironment(actionType.environment)) {
+                pb.environment().putAll(environmentResolver.resolve(actionType.environment));
+            } else {
+                for (SecretEntity secret : SecretEntity.<SecretEntity>listAll()) {
+                    try {
+                        pb.environment().put(secret.name, encryptionService.decrypt(secret.encryptedValue));
+                    } catch (Exception e) {
+                        LOG.warnf("Failed to decrypt secret '%s' for script — skipping", secret.name);
+                    }
                 }
             }
 
