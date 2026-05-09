@@ -312,6 +312,16 @@ export async function aiEditScript(request: ScriptAiEditRequest): Promise<Script
     return response.json();
 }
 
+export async function aiEditActionPrompt(request: ReportAiEditRequest): Promise<ReportAiEditResponse> {
+    const response = await fetch(`${API}/action-types/ai-edit-prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new Error(`Failed to AI edit action prompt: ${response.status}`);
+    return response.json();
+}
+
 export async function deleteActionType(id: number): Promise<void> {
     const response = await fetch(`${API}/action-types/${id}`, { method: "DELETE" });
     if (!response.ok) throw new Error(`Failed to delete action type: ${response.status}`);

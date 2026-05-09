@@ -3,8 +3,11 @@ package io.apicurio.axiom.app.rest;
 import io.apicurio.axiom.api.ActionResource;
 import io.apicurio.axiom.api.beans.ActionType;
 import io.apicurio.axiom.api.beans.NewActionType;
+import io.apicurio.axiom.api.beans.ReportAiEditRequest;
+import io.apicurio.axiom.api.beans.ReportAiEditResponse;
 import io.apicurio.axiom.api.beans.ScriptAiEditRequest;
 import io.apicurio.axiom.api.beans.ScriptAiEditResponse;
+import io.apicurio.axiom.app.ActionTypeAiService;
 import io.apicurio.axiom.app.ScriptAiService;
 import io.apicurio.axiom.core.entities.ActionTypeEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
@@ -28,6 +31,9 @@ public class ActionResourceImpl implements ActionResource {
 
     @Inject
     ScriptAiService scriptAiService;
+
+    @Inject
+    ActionTypeAiService actionTypeAiService;
 
     /**
      * {@inheritDoc}
@@ -130,6 +136,14 @@ public class ActionResourceImpl implements ActionResource {
     @Override
     public ScriptAiEditResponse aiEditScript(ScriptAiEditRequest data) {
         return scriptAiService.editScript(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReportAiEditResponse aiEditActionPrompt(ReportAiEditRequest data) {
+        return actionTypeAiService.editActionPrompt(data);
     }
 
     // ── Action Type Tool Associations (deprecated — use allowedTools) ──

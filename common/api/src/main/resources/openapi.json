@@ -1626,6 +1626,21 @@
         }
       }
     },
+    "/action-types/ai-edit-prompt": {
+      "post": {
+        "tags": ["ActionTypes"],
+        "summary": "AI-assisted prompt template and tools editing",
+        "description": "Invokes Claude Code to generate or update the prompt template and allowed tools for an actor-mode action type.",
+        "operationId": "aiEditActionPrompt",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditRequest" } } },
+          "required": true
+        },
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditResponse" } } } }
+        }
+      }
+    },
     "/mcp-servers": {
       "get": {
         "tags": ["McpServers"],

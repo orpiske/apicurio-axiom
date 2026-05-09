@@ -27,6 +27,7 @@ import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, ACTION_TYPE_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import { AddToolInput } from "../components/AddToolInput";
 import { ScriptAiModal } from "../components/ScriptAiModal";
+import { ActionTypeAiModal } from "../components/ActionTypeAiModal";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
 import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
@@ -156,13 +157,11 @@ export function ActionTypeDetailPage() {
                     </Title>
                 </FlexItem>
                 <FlexItem>
-                    {form.executionMode === "script" && (
-                        <Button variant="secondary" icon={<MagicIcon />}
-                            onClick={() => setAiModalOpen(true)}
-                            style={{ marginRight: "8px" }}>
-                            AI Assistant
-                        </Button>
-                    )}
+                    <Button variant="secondary" icon={<MagicIcon />}
+                        onClick={() => setAiModalOpen(true)}
+                        style={{ marginRight: "8px" }}>
+                        AI Assistant
+                    </Button>
                     <Button
                         variant="primary"
                         icon={<SaveIcon />}
@@ -214,16 +213,33 @@ export function ActionTypeDetailPage() {
                 )}
             </Tabs>
 
-            <ScriptAiModal
-                isOpen={aiModalOpen}
-                script={form.scriptTemplate || ""}
-                actionTypeName={form.name}
-                actionTypeDescription={form.description}
-                onApply={(script) => {
-                    updateForm({ scriptTemplate: script });
-                }}
-                onClose={() => setAiModalOpen(false)}
-            />
+            {form.executionMode === "script" && (
+                <ScriptAiModal
+                    isOpen={aiModalOpen}
+                    script={form.scriptTemplate || ""}
+                    actionTypeName={form.name}
+                    actionTypeDescription={form.description}
+                    onApply={(script) => {
+                        updateForm({ scriptTemplate: script });
+                    }}
+                    onClose={() => setAiModalOpen(false)}
+                />
+            )}
+            {form.executionMode === "actor" && (
+                <ActionTypeAiModal
+                    isOpen={aiModalOpen}
+                    promptTemplate={form.promptTemplate || ""}
+                    allowedTools={tools}
+                    actionTypeName={form.name}
+                    actionTypeDescription={form.description}
+                    onApply={(prompt, newTools) => {
+                        updateForm({ promptTemplate: prompt });
+                        setTools(newTools);
+                        setDirty(true);
+                    }}
+                    onClose={() => setAiModalOpen(false)}
+                />
+            )}
         </PageSection>
     );
 }
