@@ -4,9 +4,9 @@ import io.apicurio.axiom.core.entities.ActionTypeEntity;
 
 import java.time.Instant;
 import io.apicurio.axiom.core.entities.ActorEntity;
+import io.apicurio.axiom.core.entities.EventSourceEntity;
 import io.apicurio.axiom.core.entities.ManagerConfigEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
-import io.apicurio.axiom.core.entities.RepositoryEntity;
 import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.entities.ToolDefinitionEntity;
 import io.apicurio.axiom.core.entities.ToolsetEntity;
@@ -252,12 +252,12 @@ public class SeedDataInitializer {
 
         LOG.infof("Seeded %d built-in action types", ActionTypeEntity.count());
 
-        // Seed tools, toolsets, actors, manager config, test repository, and report definitions
+        // Seed tools, toolsets, actors, manager config, test event source, and report definitions
         seedTools();
         seedToolsets();
         seedActors();
         seedManagerConfig();
-        seedRepository();
+        seedEventSource();
         seedReportDefinitions();
         seedSecrets();
     }
@@ -437,23 +437,22 @@ public class SeedDataInitializer {
         LOG.info("Seeded default manager configuration");
     }
 
-    private void seedRepository() {
-        if (RepositoryEntity.count() > 0) {
-            LOG.info("Repositories already exist, skipping repository seed data");
+    private void seedEventSource() {
+        if (EventSourceEntity.count() > 0) {
+            LOG.info("Event sources already exist, skipping event source seed data");
             return;
         }
 
-        RepositoryEntity repo = new RepositoryEntity();
-        repo.name = "cb-test-project";
-        repo.owner = "EricWittmann";
-        repo.source = "github";
-        repo.url = "https://github.com/EricWittmann/cb-test-project";
-        repo.pollInterval = 30;
-        repo.pollingEnabled = true;
-        repo.persist();
+        EventSourceEntity source = new EventSourceEntity();
+        source.name = "EricWittmann/cb-test-project";
+        source.sourceType = "github";
+        source.enabled = true;
+        source.pollInterval = 30;
+        source.configuration = "{\"owner\":\"EricWittmann\",\"name\":\"cb-test-project\",\"url\":\"https://github.com/EricWittmann/cb-test-project\"}";
+        source.persist();
 
-        LOG.infof("Seeded test repository: %s/%s (polling every %ds)",
-                repo.owner, repo.name, repo.pollInterval);
+        LOG.infof("Seeded test event source: %s (polling every %ds)",
+                source.name, source.pollInterval);
     }
 
     // Action types reference toolsets by name using the @ToolsetName syntax.

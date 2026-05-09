@@ -1,10 +1,11 @@
 package io.apicurio.axiom.app;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.apicurio.axiom.core.entities.AiUsageEntity;
+import io.apicurio.axiom.core.entities.EventSourceEntity;
 import io.apicurio.axiom.core.entities.ReportDefinitionEntity;
 import io.apicurio.axiom.core.entities.ReportEntity;
-import io.apicurio.axiom.core.entities.RepositoryEntity;
 import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.core.services.ToolsetResolver;
@@ -216,14 +217,28 @@ public class ReportExecutionService {
         return DEFAULT_REPORT_TOOLS;
     }
 
+    /**
+     * Resolves the list of repositories for a report by querying all GitHub
+     * event sources and building the repository list from their configuration.
+     *
+     * @param definition the report definition
+     * @return a comma-separated list of owner/repo strings
+     */
     private String resolveRepositories(ReportDefinitionEntity definition) {
-        if (definition.repositories != null && !definition.repositories.isEmpty()) {
-            return String.join(", ", definition.repositories);
-        }
-        // All repositories
-        List<RepositoryEntity> all = RepositoryEntity.listAll();
+        // Query all GitHub event sources and build the repository list
+        List<EventSourceEntity> all = EventSourceEntity.list("sourceType", "github");
         return all.stream()
-                .map(r -> r.owner + "/" + r.name)
+                .map(source -> {
+                    try {
+                        JsonNode config = objectMapper.readTree(source.configuration);
+                        String owner = config.path("owner").asText("");
+                        String name = config.path("name").asText("");
+                        return owner + "/" + name;
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(s -> s != null && !s.equals("/"))
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("(no repositories configured)");
     }

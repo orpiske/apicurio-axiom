@@ -41,7 +41,7 @@ import { ActivityLogPage } from "./pages/ActivityLogPage";
 import { EventsPage } from "./pages/EventsPage";
 import { ManagerDecisionsPage } from "./pages/ManagerDecisionsPage";
 import { TasksPage } from "./pages/TasksPage";
-import { RepositoriesPage } from "./pages/RepositoriesPage";
+import { EventSourcesPage } from "./pages/EventSourcesPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ActionTypeDetailPage } from "./pages/ActionTypeDetailPage";
 import { ToolsPage } from "./pages/ToolsPage";
@@ -70,7 +70,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/repositories", "/report-definitions", "/engine"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/event-sources", "/report-definitions", "/engine"];
 
 let notificationIdCounter = 0;
 
@@ -272,8 +272,8 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/report-definitions")} onClick={() => navigate("/report-definitions")}>
                                 Report Definitions
                             </NavItem>
-                            <NavItem isActive={location.pathname.startsWith("/repositories")} onClick={() => navigate("/repositories")}>
-                                Repositories
+                            <NavItem isActive={location.pathname.startsWith("/event-sources")} onClick={() => navigate("/event-sources")}>
+                                Event Sources
                             </NavItem>
                             <NavItem isActive={location.pathname === "/secrets"} onClick={() => navigate("/secrets")}>
                                 Secrets
@@ -393,7 +393,7 @@ export function App() {
                     <Route path="/report-definitions/:definitionId" element={<ReportDefinitionDetailPage />} />
                     <Route path="/metrics/ai-usage" element={<AiUsagePage />} />
                     <Route path="/metrics/disk-usage" element={<DiskUsagePage />} />
-                    <Route path="/repositories" element={<RepositoriesPage />} />
+                    <Route path="/event-sources" element={<EventSourcesPage />} />
                     <Route path="/secrets" element={<SecretsPage />} />
                 </Routes>
             )}

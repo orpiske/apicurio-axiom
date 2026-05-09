@@ -627,50 +627,50 @@ export async function updateManagerConfig(config: ManagerConfig): Promise<Manage
     return response.json();
 }
 
-// ── Repositories ──────────────────────────────────────────────────
+// ── Event Sources ────────────────────────────────────────────────
 
-export interface Repository {
+export interface EventSource {
     id: number;
     name: string;
-    owner: string;
-    source: string;
-    url: string;
+    description?: string;
+    sourceType: string;
+    enabled: boolean;
     pollInterval?: number;
-    webhookSecret?: string;
-    pollingEnabled?: boolean;
+    secretName?: string;
+    configuration?: Record<string, string>;
 }
 
-export type NewRepository = Omit<Repository, "id">;
+export type NewEventSource = Omit<EventSource, "id">;
 
-export async function fetchRepositories(): Promise<Repository[]> {
-    const response = await fetch(`${API}/repositories`);
-    if (!response.ok) throw new Error(`Failed to fetch repositories: ${response.status}`);
+export async function fetchEventSources(): Promise<EventSource[]> {
+    const response = await fetch(`${API}/event-sources`);
+    if (!response.ok) throw new Error(`Failed to fetch event sources: ${response.status}`);
     return response.json();
 }
 
-export async function createRepository(repo: NewRepository): Promise<Repository> {
-    const response = await fetch(`${API}/repositories`, {
+export async function createEventSource(source: NewEventSource): Promise<EventSource> {
+    const response = await fetch(`${API}/event-sources`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(repo),
+        body: JSON.stringify(source),
     });
-    if (!response.ok) throw new Error(`Failed to create repository: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to create event source: ${response.status}`);
     return response.json();
 }
 
-export async function updateRepository(id: number, repo: NewRepository): Promise<Repository> {
-    const response = await fetch(`${API}/repositories/${id}`, {
+export async function updateEventSource(id: number, source: NewEventSource): Promise<EventSource> {
+    const response = await fetch(`${API}/event-sources/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(repo),
+        body: JSON.stringify(source),
     });
-    if (!response.ok) throw new Error(`Failed to update repository: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to update event source: ${response.status}`);
     return response.json();
 }
 
-export async function deleteRepository(id: number): Promise<void> {
-    const response = await fetch(`${API}/repositories/${id}`, { method: "DELETE" });
-    if (!response.ok) throw new Error(`Failed to delete repository: ${response.status}`);
+export async function deleteEventSource(id: number): Promise<void> {
+    const response = await fetch(`${API}/event-sources/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete event source: ${response.status}`);
 }
 
 // ── Thread ────────────────────────────────────────────────────────
@@ -690,7 +690,6 @@ export interface ReportDefinition {
     schedule: string;
     scheduleTime?: string;
     timeWindow: string;
-    repositories?: string[];
     promptTemplate: string;
     allowedTools?: string[];
     enabled: boolean;

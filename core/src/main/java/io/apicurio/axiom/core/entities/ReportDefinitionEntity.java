@@ -1,17 +1,11 @@
 package io.apicurio.axiom.core.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Defines a recurring report that the system generates on a schedule.
@@ -44,15 +38,6 @@ public class ReportDefinitionEntity extends PanacheEntity {
      */
     @Column(name = "time_window", nullable = false)
     public String timeWindow;
-
-    /**
-     * List of "owner/repo" strings to scan. Empty list means all repositories.
-     */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "report_definition_repository",
-            joinColumns = @JoinColumn(name = "definition_id"))
-    @Column(name = "repository")
-    public List<String> repositories = new ArrayList<>();
 
     /**
      * Prompt template with placeholders for the AI agent.

@@ -1,6 +1,5 @@
 package io.apicurio.axiom.app;
 
-import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.engine.spi.AiEngine;
 import io.apicurio.axiom.engine.spi.AiEngineCheckResult;
 import io.quarkus.runtime.StartupEvent;
@@ -35,7 +34,6 @@ public class StartupCheckService {
      */
     void onStart(@Observes StartupEvent event) {
         LOG.info("Running startup configuration checks...");
-        checkGitHubToken();
         checkNodeJs();
         checkAiEngine();
 
@@ -64,37 +62,6 @@ public class StartupCheckService {
      */
     public boolean hasErrors() {
         return results.stream().anyMatch(r -> "error".equals(r.status()));
-    }
-
-    private void checkGitHubToken() {
-        boolean hasGhToken = SecretEntity.find("name", "GH_TOKEN").firstResult() != null
-                || SecretEntity.find("name", "GITHUB_TOKEN").firstResult() != null;
-
-        if (!hasGhToken) {
-            // Fall back to checking environment variables
-            String token = System.getenv("GH_TOKEN");
-            if (token == null || token.isBlank()) token = System.getenv("GITHUB_TOKEN");
-            hasGhToken = token != null && !token.isBlank();
-        }
-
-        if (!hasGhToken) {
-            results.add(new CheckResult(
-                    "GitHub API Token",
-                    "warning",
-                    "No GitHub token found. Add a GH_TOKEN secret via Configuration > Secrets. "
-                            + "This is required for AI agents to use the gh CLI. "
-                            + "Create a Personal Access Token at "
-                            + "https://github.com/settings/tokens"
-            ));
-            LOG.warn("Startup check: No GitHub token secret configured");
-        } else {
-            results.add(new CheckResult(
-                    "GitHub API Token",
-                    "ok",
-                    "GitHub token is configured."
-            ));
-            LOG.info("Startup check OK: GitHub token found");
-        }
     }
 
     private void checkNodeJs() {

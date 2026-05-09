@@ -216,7 +216,6 @@ public class ReportsResourceImpl implements ReportsResource {
         entity.schedule = data.getSchedule();
         entity.scheduleTime = data.getScheduleTime();
         entity.timeWindow = data.getTimeWindow();
-        entity.repositories = data.getRepositories();
         entity.promptTemplate = data.getPromptTemplate();
         entity.allowedTools = data.getAllowedTools() != null
                 ? String.join(",", data.getAllowedTools()) : null;
@@ -238,7 +237,6 @@ public class ReportsResourceImpl implements ReportsResource {
         def.setSchedule(entity.schedule);
         def.setScheduleTime(entity.scheduleTime);
         def.setTimeWindow(entity.timeWindow);
-        def.setRepositories(entity.repositories);
         def.setPromptTemplate(entity.promptTemplate);
         if (entity.allowedTools != null && !entity.allowedTools.isBlank()) {
             def.setAllowedTools(java.util.Arrays.stream(entity.allowedTools.split(","))

@@ -1,15 +1,18 @@
 package io.apicurio.axiom.core.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.apicurio.axiom.core.entities.EventSourceEntity;
 import io.apicurio.axiom.core.entities.ProjectEntity;
-import io.apicurio.axiom.core.entities.RepositoryEntity;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,6 +29,9 @@ public class WorkspaceService {
 
     @ConfigProperty(name = "axiom.workspace.clone-timeout-seconds", defaultValue = "120")
     int cloneTimeoutSeconds;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     /**
      * Returns the workspace path for a project. Creates the directory if it
@@ -56,13 +62,13 @@ public class WorkspaceService {
 
         LOG.infof("Creating workspace for project %d at %s", project.id, workspace);
 
-        // Look up the repository configuration for clone URL and auth
-        RepositoryEntity repo = findRepository(project);
-        String cloneUrl = buildCloneUrl(project, repo);
+        // Look up the event source configuration for clone URL and auth
+        EventSourceEntity source = findEventSource(project);
+        String cloneUrl = buildCloneUrl(project, source);
 
         try {
             Files.createDirectories(workspace.getParent());
-            cloneRepository(cloneUrl, workspace, repo);
+            cloneRepository(cloneUrl, workspace, source);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to clone repository for project %d", project.id);
             throw new WorkspaceException("Failed to clone repository: " + e.getMessage(), e);
@@ -131,39 +137,81 @@ public class WorkspaceService {
         }
     }
 
-    private RepositoryEntity findRepository(ProjectEntity project) {
+    /**
+     * Finds the EventSourceEntity matching a project's repository field.
+     * The project's repository field is in "owner/repo" format. This method
+     * iterates GitHub event sources and parses their configuration JSON
+     * to match owner and name.
+     *
+     * @param project the project whose event source to find
+     * @return the matching event source, or null if not found
+     */
+    private EventSourceEntity findEventSource(ProjectEntity project) {
         String[] parts = project.repository.split("/", 2);
         if (parts.length == 2) {
-            RepositoryEntity repo = RepositoryEntity.find(
-                    "owner = ?1 and name = ?2", parts[0], parts[1]).firstResult();
-            if (repo != null) {
-                return repo;
+            String targetOwner = parts[0];
+            String targetName = parts[1];
+
+            List<EventSourceEntity> sources = EventSourceEntity.list("sourceType", "github");
+            for (EventSourceEntity source : sources) {
+                try {
+                    JsonNode config = objectMapper.readTree(source.configuration);
+                    String owner = config.path("owner").asText(null);
+                    String name = config.path("name").asText(null);
+                    if (targetOwner.equals(owner) && targetName.equals(name)) {
+                        return source;
+                    }
+                } catch (Exception e) {
+                    LOG.debugf("Failed to parse configuration for event source %d", source.id);
+                }
             }
         }
         return null;
     }
 
-    private String buildCloneUrl(ProjectEntity project, RepositoryEntity repo) {
-        if (repo != null && repo.url != null) {
-            // If the repo has a PAT in its configuration, embed it in the URL
-            String pat = extractPat(repo);
-            if (pat != null) {
-                // https://<token>@github.com/owner/repo.git
-                return repo.url.replace("https://", "https://" + pat + "@");
+    /**
+     * Builds the clone URL for a project, extracting the URL from the event source's
+     * configuration JSON if available.
+     *
+     * @param project the project
+     * @param source the event source (may be null)
+     * @return the clone URL
+     */
+    private String buildCloneUrl(ProjectEntity project, EventSourceEntity source) {
+        if (source != null && source.configuration != null) {
+            try {
+                JsonNode config = objectMapper.readTree(source.configuration);
+                String url = config.path("url").asText(null);
+                if (url != null) {
+                    // If the source has a PAT in its configuration, embed it in the URL
+                    String pat = extractPat(source);
+                    if (pat != null) {
+                        // https://<token>@github.com/owner/repo.git
+                        return url.replace("https://", "https://" + pat + "@");
+                    }
+                    return url;
+                }
+            } catch (Exception e) {
+                LOG.debugf("Failed to parse configuration for event source %d", source.id);
             }
-            return repo.url;
         }
         // Fall back to constructing a URL from the project's repository field
         return "https://github.com/" + project.repository + ".git";
     }
 
-    private String extractPat(RepositoryEntity repo) {
-        // PAT can be stored in the repository's configuration JSON
+    /**
+     * Extracts a personal access token from the event source's configuration JSON.
+     *
+     * @param source the event source
+     * @return the PAT, or null if not found
+     */
+    private String extractPat(EventSourceEntity source) {
+        // PAT can be stored in the event source's configuration JSON
         // For now, return null — SSH/PAT integration will be refined later
         return null;
     }
 
-    private void cloneRepository(String cloneUrl, Path targetDir, RepositoryEntity repo)
+    private void cloneRepository(String cloneUrl, Path targetDir, EventSourceEntity source)
             throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(
                 "git", "clone", "--depth", "1", cloneUrl, targetDir.toAbsolutePath().toString()
@@ -171,10 +219,10 @@ public class WorkspaceService {
         pb.redirectErrorStream(true);
 
         // Configure SSH if needed
-        if (repo != null && repo.configuration != null
-                && repo.configuration.contains("sshKeyPath")) {
+        if (source != null && source.configuration != null
+                && source.configuration.contains("sshKeyPath")) {
             // TODO: Parse SSH key path from configuration and set GIT_SSH_COMMAND
-            LOG.debugf("SSH authentication configured for repository %s", repo.name);
+            LOG.debugf("SSH authentication configured for event source %s", source.name);
         }
 
         Process process = pb.start();

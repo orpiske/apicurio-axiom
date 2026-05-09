@@ -60,6 +60,9 @@ public class TaskExecutionService {
     Event<SseEvent> sseEvents;
 
     @Inject
+    McpConfigGenerator mcpConfigGenerator;
+
+    @Inject
     ScriptExecutionService scriptExecutionService;
 
     @Inject
@@ -134,8 +137,7 @@ public class TaskExecutionService {
 
         // Generate MCP config filtered to only the tools allowed by this action type
         List<String> allowedTools = getToolsFromActionType(task.actionType);
-        AiEngineMcpManager mcpManager = engineRegistry.getMcpManager(engineType);
-        Path mcpConfig = mcpManager.configureMcpServers(task.id, env, allowedTools);
+        Path mcpConfig = mcpConfigGenerator.generateMcpConfig(task.id, env, allowedTools);
 
         ActorContext context = ActorContext.builder()
                 .workingDirectory(workspace)

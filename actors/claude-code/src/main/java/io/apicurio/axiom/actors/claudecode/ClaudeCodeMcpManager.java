@@ -43,14 +43,23 @@ public class ClaudeCodeMcpManager implements AiEngineMcpManager {
      */
     public void setDelegate(McpConfigDelegate delegate) {
         this.delegate = delegate;
+        LOG.infof("MCP config delegate set on ClaudeCodeMcpManager instance@%d",
+                System.identityHashCode(this));
     }
+
+    private static final org.jboss.logging.Logger LOG =
+            org.jboss.logging.Logger.getLogger(ClaudeCodeMcpManager.class);
 
     @Override
     public Path configureMcpServers(Long taskId, Map<String, String> environment,
                                      List<String> allowedTools) {
         if (delegate != null) {
-            return delegate.generateMcpConfig(taskId, environment, allowedTools);
+            Path result = delegate.generateMcpConfig(taskId, environment, allowedTools);
+            LOG.debugf("MCP config for task %d: %s", taskId, result);
+            return result;
         }
+        LOG.warnf("MCP config delegate not set on ClaudeCodeMcpManager instance@%d — cannot generate MCP config for task %d",
+                System.identityHashCode(this), taskId);
         return null;
     }
 }

@@ -28,7 +28,7 @@ import {
     fetchActivityLog,
     fetchActionTypes,
     fetchActors,
-    fetchRepositories,
+    fetchEventSources,
     fetchTools,
     fetchReportDefinitions,
 } from "../config/api";
@@ -77,7 +77,7 @@ export function DashboardPage() {
     const [requirements, setRequirements] = useState<SetupRequirement[]>([]);
     const [setupChecked, setSetupChecked] = useState(false);
     const [configCounts, setConfigCounts] = useState({
-        actors: 0, actionTypes: 0, tools: 0, repositories: 0, reportDefinitions: 0,
+        actors: 0, actionTypes: 0, tools: 0, eventSources: 0, reportDefinitions: 0,
     });
 
     const loadData = useCallback(() => {
@@ -85,33 +85,24 @@ export function DashboardPage() {
         Promise.all([
             fetchProjects(1, 100),
             fetchActivityLog(1, 10),
-            fetchRepositories(),
+            fetchEventSources(),
             fetchActors(),
             fetchActionTypes(),
             fetchTools(),
             fetchReportDefinitions(),
         ])
-            .then(([p, a, repos, actors, actionTypes, tools, reportDefs]) => {
+            .then(([p, a, eventSources, actors, actionTypes, tools, reportDefs]) => {
                 setProjects(p.items);
                 setRecentActivity(a.items);
                 setConfigCounts({
                     actors: actors.length,
                     actionTypes: actionTypes.length,
                     tools: tools.length,
-                    repositories: repos.length,
+                    eventSources: eventSources.length,
                     reportDefinitions: reportDefs.length,
                 });
 
                 setRequirements([
-                    {
-                        name: "Repository",
-                        met: repos.length > 0,
-                        description:
-                            "At least one GitHub or Jira repository must be configured for " +
-                            "the system to monitor for events.",
-                        navPath: "/repositories",
-                        navLabel: "Configure Repositories",
-                    },
                     {
                         name: "Actor",
                         met: actors.length > 0,
@@ -295,8 +286,8 @@ export function DashboardPage() {
                         <CardBody>
                             <Gallery hasGutter minWidths={{ default: "140px" }}>
                                 <GalleryItem>
-                                    <ConfigCard label="Repositories" count={configCounts.repositories}
-                                                path="/repositories" />
+                                    <ConfigCard label="Event Sources" count={configCounts.eventSources}
+                                                path="/event-sources" />
                                 </GalleryItem>
                                 <GalleryItem>
                                     <ConfigCard label="Actors" count={configCounts.actors}

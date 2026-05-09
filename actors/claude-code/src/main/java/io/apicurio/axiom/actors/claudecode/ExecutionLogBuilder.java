@@ -95,6 +95,22 @@ public class ExecutionLogBuilder {
     }
 
     /**
+     * Appends the environment variables section (names only, no values).
+     *
+     * @param env the environment variable map
+     */
+    public void environment(java.util.Map<String, String> env) {
+        log.append("=== Environment Variables ===\n");
+        if (env == null || env.isEmpty()) {
+            log.append("(none)\n\n");
+            return;
+        }
+        env.keySet().stream().sorted().forEach(key ->
+                log.append("  - ").append(key).append("\n"));
+        log.append("\n");
+    }
+
+    /**
      * Appends the command line section, formatting flags for readability.
      *
      * @param cmdLine the full command line as a list of arguments

@@ -92,15 +92,14 @@ public class ClaudeCodeSubprocess {
     private ClaudeCodeResult doExecute() throws IOException, InterruptedException {
         Instant startTime = Instant.now();
 
-        LOG.infof("Launching Claude Code: %s", String.join(" ",
-                command.subList(0, Math.min(command.size(), 5))) + "...");
+        LOG.infof("Launching Claude Code");
         // Log tool-related flags for debugging
         for (int i = 0; i < command.size(); i++) {
             String arg = command.get(i);
             if ("--tools".equals(arg) || "--allowedTools".equals(arg)
                     || "--disallowedTools".equals(arg) || "--permission-mode".equals(arg)) {
                 String value = (i + 1 < command.size()) ? command.get(i + 1) : "?";
-                LOG.infof("  [cmd] %s %s", arg, value);
+                LOG.tracef("  [cmd] %s %s", arg, value);
             }
         }
 
@@ -178,7 +177,7 @@ public class ClaudeCodeSubprocess {
         stderrFuture.join();
 
         int exitCode = process.exitValue();
-        LOG.infof("Claude Code subprocess exited with code %d", exitCode);
+        LOG.tracef("Claude Code subprocess exited with code %d", exitCode);
 
         if (exitCode != 0) {
             String error = stderrContent.toString().trim();
@@ -280,7 +279,7 @@ public class ClaudeCodeSubprocess {
                                 String inputPreview = input.length() > 150
                                         ? input.substring(0, 147) + "..."
                                         : input;
-                                LOG.infof("  [claude] Tool call: %s — %s", toolName, inputPreview);
+                                LOG.tracef("  [claude] Tool call: %s — %s", toolName, inputPreview);
                                 logBuilder.toolCall(toolName, input);
                             } else if ("text".equals(blockType)) {
                                 String text = block.path("text").asText("");
@@ -288,7 +287,7 @@ public class ClaudeCodeSubprocess {
                                     String preview = text.length() > 120
                                             ? text.substring(0, 117) + "..."
                                             : text;
-                                    LOG.debugf("  [claude] Text: %s", preview);
+                                    LOG.tracef("  [claude] Text: %s", preview);
                                     logBuilder.text(text);
                                 }
                             }
@@ -300,7 +299,7 @@ public class ClaudeCodeSubprocess {
                     double cost = node.path("total_cost_usd").asDouble(0);
                     int turns = node.path("num_turns").asInt(0);
                     long durationMs = node.path("duration_ms").asLong(0);
-                    LOG.infof("  [claude] Result: %s (turns=%d, cost=$%.4f, duration=%dms)",
+                    LOG.tracef("  [claude] Result: %s (turns=%d, cost=$%.4f, duration=%dms)",
                             subtype, turns, cost, durationMs);
                     logBuilder.result(subtype, turns, cost, durationMs);
 
@@ -341,7 +340,7 @@ public class ClaudeCodeSubprocess {
                         LOG.warnf("  [claude] Tool failed: %s — %s", toolName, errorPreview);
                         logBuilder.toolResult(toolName, true, errorPreview);
                     } else {
-                        LOG.infof("  [claude] Tool completed: %s", toolName);
+                        LOG.tracef("  [claude] Tool completed: %s", toolName);
                         logBuilder.toolResult(toolName, false, null);
                     }
                 }

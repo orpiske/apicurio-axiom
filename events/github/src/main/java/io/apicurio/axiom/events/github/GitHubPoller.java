@@ -2,7 +2,7 @@ package io.apicurio.axiom.events.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.apicurio.axiom.core.entities.RepositoryEntity;
+import io.apicurio.axiom.core.entities.EventSourceEntity;
 import io.apicurio.axiom.core.entities.SecretEntity;
 import io.apicurio.axiom.core.services.EncryptionService;
 import io.apicurio.axiom.events.core.EventService;
@@ -18,17 +18,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Polls the GitHub API for new issue and comment events on monitored repositories.
+ * Polls the GitHub API for new issue and comment events on monitored event sources.
  *
  * <p>This provides an alternative to webhooks for environments where inbound
  * connectivity is not available (e.g. local development behind a firewall).</p>
  *
- * <p>For each repository with {@code pollingEnabled = true}, the poller:</p>
+ * <p>For each GitHub event source with {@code enabled = true}, the poller:</p>
  * <ol>
  *   <li>Fetches issues updated since the last poll</li>
  *   <li>Fetches comments created since the last poll</li>
  *   <li>Determines the event type for each and ingests new events</li>
- *   <li>Updates the repository's {@code lastPolledAt} timestamp</li>
+ *   <li>Updates the event source's {@code lastPolledAt} timestamp</li>
  * </ol>
  */
 @ApplicationScoped
@@ -48,68 +48,98 @@ public class GitHubPoller {
     @Inject
     EncryptionService encryptionService;
 
+    private static final int DEFAULT_POLL_INTERVAL = 60;
+    private static final int TICK_INTERVAL = 10;
+
     /**
-     * Polls all GitHub repositories that have polling enabled.
-     * Runs every 60 seconds by default.
+     * Tick every 10 seconds and check each enabled GitHub event source
+     * to see if its per-source poll interval has elapsed since the last poll.
      */
-    @Scheduled(every = "${axiom.github.poll-interval:60s}",
+    @Scheduled(every = "${axiom.github.tick-interval:" + TICK_INTERVAL + "s}",
                concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void poll() {
-        List<RepositoryEntity> repos = RepositoryEntity
-                .list("source = ?1 and pollingEnabled = ?2", "github", true);
+        List<EventSourceEntity> sources = EventSourceEntity
+                .list("sourceType = ?1 and enabled = ?2", "github", true);
 
-        if (repos.isEmpty()) {
+        if (sources.isEmpty()) {
             return;
         }
 
-        LOG.debugf("Polling %d GitHub repository(ies)", repos.size());
-        for (RepositoryEntity repo : repos) {
-            pollRepository(repo);
+        Instant now = Instant.now();
+        for (EventSourceEntity source : sources) {
+            if (isDue(source, now)) {
+                pollRepository(source);
+            }
         }
     }
 
-    private void pollRepository(RepositoryEntity repo) {
-        String token = resolveGitHubToken();
+    private boolean isDue(EventSourceEntity source, Instant now) {
+        if (source.lastPolledAt == null) {
+            return true;
+        }
+        int interval = source.pollInterval != null ? source.pollInterval : DEFAULT_POLL_INTERVAL;
+        return now.isAfter(source.lastPolledAt.plusSeconds(interval));
+    }
+
+    private void pollRepository(EventSourceEntity source) {
+        String token = resolveToken(source);
         Instant pollStartedAt = Instant.now();
-        Instant since = repo.lastPolledAt;
+        Instant since = source.lastPolledAt;
+
+        // Parse owner and name from configuration JSON
+        String owner;
+        String name;
+        try {
+            JsonNode config = objectMapper.readTree(source.configuration);
+            owner = config.path("owner").asText(null);
+            name = config.path("name").asText(null);
+        } catch (Exception e) {
+            LOG.warnf(e, "Failed to parse configuration for event source %d (%s)", source.id, source.name);
+            return;
+        }
+
+        if (owner == null || name == null) {
+            LOG.warnf("Event source %d (%s) missing owner or name in configuration", source.id, source.name);
+            return;
+        }
 
         // On first poll, skip historical data — only track events from now on
         if (since == null) {
             LOG.infof("First poll for %s/%s — setting baseline to now, skipping historical events",
-                    repo.owner, repo.name);
-            updateLastPolledAt(repo.id, pollStartedAt);
+                    owner, name);
+            updateLastPolledAt(source.id, pollStartedAt);
             return;
         }
 
-        LOG.infof("Polling GitHub repository %s/%s (since: %s)",
-                repo.owner, repo.name, since);
+        LOG.tracef("Polling GitHub repository %s/%s (since: %s)",
+                owner, name, since);
 
         int eventsIngested = 0;
 
         // Poll for updated issues
-        eventsIngested += pollIssues(repo, since, token);
+        eventsIngested += pollIssues(owner, name, since, token);
 
         // Poll for new comments
-        eventsIngested += pollComments(repo, since, token);
+        eventsIngested += pollComments(owner, name, since, token);
 
         // Update the last polled timestamp
-        updateLastPolledAt(repo.id, pollStartedAt);
+        updateLastPolledAt(source.id, pollStartedAt);
 
         if (eventsIngested > 0) {
-            LOG.infof("Ingested %d event(s) from %s/%s", eventsIngested, repo.owner, repo.name);
+            LOG.infof("Ingested %d event(s) from %s/%s", eventsIngested, owner, name);
         }
     }
 
-    private int pollIssues(RepositoryEntity repo, Instant since, String token) {
+    private int pollIssues(String owner, String name, Instant since, String token) {
         Optional<JsonNode> result = apiClient.fetchIssuesUpdatedSince(
-                repo.owner, repo.name, since, token);
+                owner, name, since, token);
 
         if (result.isEmpty() || !result.get().isArray()) {
             return 0;
         }
 
         int count = 0;
-        String repoFullName = repo.owner + "/" + repo.name;
+        String repoFullName = owner + "/" + name;
 
         for (JsonNode issue : result.get()) {
             // Skip pull requests (GitHub includes PRs in the issues endpoint)
@@ -137,16 +167,16 @@ public class GitHubPoller {
         return count;
     }
 
-    private int pollComments(RepositoryEntity repo, Instant since, String token) {
+    private int pollComments(String owner, String name, Instant since, String token) {
         Optional<JsonNode> result = apiClient.fetchCommentsUpdatedSince(
-                repo.owner, repo.name, since, token);
+                owner, name, since, token);
 
         if (result.isEmpty() || !result.get().isArray()) {
             return 0;
         }
 
         int count = 0;
-        String repoFullName = repo.owner + "/" + repo.name;
+        String repoFullName = owner + "/" + name;
 
         for (JsonNode comment : result.get()) {
             // Extract issue number from the issue_url field
@@ -273,33 +303,44 @@ public class GitHubPoller {
     }
 
     @Transactional
-    void updateLastPolledAt(Long repoId, Instant polledAt) {
-        RepositoryEntity repo = RepositoryEntity.findById(repoId);
-        if (repo != null) {
-            repo.lastPolledAt = polledAt;
+    void updateLastPolledAt(Long sourceId, Instant polledAt) {
+        EventSourceEntity source = EventSourceEntity.findById(sourceId);
+        if (source != null) {
+            source.lastPolledAt = polledAt;
         }
     }
 
-    private String resolveGitHubToken() {
-        // Try secrets store first
-        SecretEntity secret = SecretEntity.find("name", "GH_TOKEN").firstResult();
-        if (secret != null) {
-            try {
-                return encryptionService.decrypt(secret.encryptedValue);
-            } catch (Exception e) {
-                LOG.warn("Failed to decrypt GH_TOKEN secret");
-            }
-        }
-        secret = SecretEntity.find("name", "GITHUB_TOKEN").firstResult();
-        if (secret != null) {
-            try {
-                return encryptionService.decrypt(secret.encryptedValue);
-            } catch (Exception e) {
-                LOG.warn("Failed to decrypt GITHUB_TOKEN secret");
+    /**
+     * Resolves the authentication token for an event source. Checks the
+     * per-source secret first, then falls back to the default GitHub secrets.
+     */
+    private String resolveToken(EventSourceEntity source) {
+        // Per-source secret takes priority
+        if (source.secretName != null && !source.secretName.isBlank()) {
+            SecretEntity secret = SecretEntity.find("name", source.secretName).firstResult();
+            if (secret != null) {
+                try {
+                    return encryptionService.decrypt(secret.encryptedValue);
+                } catch (Exception e) {
+                    LOG.warnf("Failed to decrypt secret '%s' for event source '%s'",
+                            source.secretName, source.name);
+                }
             }
         }
 
-        // Fall back to environment variables
+        // Fall back to default GitHub secrets
+        for (String name : List.of("GH_TOKEN", "GITHUB_TOKEN")) {
+            SecretEntity secret = SecretEntity.find("name", name).firstResult();
+            if (secret != null) {
+                try {
+                    return encryptionService.decrypt(secret.encryptedValue);
+                } catch (Exception e) {
+                    LOG.warnf("Failed to decrypt %s secret", name);
+                }
+            }
+        }
+
+        // Last resort: environment variables
         String token = System.getenv("GH_TOKEN");
         if (token == null || token.isBlank()) token = System.getenv("GITHUB_TOKEN");
         return token;

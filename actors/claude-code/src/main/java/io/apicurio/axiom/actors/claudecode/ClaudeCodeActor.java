@@ -63,6 +63,7 @@ public class ClaudeCodeActor implements Actor {
         logBuilder.systemPrompt(context.getSystemPrompt());
         logBuilder.prompt(prompt);
         logBuilder.allowedTools(context.getAllowedTools());
+        logBuilder.environment(context.getEnvironment());
 
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, context)

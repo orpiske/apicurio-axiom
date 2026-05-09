@@ -814,134 +814,52 @@
         }
       }
     },
-    "/repositories": {
+    "/event-sources": {
       "get": {
-        "tags": [
-          "Repositories"
-        ],
-        "summary": "List all monitored repositories",
-        "operationId": "listRepositories",
+        "tags": ["EventSources"],
+        "summary": "List all event sources",
+        "operationId": "listEventSources",
         "responses": {
-          "200": {
-            "description": "List of repositories",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Repository"
-                  }
-                }
-              }
-            }
-          }
+          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EventSource" } } } } }
         }
       },
       "post": {
-        "tags": [
-          "Repositories"
-        ],
-        "summary": "Add a monitored repository",
-        "operationId": "createRepository",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewRepository"
-              }
-            }
-          },
-          "required": true
-        },
+        "tags": ["EventSources"],
+        "summary": "Create an event source",
+        "operationId": "createEventSource",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewEventSource" } } }, "required": true },
         "responses": {
-          "201": {
-            "description": "Repository created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Repository"
-                }
-              }
-            }
-          }
+          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } }
         }
       }
     },
-    "/repositories/{repositoryId}": {
+    "/event-sources/{eventSourceId}": {
       "get": {
-        "tags": [
-          "Repositories"
-        ],
-        "summary": "Get a repository by ID",
-        "operationId": "getRepository",
+        "tags": ["EventSources"],
+        "summary": "Get an event source by ID",
+        "operationId": "getEventSource",
         "responses": {
-          "200": {
-            "description": "The repository",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Repository"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "put": {
-        "tags": [
-          "Repositories"
-        ],
-        "summary": "Update a repository",
-        "operationId": "updateRepository",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewRepository"
-              }
-            }
-          },
-          "required": true
-        },
+        "tags": ["EventSources"],
+        "summary": "Update an event source",
+        "operationId": "updateEventSource",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewEventSource" } } }, "required": true },
         "responses": {
-          "200": {
-            "description": "Repository updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Repository"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "delete": {
-        "tags": [
-          "Repositories"
-        ],
-        "summary": "Delete a repository",
-        "operationId": "deleteRepository",
-        "responses": {
-          "204": {
-            "description": "Repository deleted"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
+        "tags": ["EventSources"],
+        "summary": "Delete an event source",
+        "operationId": "deleteEventSource",
+        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
       },
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/RepositoryId"
-        }
-      ]
+      "parameters": [{ "name": "eventSourceId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
     },
     "/reports/definitions": {
       "get": {
@@ -1281,27 +1199,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/webhooks/github": {
-      "post": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Receive a GitHub webhook event",
-        "description": "Receives GitHub webhook payloads, validates the HMAC-SHA256 signature, normalizes the event, and enqueues it for processing.",
-        "operationId": "handleGitHubWebhook",
-        "responses": {
-          "200": {
-            "description": "Event received and enqueued"
-          },
-          "204": {
-            "description": "Event ignored (unsupported event type)"
-          },
-          "401": {
-            "description": "Invalid webhook signature"
           }
         }
       }
@@ -2379,91 +2276,31 @@
           }
         }
       },
-      "Repository": {
-        "required": [
-          "id",
-          "name",
-          "owner",
-          "source",
-          "url"
-        ],
+      "EventSource": {
+        "required": ["id", "name", "sourceType"],
         "type": "object",
         "properties": {
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string"
-          },
-          "source": {
-            "enum": [
-              "github",
-              "jira"
-            ],
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          },
-          "pollInterval": {
-            "type": "integer"
-          },
-          "webhookSecret": {
-            "type": "string"
-          },
-          "configuration": {
-            "type": "object",
-            "additionalProperties": {}
-          },
-          "pollingEnabled": {
-            "description": "Whether polling is enabled for this repository",
-            "type": "boolean"
-          }
+          "id": { "format": "int64", "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "sourceType": { "enum": ["github", "jira"], "type": "string" },
+          "enabled": { "type": "boolean" },
+          "pollInterval": { "type": "integer" },
+          "secretName": { "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.", "type": "string" },
+          "configuration": { "description": "Source-specific configuration (JSON object)", "type": "object", "additionalProperties": {} }
         }
       },
-      "NewRepository": {
-        "required": [
-          "name",
-          "owner",
-          "source",
-          "url"
-        ],
+      "NewEventSource": {
+        "required": ["name", "sourceType", "configuration"],
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string"
-          },
-          "source": {
-            "enum": [
-              "github",
-              "jira"
-            ],
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          },
-          "pollInterval": {
-            "type": "integer"
-          },
-          "webhookSecret": {
-            "type": "string"
-          },
-          "configuration": {
-            "type": "object",
-            "additionalProperties": {}
-          },
-          "pollingEnabled": {
-            "description": "Whether polling is enabled for this repository",
-            "type": "boolean"
-          }
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "sourceType": { "enum": ["github", "jira"], "type": "string" },
+          "enabled": { "type": "boolean" },
+          "pollInterval": { "type": "integer" },
+          "secretName": { "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.", "type": "string" },
+          "configuration": { "description": "Source-specific configuration (JSON object)", "type": "object", "additionalProperties": {} }
         }
       },
       "Event": {
@@ -2587,7 +2424,7 @@
           "schedule": { "type": "string" },
           "scheduleTime": { "type": "string" },
           "timeWindow": { "type": "string" },
-          "repositories": { "type": "array", "items": { "type": "string" } },
+
           "promptTemplate": { "type": "string" },
           "allowedTools": { "type": "array", "items": { "type": "string" } },
           "enabled": { "type": "boolean" },
@@ -2606,7 +2443,7 @@
           "schedule": { "type": "string" },
           "scheduleTime": { "type": "string" },
           "timeWindow": { "type": "string" },
-          "repositories": { "type": "array", "items": { "type": "string" } },
+
           "promptTemplate": { "type": "string" },
           "allowedTools": { "type": "array", "items": { "type": "string" } },
           "enabled": { "type": "boolean" }
@@ -3100,10 +2937,10 @@
           "type": "integer"
         }
       },
-      "RepositoryId": {
-        "name": "repositoryId",
+      "EventSourceId": {
+        "name": "eventSourceId",
         "in": "path",
-        "description": "Repository ID",
+        "description": "Event Source ID",
         "required": true,
         "schema": {
           "format": "int64",
@@ -3148,10 +2985,6 @@
     {
       "name": "Activity",
       "description": "Global activity log"
-    },
-    {
-      "name": "Webhooks",
-      "description": "Webhook endpoints for external event sources"
     },
     {
       "name": "Manager",

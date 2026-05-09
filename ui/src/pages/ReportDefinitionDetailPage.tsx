@@ -12,8 +12,6 @@ import {
     FormGroup,
     FormSelect,
     FormSelectOption,
-    InputGroup,
-    InputGroupItem,
     Label,
     PageSection,
     Switch,
@@ -59,7 +57,6 @@ export function ReportDefinitionDetailPage() {
     const [activeTab, setActiveTab] = useState(0);
 
     const [aiModalOpen, setAiModalOpen] = useState(false);
-    const [repos, setRepos] = useState<string[]>([]);
     const [tools, setTools] = useState<string[]>([]);
 
     // Generated reports for this definition
@@ -78,10 +75,9 @@ export function ReportDefinitionDetailPage() {
                 setForm({
                     name: def.name, description: def.description,
                     schedule: def.schedule, scheduleTime: def.scheduleTime,
-                    timeWindow: def.timeWindow, repositories: def.repositories,
+                    timeWindow: def.timeWindow,
                     promptTemplate: def.promptTemplate, enabled: def.enabled,
                 });
-                setRepos(def.repositories || []);
                 setTools(def.allowedTools || []);
                 setReports(rpts.items);
                 setReportsTotalCount(rpts.totalCount);
@@ -102,7 +98,6 @@ export function ReportDefinitionDetailPage() {
         setSaving(true);
         const data = {
             ...form,
-            repositories: repos.length > 0 ? repos : undefined,
             allowedTools: tools.length > 0 ? tools : undefined,
         };
         updateReportDefinition(id, data)
@@ -120,19 +115,6 @@ export function ReportDefinitionDetailPage() {
 
     const removeTool = (tool: string) => {
         setTools(tools.filter((t) => t !== tool));
-        setDirty(true);
-    };
-
-    const addRepo = (repo: string) => {
-        const trimmed = repo.trim();
-        if (trimmed && !repos.includes(trimmed)) {
-            setRepos([...repos, trimmed]);
-            setDirty(true);
-        }
-    };
-
-    const removeRepo = (repo: string) => {
-        setRepos(repos.filter((r) => r !== repo));
         setDirty(true);
     };
 
@@ -209,22 +191,16 @@ export function ReportDefinitionDetailPage() {
                         <InfoTab form={form} updateForm={updateForm} />
                     </TabContent>
                 </Tab>
-                <Tab eventKey={1} title={<TabTitleText>Repositories ({repos.length})</TabTitleText>}>
-                    <TabContent id="repos-tab" eventKey={1} activeKey={activeTab}
-                        style={{ marginTop: "24px" }}>
-                        <RepositoriesTab repos={repos} addRepo={addRepo} removeRepo={removeRepo} />
-                    </TabContent>
-                </Tab>
-                <Tab eventKey={2} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
-                    <TabContent id="tools-tab" eventKey={2} activeKey={activeTab}
+                <Tab eventKey={1} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
+                    <TabContent id="tools-tab" eventKey={1} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
                         <AllowedToolsTab
                             tools={tools} addTool={addTool} removeTool={removeTool}
                         />
                     </TabContent>
                 </Tab>
-                <Tab eventKey={3} title={<TabTitleText>Prompt Template</TabTitleText>}>
-                    <TabContent id="prompt-tab" eventKey={3} activeKey={activeTab}
+                <Tab eventKey={2} title={<TabTitleText>Prompt Template</TabTitleText>}>
+                    <TabContent id="prompt-tab" eventKey={2} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
                         <PromptTemplateTab
                             value={form.promptTemplate}
@@ -232,10 +208,10 @@ export function ReportDefinitionDetailPage() {
                         />
                     </TabContent>
                 </Tab>
-                <Tab eventKey={4} title={<TabTitleText>
+                <Tab eventKey={3} title={<TabTitleText>
                     Generated Reports ({reportsTotalCount})
                 </TabTitleText>}>
-                    <TabContent id="reports-tab" eventKey={4} activeKey={activeTab}
+                    <TabContent id="reports-tab" eventKey={3} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
                         <GeneratedReportsTab reports={reports} />
                     </TabContent>
@@ -365,72 +341,6 @@ function AllowedToolsTab({ tools, addTool, removeTool }: {
                             <FlexItem>
                                 <Button variant="plain" size="sm" onClick={() => removeTool(tool)}
                                     aria-label={`Remove ${tool}`}>
-                                    <TimesIcon />
-                                </Button>
-                            </FlexItem>
-                        </Flex>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function RepositoriesTab({ repos, addRepo, removeRepo }: {
-    repos: string[];
-    addRepo: (repo: string) => void;
-    removeRepo: (repo: string) => void;
-}) {
-    const [newRepo, setNewRepo] = useState("");
-
-    return (
-        <div style={{ maxWidth: "600px" }}>
-            <p style={{ color: "#6a6e73", marginBottom: "16px" }}>
-                Specify which repositories this report should cover. Leave empty to
-                include all monitored repositories.
-            </p>
-
-            <InputGroup style={{ marginBottom: "16px" }}>
-                <InputGroupItem isFill>
-                    <TextInput
-                        id="newRepo"
-                        value={newRepo}
-                        onChange={(_e, v) => setNewRepo(v)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                addRepo(newRepo);
-                                setNewRepo("");
-                            }
-                        }}
-                        placeholder="owner/repo (press Enter or click Add)"
-                    />
-                </InputGroupItem>
-                <InputGroupItem>
-                    <Button variant="control" onClick={() => { addRepo(newRepo); setNewRepo(""); }}
-                        isDisabled={!newRepo.trim()}>
-                        Add
-                    </Button>
-                </InputGroupItem>
-            </InputGroup>
-
-            {repos.length === 0 ? (
-                <Alert variant="info" title="No repositories specified — the report will cover all monitored repositories." ouiaId="InfoAlert" />
-            ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {repos.map((repo) => (
-                        <Flex key={repo} alignItems={{ default: "alignItemsCenter" }}
-                            style={{
-                                padding: "8px 12px",
-                                backgroundColor: "var(--pf-t--global--background--color--secondary--default)",
-                                borderRadius: "4px",
-                            }}>
-                            <FlexItem grow={{ default: "grow" }}>
-                                <code style={{ fontSize: "13px" }}>{repo}</code>
-                            </FlexItem>
-                            <FlexItem>
-                                <Button variant="plain" size="sm" onClick={() => removeRepo(repo)}
-                                    aria-label={`Remove ${repo}`}>
                                     <TimesIcon />
                                 </Button>
                             </FlexItem>
