@@ -422,8 +422,14 @@ export type NewMcpServer = Omit<McpServer, "id">;
 
 export type NewToolDefinition = Omit<ToolDefinition, "id">;
 
-export async function fetchTools(): Promise<ToolDefinition[]> {
-    const response = await fetch(`${API}/tools`);
+export async function fetchTools(
+    page = 1, limit = 20, filterName?: string
+): Promise<SearchResults<ToolDefinition>> {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    if (filterName) params.set("filterName", filterName);
+    const response = await fetch(`${API}/tools?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch tools: ${response.status}`);
     return response.json();
 }

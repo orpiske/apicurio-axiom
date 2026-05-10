@@ -88,16 +88,16 @@ export function DashboardPage() {
             fetchEventSources(),
             fetchActors(),
             fetchActionTypes(),
-            fetchTools(),
+            fetchTools(1, 1),
             fetchReportDefinitions(),
         ])
-            .then(([p, a, eventSources, actors, actionTypes, tools, reportDefs]) => {
+            .then(([p, a, eventSources, actors, actionTypes, toolsResult, reportDefs]) => {
                 setProjects(p.items);
                 setRecentActivity(a.items);
                 setConfigCounts({
                     actors: actors.length,
                     actionTypes: actionTypes.length,
-                    tools: tools.length,
+                    tools: toolsResult.totalCount,
                     eventSources: eventSources.length,
                     reportDefinitions: reportDefs.length,
                 });

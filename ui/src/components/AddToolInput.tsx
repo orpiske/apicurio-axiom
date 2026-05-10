@@ -75,10 +75,10 @@ export function AddToolInput({
     const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
 
     useEffect(() => {
-        Promise.all([fetchToolsets(), fetchTools(), fetchMcpServers()])
-            .then(([ts, tools, servers]) => {
+        Promise.all([fetchToolsets(), fetchTools(1, 1000), fetchMcpServers()])
+            .then(([ts, toolsResult, servers]) => {
                 setToolsets(ts);
-                setCustomTools(tools);
+                setCustomTools(toolsResult.items);
                 setMcpServers(servers);
             })
             .catch(console.error);

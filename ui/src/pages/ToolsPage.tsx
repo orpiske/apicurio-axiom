@@ -13,11 +13,17 @@ import {
     ModalFooter,
     ModalHeader,
     PageSection,
+    Pagination,
     TextInput,
     Title,
+    Toolbar,
+    ToolbarContent,
+    ToolbarItem,
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
+import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
+import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
 import {
     type ToolDefinition,
@@ -30,16 +36,41 @@ import {
 export function ToolsPage() {
     const navigate = useNavigate();
     const [tools, setTools] = useState<ToolDefinition[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newName, setNewName] = useState("");
 
+    const [filterDraft, setFilterDraft] = useState("");
+    const [filterApplied, setFilterApplied] = useState("");
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(20);
+
     const load = useCallback(() => {
         setLoading(true);
-        fetchTools().then(setTools).catch(console.error).finally(() => setLoading(false));
-    }, []);
+        fetchTools(page, perPage, filterApplied || undefined)
+            .then((results) => {
+                setTools(results.items);
+                setTotalCount(results.totalCount);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, [page, perPage, filterApplied]);
 
     useEffect(() => { load(); }, [load]);
+
+    const applyFilter = () => {
+        if (filterDraft !== filterApplied) {
+            setFilterApplied(filterDraft);
+            setPage(1);
+        }
+    };
+
+    const handleFilterKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            applyFilter();
+        }
+    };
 
     const handleCreate = () => {
         const data: NewToolDefinition = {
@@ -75,39 +106,88 @@ export function ToolsPage() {
                 </FlexItem>
             </Flex>
 
-            <div style={{ marginTop: "16px" }}>
+            <Toolbar style={{ marginTop: "16px" }}>
+                <ToolbarContent>
+                    <ToolbarItem style={{ maxWidth: "400px", flex: 1 }}>
+                        <TextInput
+                            placeholder="Filter by name or description..."
+                            value={filterDraft}
+                            onChange={(_e, v) => setFilterDraft(v)}
+                            onKeyDown={handleFilterKeyDown}
+                            onBlur={applyFilter}
+                            aria-label="Filter tools"
+                        />
+                    </ToolbarItem>
+                    {filterApplied && (
+                        <ToolbarItem>
+                            <Button variant="link" icon={<TimesIcon />} onClick={() => {
+                                setFilterDraft("");
+                                setFilterApplied("");
+                                setPage(1);
+                            }}>
+                                Clear filters
+                            </Button>
+                        </ToolbarItem>
+                    )}
+                    <ToolbarItem variant="separator" />
+                    <ToolbarItem>
+                        <Button variant="plain" aria-label="Refresh" onClick={load}>
+                            <SyncAltIcon />
+                        </Button>
+                    </ToolbarItem>
+                </ToolbarContent>
+            </Toolbar>
+
+            <div>
                 {loading ? (
                     <EmptyState><EmptyStateBody>Loading...</EmptyStateBody></EmptyState>
                 ) : tools.length === 0 ? (
-                    <EmptyState><EmptyStateBody>No tools defined. Create a tool to provide custom capabilities to AI agents.</EmptyStateBody></EmptyState>
+                    <EmptyState><EmptyStateBody>
+                        {filterApplied
+                            ? "No tools match the current filter."
+                            : "No tools defined. Create a tool to provide custom capabilities to AI agents."}
+                    </EmptyStateBody></EmptyState>
                 ) : (
-                    <Table aria-label="Tools" variant="compact">
-                        <Thead>
-                            <Tr>
-                                <Th>Name</Th>
-                                <Th>Description</Th>
-                                <Th />
-                            </Tr>
-                        </Thead>
-                        <Tbody>
-                            {tools.map((tool) => (
-                                <Tr
-                                    key={tool.id}
-                                    isClickable
-                                    onRowClick={() => navigate(`/tools/${tool.id}`)}
-                                >
-                                    <Td>{tool.name}</Td>
-                                    <Td>{tool.description || "—"}</Td>
-                                    <Td>
-                                        <Button variant="plain" size="sm" style={{ padding: 0 }}
-                                            onClick={(e) => handleDelete(e, tool.id)}>
-                                            <TrashIcon />
-                                        </Button>
-                                    </Td>
+                    <>
+                        <Table aria-label="Tools" variant="compact">
+                            <Thead>
+                                <Tr>
+                                    <Th>Name</Th>
+                                    <Th>Description</Th>
+                                    <Th />
                                 </Tr>
-                            ))}
-                        </Tbody>
-                    </Table>
+                            </Thead>
+                            <Tbody>
+                                {tools.map((tool) => (
+                                    <Tr
+                                        key={tool.id}
+                                        isClickable
+                                        onRowClick={() => navigate(`/tools/${tool.id}`)}
+                                    >
+                                        <Td>{tool.name}</Td>
+                                        <Td>{tool.description || "—"}</Td>
+                                        <Td>
+                                            <Button variant="plain" size="sm" style={{ padding: 0 }}
+                                                onClick={(e) => handleDelete(e, tool.id)}>
+                                                <TrashIcon />
+                                            </Button>
+                                        </Td>
+                                    </Tr>
+                                ))}
+                            </Tbody>
+                        </Table>
+                        {totalCount > perPage && (
+                            <Pagination
+                                itemCount={totalCount}
+                                perPage={perPage}
+                                page={page}
+                                onSetPage={(_e, p) => setPage(p)}
+                                onPerPageSelect={(_e, pp) => { setPerPage(pp); setPage(1); }}
+                                variant="bottom"
+                                style={{ marginTop: "8px" }}
+                            />
+                        )}
+                    </>
                 )}
             </div>
 

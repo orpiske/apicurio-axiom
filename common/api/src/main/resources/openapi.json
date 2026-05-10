@@ -61,7 +61,9 @@
     },
     "/system/models": {
       "get": {
-        "tags": ["System"],
+        "tags": [
+          "System"
+        ],
         "summary": "List available AI models",
         "description": "Returns the list of AI models that can be used for action type configuration.",
         "operationId": "listModels",
@@ -69,7 +71,12 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "type": "string" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -78,7 +85,9 @@
     },
     "/system/engines": {
       "get": {
-        "tags": ["System"],
+        "tags": [
+          "System"
+        ],
         "summary": "List available AI engines",
         "description": "Returns the list of AI engine types that are available (e.g. claude-code, opencode).",
         "operationId": "listEngines",
@@ -86,7 +95,12 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "type": "string" } }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -106,8 +120,8 @@
             "in": "query",
             "description": "Page number (1-indexed)",
             "schema": {
-              "type": "integer",
-              "default": 1
+              "default": 1,
+              "type": "integer"
             }
           },
           {
@@ -115,8 +129,8 @@
             "in": "query",
             "description": "Number of items per page",
             "schema": {
-              "type": "integer",
-              "default": 20
+              "default": 20,
+              "type": "integer"
             }
           },
           {
@@ -257,29 +271,61 @@
     },
     "/projects/{projectId}/close": {
       "post": {
-        "tags": ["Projects"],
+        "tags": [
+          "Projects"
+        ],
         "summary": "Close a project",
         "description": "Sets the project status to Completed.",
         "operationId": "closeProject",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Project" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
-      "parameters": [{ "$ref": "#/components/parameters/ProjectId" }]
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ]
     },
     "/projects/{projectId}/reopen": {
       "post": {
-        "tags": ["Projects"],
+        "tags": [
+          "Projects"
+        ],
         "summary": "Reopen a project",
         "description": "Sets the project status to InProgress.",
         "operationId": "reopenProject",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Project" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
-      "parameters": [{ "$ref": "#/components/parameters/ProjectId" }]
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ]
     },
     "/projects/{projectId}/tasks": {
       "get": {
@@ -583,8 +629,8 @@
             "in": "query",
             "description": "Page number (1-indexed)",
             "schema": {
-              "type": "integer",
-              "default": 1
+              "default": 1,
+              "type": "integer"
             }
           },
           {
@@ -592,8 +638,8 @@
             "in": "query",
             "description": "Number of items per page",
             "schema": {
-              "type": "integer",
-              "default": 20
+              "default": 20,
+              "type": "integer"
             }
           },
           {
@@ -816,171 +862,461 @@
     },
     "/event-sources": {
       "get": {
-        "tags": ["EventSources"],
+        "tags": [
+          "EventSources"
+        ],
         "summary": "List all event sources",
         "operationId": "listEventSources",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EventSource" } } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventSource"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "post": {
-        "tags": ["EventSources"],
+        "tags": [
+          "EventSources"
+        ],
         "summary": "Create an event source",
         "operationId": "createEventSource",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewEventSource" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEventSource"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } }
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSource"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/event-sources/{eventSourceId}": {
       "get": {
-        "tags": ["EventSources"],
+        "tags": [
+          "EventSources"
+        ],
         "summary": "Get an event source by ID",
         "operationId": "getEventSource",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSource"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["EventSources"],
+        "tags": [
+          "EventSources"
+        ],
         "summary": "Update an event source",
         "operationId": "updateEventSource",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewEventSource" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEventSource"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventSource" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSource"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["EventSources"],
+        "tags": [
+          "EventSources"
+        ],
         "summary": "Delete an event source",
         "operationId": "deleteEventSource",
-        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
-      "parameters": [{ "name": "eventSourceId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "eventSourceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/reports/definitions": {
       "get": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "List all report definitions",
         "operationId": "listReportDefinitions",
         "responses": {
           "200": {
             "description": "List of report definitions",
-            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ReportDefinition" } } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportDefinition"
+                  }
+                }
+              }
+            }
           }
         }
       },
       "post": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Create a report definition",
         "operationId": "createReportDefinition",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewReportDefinition" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewReportDefinition"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Report definition created",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportDefinition" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinition"
+                }
+              }
+            }
           }
         }
       }
     },
     "/reports/definitions/{definitionId}": {
       "get": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Get a report definition",
         "operationId": "getReportDefinition",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportDefinition" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinition"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Update a report definition",
         "operationId": "updateReportDefinition",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewReportDefinition" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewReportDefinition"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportDefinition" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinition"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Delete a report definition",
         "operationId": "deleteReportDefinition",
-        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
-      "parameters": [{ "name": "definitionId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "definitionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/reports/definitions/{definitionId}/run": {
       "post": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Manually trigger a report generation",
         "operationId": "runReportDefinition",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Report" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
-      "parameters": [{ "name": "definitionId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "definitionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/reports/ai-edit-prompt": {
       "post": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "AI-assisted report prompt editing",
         "description": "Invokes Claude Code to generate or update a report definition's prompt template and allowed tools.",
         "operationId": "aiEditReportPrompt",
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditRequest" } } },
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportAiEditRequest"
+              }
+            }
+          },
           "required": true
         },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditResponse" } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportAiEditResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/reports": {
       "get": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "List generated reports (paginated)",
         "operationId": "listReports",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
-          { "name": "filterDefinitionId", "in": "query", "schema": { "type": "integer" } },
-          { "name": "filterStatus", "in": "query", "description": "Comma-separated statuses", "schema": { "type": "string" } },
-          { "name": "filterTitle", "in": "query", "description": "Substring match on title", "schema": { "type": "string" } }
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filterDefinitionId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filterStatus",
+            "in": "query",
+            "description": "Comma-separated statuses",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterTitle",
+            "in": "query",
+            "description": "Substring match on title",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportSearchResults" } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSearchResults"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/reports/{reportId}": {
       "get": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Get a generated report",
         "operationId": "getReport",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Report" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
-      "parameters": [{ "name": "reportId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "reportId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/reports/{reportId}/log": {
       "get": {
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "summary": "Get the execution log for a report",
         "operationId": "getReportExecutionLog",
         "responses": {
-          "200": { "content": { "text/plain": { "schema": { "type": "string" } } } },
-          "404": { "description": "Report not found or no log available" }
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Report not found or no log available"
+          }
         }
       },
-      "parameters": [{ "name": "reportId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "reportId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/usage/ai": {
       "get": {
@@ -993,45 +1329,63 @@
           {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "default": 1 }
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "default": 20 }
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
           },
           {
             "name": "filterInvocationType",
             "in": "query",
             "description": "Filter by invocation type (task or manager)",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "filterProjectId",
             "in": "query",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "name": "filterActorId",
             "in": "query",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "name": "filterActionType",
             "in": "query",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "filterDateFrom",
             "in": "query",
             "description": "Start date filter (inclusive, ISO-8601 date e.g. 2026-01-15)",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "filterDateTo",
             "in": "query",
             "description": "End date filter (inclusive, ISO-8601 date e.g. 2026-01-31)",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1050,17 +1404,35 @@
     },
     "/usage/disk": {
       "get": {
-        "tags": ["Usage"],
+        "tags": [
+          "Usage"
+        ],
         "summary": "List disk usage by project (paginated)",
         "operationId": "listDiskUsage",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          },
           {
             "name": "filterName",
             "in": "query",
             "description": "Filter by project name (substring match)",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1068,7 +1440,9 @@
             "description": "Paginated disk usage by project",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DiskUsageSearchResults" }
+                "schema": {
+                  "$ref": "#/components/schemas/DiskUsageSearchResults"
+                }
               }
             }
           }
@@ -1077,41 +1451,123 @@
     },
     "/tasks": {
       "get": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "List all tasks (paginated)",
         "operationId": "listAllTasks",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
-          { "name": "filterActionType", "in": "query", "description": "Filter by action type", "schema": { "type": "string" } },
-          { "name": "filterStatus", "in": "query", "description": "Filter by status (comma-separated)", "schema": { "type": "string" } },
-          { "name": "filterProjectId", "in": "query", "description": "Filter by project ID", "schema": { "type": "integer" } }
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filterActionType",
+            "in": "query",
+            "description": "Filter by action type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterStatus",
+            "in": "query",
+            "description": "Filter by status (comma-separated)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterProjectId",
+            "in": "query",
+            "description": "Filter by project ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "responses": {
           "200": {
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskSearchResults" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSearchResults"
+                }
+              }
+            }
           }
         }
       }
     },
     "/events": {
       "get": {
-        "tags": ["Events"],
+        "tags": [
+          "Events"
+        ],
         "summary": "List events (paginated)",
         "operationId": "listEvents",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
-          { "name": "filterSource", "in": "query", "description": "Filter by event source", "schema": { "type": "string" } },
-          { "name": "filterEventType", "in": "query", "description": "Filter by event type", "schema": { "type": "string" } },
-          { "name": "filterRepository", "in": "query", "description": "Filter by repository", "schema": { "type": "string" } }
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filterSource",
+            "in": "query",
+            "description": "Filter by event source",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterEventType",
+            "in": "query",
+            "description": "Filter by event type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterRepository",
+            "in": "query",
+            "description": "Filter by repository",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Paginated list of events",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/EventSearchResults" }
+                "schema": {
+                  "$ref": "#/components/schemas/EventSearchResults"
+                }
               }
             }
           }
@@ -1120,15 +1576,37 @@
     },
     "/events/{eventId}": {
       "get": {
-        "tags": ["Events"],
+        "tags": [
+          "Events"
+        ],
         "summary": "Get a single event by ID",
         "operationId": "getEvent",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Event" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
-      "parameters": [{ "name": "eventId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "eventId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/activity": {
       "get": {
@@ -1143,8 +1621,8 @@
             "in": "query",
             "description": "Page number (1-indexed)",
             "schema": {
-              "type": "integer",
-              "default": 1
+              "default": 1,
+              "type": "integer"
             }
           },
           {
@@ -1152,8 +1630,8 @@
             "in": "query",
             "description": "Number of items per page",
             "schema": {
-              "type": "integer",
-              "default": 20
+              "default": 20,
+              "type": "integer"
             }
           },
           {
@@ -1274,18 +1752,40 @@
     },
     "/projects/{projectId}/tasks/{taskId}/cancel": {
       "post": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Cancel a stuck or in-progress task",
         "description": "Marks the task as Failed with a cancellation reason. Use this to unstick tasks that are stuck in InProgress or AwaitingInput.",
         "operationId": "cancelTask",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Task" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "parameters": [
-        { "$ref": "#/components/parameters/ProjectId" },
-        { "name": "taskId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "name": "taskId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
       ]
     },
     "/projects/{projectId}/tasks/{taskId}/respond": {
@@ -1417,11 +1917,44 @@
         ],
         "summary": "List all tool definitions",
         "operationId": "listTools",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filterName",
+            "in": "query",
+            "description": "Filter by name or description (substring match)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of tool definitions",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolSearchResults"
+                }
+              }
             }
           }
         }
@@ -1611,168 +2144,438 @@
     },
     "/action-types/ai-edit-script": {
       "post": {
-        "tags": ["ActionTypes"],
+        "tags": [
+          "ActionTypes"
+        ],
         "summary": "AI-assisted script editing",
         "description": "Invokes Claude Code to generate or update a script template for a script-mode action type.",
         "operationId": "aiEditScript",
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScriptAiEditRequest" } } },
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScriptAiEditRequest"
+              }
+            }
+          },
           "required": true
         },
         "responses": {
           "200": {
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScriptAiEditResponse" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptAiEditResponse"
+                }
+              }
+            }
           }
         }
       }
     },
     "/action-types/ai-edit-prompt": {
       "post": {
-        "tags": ["ActionTypes"],
+        "tags": [
+          "ActionTypes"
+        ],
         "summary": "AI-assisted prompt template and tools editing",
         "description": "Invokes Claude Code to generate or update the prompt template and allowed tools for an actor-mode action type.",
         "operationId": "aiEditActionPrompt",
         "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditRequest" } } },
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportAiEditRequest"
+              }
+            }
+          },
           "required": true
         },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportAiEditResponse" } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportAiEditResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/mcp-servers": {
       "get": {
-        "tags": ["McpServers"],
+        "tags": [
+          "McpServers"
+        ],
         "summary": "List all MCP servers",
         "operationId": "listMcpServers",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/McpServer" } } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/McpServer"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "post": {
-        "tags": ["McpServers"],
+        "tags": [
+          "McpServers"
+        ],
         "summary": "Register an MCP server",
         "operationId": "createMcpServer",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewMcpServer" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewMcpServer"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/McpServer" } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServer"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/mcp-servers/{mcpServerId}": {
       "get": {
-        "tags": ["McpServers"],
+        "tags": [
+          "McpServers"
+        ],
         "summary": "Get an MCP server",
         "operationId": "getMcpServer",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/McpServer" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["McpServers"],
+        "tags": [
+          "McpServers"
+        ],
         "summary": "Update an MCP server",
         "operationId": "updateMcpServer",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewMcpServer" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewMcpServer"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/McpServer" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["McpServers"],
+        "tags": [
+          "McpServers"
+        ],
         "summary": "Delete an MCP server",
         "operationId": "deleteMcpServer",
-        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
-      "parameters": [{ "name": "mcpServerId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "mcpServerId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/secrets": {
       "get": {
-        "tags": ["Secrets"],
+        "tags": [
+          "Secrets"
+        ],
         "summary": "List all secrets",
         "description": "Returns secret names and descriptions. Values are never returned.",
         "operationId": "listSecrets",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Secret" } } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Secret"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "post": {
-        "tags": ["Secrets"],
+        "tags": [
+          "Secrets"
+        ],
         "summary": "Create a secret",
         "operationId": "createSecret",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewSecret" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSecret"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Secret" } } } }
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Secret"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/secrets/{secretId}": {
       "put": {
-        "tags": ["Secrets"],
+        "tags": [
+          "Secrets"
+        ],
         "summary": "Update a secret",
         "operationId": "updateSecret",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewSecret" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSecret"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Secret" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Secret"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["Secrets"],
+        "tags": [
+          "Secrets"
+        ],
         "summary": "Delete a secret",
         "operationId": "deleteSecret",
-        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
-      "parameters": [{ "name": "secretId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "secretId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     },
     "/toolsets": {
       "get": {
-        "tags": ["Toolsets"],
+        "tags": [
+          "Toolsets"
+        ],
         "summary": "List all toolsets",
         "operationId": "listToolsets",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Toolset" } } } } }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Toolset"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "post": {
-        "tags": ["Toolsets"],
+        "tags": [
+          "Toolsets"
+        ],
         "summary": "Create a new toolset",
         "operationId": "createToolset",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewToolset" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewToolset"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "201": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } }
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/toolsets/{toolsetId}": {
       "get": {
-        "tags": ["Toolsets"],
+        "tags": [
+          "Toolsets"
+        ],
         "summary": "Get a toolset by ID",
         "operationId": "getToolset",
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["Toolsets"],
+        "tags": [
+          "Toolsets"
+        ],
         "summary": "Update a toolset",
         "operationId": "updateToolset",
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewToolset" } } }, "required": true },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewToolset"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Toolset" } } } },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["Toolsets"],
+        "tags": [
+          "Toolsets"
+        ],
         "summary": "Delete a toolset",
         "operationId": "deleteToolset",
-        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
-      "parameters": [{ "name": "toolsetId", "in": "path", "required": true, "schema": { "format": "int64", "type": "integer" } }]
+      "parameters": [
+        {
+          "name": "toolsetId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -2220,7 +3023,9 @@
           "environment": {
             "description": "Custom environment variables for the subprocess. Values can reference secrets using ${secret:NAME} syntax. When set, replaces the default all-secrets injection.",
             "type": "object",
-            "additionalProperties": { "type": "string" }
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "engine": {
             "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
@@ -2282,7 +3087,9 @@
           "environment": {
             "description": "Custom environment variables for the subprocess. Values can reference secrets using ${secret:NAME} syntax. When set, replaces the default all-secrets injection.",
             "type": "object",
-            "additionalProperties": { "type": "string" }
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "engine": {
             "description": "AI engine override for this action type (e.g. opencode, claude-code). When empty, the global default engine is used.",
@@ -2302,30 +3109,83 @@
         }
       },
       "EventSource": {
-        "required": ["id", "name", "sourceType"],
+        "required": [
+          "id",
+          "name",
+          "sourceType"
+        ],
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "sourceType": { "enum": ["github", "jira"], "type": "string" },
-          "enabled": { "type": "boolean" },
-          "pollInterval": { "type": "integer" },
-          "secretName": { "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.", "type": "string" },
-          "configuration": { "description": "Source-specific configuration (JSON object)", "type": "object", "additionalProperties": {} }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "github",
+              "jira"
+            ],
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "pollInterval": {
+            "type": "integer"
+          },
+          "secretName": {
+            "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Source-specific configuration (JSON object)",
+            "type": "object",
+            "additionalProperties": {}
+          }
         }
       },
       "NewEventSource": {
-        "required": ["name", "sourceType", "configuration"],
+        "required": [
+          "name",
+          "sourceType",
+          "configuration"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "sourceType": { "enum": ["github", "jira"], "type": "string" },
-          "enabled": { "type": "boolean" },
-          "pollInterval": { "type": "integer" },
-          "secretName": { "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.", "type": "string" },
-          "configuration": { "description": "Source-specific configuration (JSON object)", "type": "object", "additionalProperties": {} }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "github",
+              "jira"
+            ],
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "pollInterval": {
+            "type": "integer"
+          },
+          "secretName": {
+            "description": "Name of the secret to use for authentication (from Secrets store). Falls back to default provider secret if not set.",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Source-specific configuration (JSON object)",
+            "type": "object",
+            "additionalProperties": {}
+          }
         }
       },
       "Event": {
@@ -2373,10 +3233,22 @@
       "EventSearchResults": {
         "type": "object",
         "properties": {
-          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Event" } },
-          "totalCount": { "format": "int64", "type": "integer" },
-          "page": { "type": "integer" },
-          "limit": { "type": "integer" }
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          }
         }
       },
       "ActivityLogEntry": {
@@ -2443,109 +3315,298 @@
       "ReportDefinition": {
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "schedule": { "type": "string" },
-          "scheduleTime": { "type": "string" },
-          "timeWindow": { "type": "string" },
-
-          "promptTemplate": { "type": "string" },
-          "allowedTools": { "type": "array", "items": { "type": "string" } },
-          "environment": { "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.", "type": "object", "additionalProperties": { "type": "string" } },
-          "enabled": { "type": "boolean" },
-          "nextRunAt": { "format": "date-time", "type": "string" },
-          "lastRunAt": { "format": "date-time", "type": "string" },
-          "createdOn": { "format": "date-time", "type": "string" },
-          "updatedOn": { "format": "date-time", "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "schedule": {
+            "type": "string"
+          },
+          "scheduleTime": {
+            "type": "string"
+          },
+          "timeWindow": {
+            "type": "string"
+          },
+          "promptTemplate": {
+            "type": "string"
+          },
+          "allowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "environment": {
+            "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "nextRunAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastRunAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdOn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedOn": {
+            "format": "date-time",
+            "type": "string"
+          }
         }
       },
       "NewReportDefinition": {
-        "required": ["name", "schedule", "timeWindow", "promptTemplate"],
+        "required": [
+          "name",
+          "schedule",
+          "timeWindow",
+          "promptTemplate"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "schedule": { "type": "string" },
-          "scheduleTime": { "type": "string" },
-          "timeWindow": { "type": "string" },
-
-          "promptTemplate": { "type": "string" },
-          "allowedTools": { "type": "array", "items": { "type": "string" } },
-          "environment": { "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.", "type": "object", "additionalProperties": { "type": "string" } },
-          "enabled": { "type": "boolean" }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "schedule": {
+            "type": "string"
+          },
+          "scheduleTime": {
+            "type": "string"
+          },
+          "timeWindow": {
+            "type": "string"
+          },
+          "promptTemplate": {
+            "type": "string"
+          },
+          "allowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "environment": {
+            "description": "Custom environment variables. Values can reference secrets using ${secret:NAME} syntax.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          }
         }
       },
       "Report": {
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "definitionId": { "format": "int64", "type": "integer" },
-          "status": { "type": "string" },
-          "title": { "type": "string" },
-          "content": { "type": "string" },
-          "timeRangeStart": { "format": "date-time", "type": "string" },
-          "timeRangeEnd": { "format": "date-time", "type": "string" },
-          "costUsd": { "format": "double", "type": "number" },
-          "createdOn": { "format": "date-time", "type": "string" },
-          "completedOn": { "format": "date-time", "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "definitionId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "timeRangeStart": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "timeRangeEnd": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "costUsd": {
+            "format": "double",
+            "type": "number"
+          },
+          "createdOn": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedOn": {
+            "format": "date-time",
+            "type": "string"
+          }
         }
       },
       "ReportSearchResults": {
         "type": "object",
         "properties": {
-          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Report" } },
-          "totalCount": { "format": "int64", "type": "integer" },
-          "page": { "type": "integer" },
-          "limit": { "type": "integer" }
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Report"
+            }
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          }
         }
       },
       "ProjectMetrics": {
         "type": "object",
         "properties": {
-          "projectId": { "format": "int64", "type": "integer" },
-          "diskUsageBytes": { "format": "int64", "type": "integer" },
-          "totalCostUsd": { "format": "double", "type": "number" },
-          "totalInputTokens": { "format": "int64", "type": "integer" },
-          "totalOutputTokens": { "format": "int64", "type": "integer" },
-          "invocationCount": { "format": "int64", "type": "integer" }
+          "projectId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "diskUsageBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalCostUsd": {
+            "format": "double",
+            "type": "number"
+          },
+          "totalInputTokens": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalOutputTokens": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "invocationCount": {
+            "format": "int64",
+            "type": "integer"
+          }
         }
       },
       "DiskUsageSearchResults": {
         "type": "object",
         "properties": {
-          "items": { "type": "array", "items": { "$ref": "#/components/schemas/DiskUsageProject" } },
-          "totalCount": { "format": "int64", "type": "integer" },
-          "page": { "type": "integer" },
-          "limit": { "type": "integer" },
-          "totalDiskUsageBytes": { "format": "int64", "type": "integer", "description": "Sum across all matching projects" },
-          "projectCount": { "format": "int64", "type": "integer", "description": "Count of all matching projects" }
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiskUsageProject"
+            }
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalDiskUsageBytes": {
+            "format": "int64",
+            "description": "Sum across all matching projects",
+            "type": "integer"
+          },
+          "projectCount": {
+            "format": "int64",
+            "description": "Count of all matching projects",
+            "type": "integer"
+          }
         }
       },
       "DiskUsageProject": {
         "type": "object",
         "properties": {
-          "projectId": { "format": "int64", "type": "integer" },
-          "projectName": { "type": "string" },
-          "diskUsageBytes": { "format": "int64", "type": "integer" }
+          "projectId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "diskUsageBytes": {
+            "format": "int64",
+            "type": "integer"
+          }
         }
       },
       "AiUsage": {
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "invocationType": { "type": "string" },
-          "taskId": { "format": "int64", "type": "integer" },
-          "eventId": { "format": "int64", "type": "integer" },
-          "projectId": { "format": "int64", "type": "integer" },
-          "actorId": { "format": "int64", "type": "integer" },
-          "actionType": { "type": "string" },
-          "model": { "type": "string" },
-          "costUsd": { "format": "double", "type": "number" },
-          "inputTokens": { "format": "int64", "type": "integer" },
-          "outputTokens": { "format": "int64", "type": "integer" },
-          "durationMs": { "format": "int64", "type": "integer" },
-          "createdOn": { "format": "date-time", "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "invocationType": {
+            "type": "string"
+          },
+          "taskId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "eventId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "projectId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "actorId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "actionType": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "costUsd": {
+            "format": "double",
+            "type": "number"
+          },
+          "inputTokens": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "outputTokens": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "createdOn": {
+            "format": "date-time",
+            "type": "string"
+          }
         }
       },
       "AiUsageSearchResults": {
@@ -2553,11 +3614,20 @@
         "properties": {
           "items": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/AiUsage" }
+            "items": {
+              "$ref": "#/components/schemas/AiUsage"
+            }
           },
-          "totalCount": { "format": "int64", "type": "integer" },
-          "page": { "type": "integer" },
-          "limit": { "type": "integer" },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
           "totalCostUsd": {
             "format": "double",
             "description": "Sum of costUsd across ALL matching records (not just the current page)",
@@ -2741,126 +3811,304 @@
         }
       },
       "ToolDefinition": {
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "parameters": { "type": "array", "items": { "$ref": "#/components/schemas/ToolParameter" } },
-          "scriptTemplate": { "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolParameter"
+            }
+          },
+          "scriptTemplate": {
+            "type": "string"
+          }
         }
       },
       "NewToolDefinition": {
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "parameters": { "type": "array", "items": { "$ref": "#/components/schemas/ToolParameter" } },
-          "scriptTemplate": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolParameter"
+            }
+          },
+          "scriptTemplate": {
+            "type": "string"
+          }
         }
       },
       "McpServer": {
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "serverCommand": { "type": "string" },
-          "serverArgs": { "type": "array", "items": { "type": "string" } },
-          "serverEnv": { "type": "object", "additionalProperties": { "type": "string" } },
-          "serverUrl": { "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "serverCommand": {
+            "type": "string"
+          },
+          "serverArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "serverEnv": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "serverUrl": {
+            "type": "string"
+          }
         }
       },
       "NewMcpServer": {
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "serverCommand": { "type": "string" },
-          "serverArgs": { "type": "array", "items": { "type": "string" } },
-          "serverEnv": { "type": "object", "additionalProperties": { "type": "string" } },
-          "serverUrl": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "serverCommand": {
+            "type": "string"
+          },
+          "serverArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "serverEnv": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "serverUrl": {
+            "type": "string"
+          }
         }
       },
       "Toolset": {
-        "required": ["id", "name", "tools"],
+        "required": [
+          "id",
+          "name",
+          "tools"
+        ],
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tools": {
+            "description": "List of tool strings in this toolset",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "NewToolset": {
-        "required": ["name", "tools"],
+        "required": [
+          "name",
+          "tools"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "tools": { "description": "List of tool strings in this toolset", "type": "array", "items": { "type": "string" } }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tools": {
+            "description": "List of tool strings in this toolset",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "Secret": {
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "id": { "format": "int64", "type": "integer" },
-          "name": { "type": "string" },
-          "description": { "type": "string" }
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         }
       },
       "NewSecret": {
-        "required": ["name", "value"],
+        "required": [
+          "name",
+          "value"
+        ],
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "value": { "description": "The secret value (write-only, never returned in responses)", "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "value": {
+            "description": "The secret value (write-only, never returned in responses)",
+            "type": "string"
+          }
         }
       },
       "ReportAiEditRequest": {
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "type": "object",
         "properties": {
-          "message": { "description": "The user's instruction for creating or modifying the report prompt", "type": "string" },
-          "currentPromptTemplate": { "description": "The current prompt template, if any", "type": "string" },
-          "currentAllowedTools": { "description": "The current allowed tools list", "type": "array", "items": { "type": "string" } },
-          "reportName": { "description": "The report definition name for context", "type": "string" },
-          "reportDescription": { "description": "The report definition description for context", "type": "string" }
+          "message": {
+            "description": "The user's instruction for creating or modifying the report prompt",
+            "type": "string"
+          },
+          "currentPromptTemplate": {
+            "description": "The current prompt template, if any",
+            "type": "string"
+          },
+          "currentAllowedTools": {
+            "description": "The current allowed tools list",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reportName": {
+            "description": "The report definition name for context",
+            "type": "string"
+          },
+          "reportDescription": {
+            "description": "The report definition description for context",
+            "type": "string"
+          }
         }
       },
       "ReportAiEditResponse": {
         "type": "object",
         "properties": {
-          "promptTemplate": { "description": "The generated or updated prompt template", "type": "string" },
-          "allowedTools": { "description": "Recommended allowed tools for this report", "type": "array", "items": { "type": "string" } },
-          "explanation": { "description": "AI's explanation of what was generated or changed", "type": "string" }
+          "promptTemplate": {
+            "description": "The generated or updated prompt template",
+            "type": "string"
+          },
+          "allowedTools": {
+            "description": "Recommended allowed tools for this report",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explanation": {
+            "description": "AI's explanation of what was generated or changed",
+            "type": "string"
+          }
         }
       },
       "ScriptAiEditRequest": {
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "type": "object",
         "properties": {
-          "message": { "description": "The user's instruction for creating or modifying the script", "type": "string" },
-          "currentScript": { "description": "The current script template, if any", "type": "string" },
-          "actionTypeName": { "description": "The action type name for context", "type": "string" },
-          "actionTypeDescription": { "description": "The action type description for context", "type": "string" }
+          "message": {
+            "description": "The user's instruction for creating or modifying the script",
+            "type": "string"
+          },
+          "currentScript": {
+            "description": "The current script template, if any",
+            "type": "string"
+          },
+          "actionTypeName": {
+            "description": "The action type name for context",
+            "type": "string"
+          },
+          "actionTypeDescription": {
+            "description": "The action type description for context",
+            "type": "string"
+          }
         }
       },
       "ScriptAiEditResponse": {
         "type": "object",
         "properties": {
-          "script": { "description": "The generated or updated bash script template", "type": "string" },
-          "explanation": { "description": "AI's explanation of what was generated or changed", "type": "string" }
+          "script": {
+            "description": "The generated or updated bash script template",
+            "type": "string"
+          },
+          "explanation": {
+            "description": "AI's explanation of what was generated or changed",
+            "type": "string"
+          }
         }
       },
       "ToolAiEditRequest": {
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "type": "object",
         "properties": {
           "message": {
@@ -2907,6 +4155,27 @@
           },
           "required": {
             "type": "boolean"
+          }
+        }
+      },
+      "ToolSearchResults": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            }
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
           }
         }
       }
