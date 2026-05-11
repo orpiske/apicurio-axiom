@@ -82,6 +82,7 @@ public class EventsResourceImpl implements EventsResource {
     private Event toBean(EventEntity entity) {
         Event event = new Event();
         event.setId(entity.id);
+        event.setEventSourceId(entity.eventSourceId);
         event.setSource(entity.source);
         event.setEventType(entity.eventType);
         event.setIssueRef(entity.issueRef);

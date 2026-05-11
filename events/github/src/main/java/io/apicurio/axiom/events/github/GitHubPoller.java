@@ -117,10 +117,10 @@ public class GitHubPoller {
         int eventsIngested = 0;
 
         // Poll for updated issues
-        eventsIngested += pollIssues(owner, name, since, token);
+        eventsIngested += pollIssues(source.id, owner, name, since, token);
 
         // Poll for new comments
-        eventsIngested += pollComments(owner, name, since, token);
+        eventsIngested += pollComments(source.id, owner, name, since, token);
 
         // Update the last polled timestamp
         updateLastPolledAt(source.id, pollStartedAt);
@@ -130,7 +130,7 @@ public class GitHubPoller {
         }
     }
 
-    private int pollIssues(String owner, String name, Instant since, String token) {
+    private int pollIssues(Long eventSourceId, String owner, String name, Instant since, String token) {
         Optional<JsonNode> result = apiClient.fetchIssuesUpdatedSince(
                 owner, name, since, token);
 
@@ -158,7 +158,7 @@ public class GitHubPoller {
             try {
                 String payload = objectMapper.writeValueAsString(wrapIssueAsWebhookPayload(
                         issue, repoFullName, eventType));
-                eventService.ingestEvent("github", eventType, issueRef, repoFullName, payload);
+                eventService.ingestEvent(eventSourceId, "github", eventType, issueRef, repoFullName, payload);
                 count++;
             } catch (Exception e) {
                 LOG.warnf(e, "Failed to ingest issue event for %s", issueRef);
@@ -167,7 +167,7 @@ public class GitHubPoller {
         return count;
     }
 
-    private int pollComments(String owner, String name, Instant since, String token) {
+    private int pollComments(Long eventSourceId, String owner, String name, Instant since, String token) {
         Optional<JsonNode> result = apiClient.fetchCommentsUpdatedSince(
                 owner, name, since, token);
 
@@ -197,7 +197,7 @@ public class GitHubPoller {
             try {
                 String payload = objectMapper.writeValueAsString(wrapCommentAsWebhookPayload(
                         comment, repoFullName, issueNumber));
-                eventService.ingestEvent("github", "comment-added", issueRef, repoFullName, payload);
+                eventService.ingestEvent(eventSourceId, "github", "comment-added", issueRef, repoFullName, payload);
                 count++;
             } catch (Exception e) {
                 LOG.warnf(e, "Failed to ingest comment event for %s", issueRef);

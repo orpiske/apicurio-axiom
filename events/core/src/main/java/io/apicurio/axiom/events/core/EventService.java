@@ -20,7 +20,7 @@ public class EventService {
     /**
      * Persists a new event and enqueues it for processing by the Manager.
      *
-     * @param source the event source (github, jira, internal)
+     * @param source the event source type (github, jira, internal)
      * @param eventType the normalized event type (e.g. issue-created, comment-added)
      * @param issueRef the issue reference (e.g. owner/repo#123), may be null
      * @param repository the repository identifier, may be null
@@ -30,8 +30,26 @@ public class EventService {
     @Transactional
     public EventEntity ingestEvent(String source, String eventType, String issueRef,
                                    String repository, String payload) {
+        return ingestEvent(null, source, eventType, issueRef, repository, payload);
+    }
+
+    /**
+     * Persists a new event from a specific Event Source and enqueues it for processing.
+     *
+     * @param eventSourceId the ID of the Event Source that produced this event, may be null
+     * @param source the event source type (github, jira, internal)
+     * @param eventType the normalized event type (e.g. issue-created, comment-added)
+     * @param issueRef the issue reference (e.g. owner/repo#123), may be null
+     * @param repository the repository identifier, may be null
+     * @param payload the raw event payload as JSON
+     * @return the persisted EventEntity
+     */
+    @Transactional
+    public EventEntity ingestEvent(Long eventSourceId, String source, String eventType,
+                                   String issueRef, String repository, String payload) {
         // Persist the event
         EventEntity event = new EventEntity();
+        event.eventSourceId = eventSourceId;
         event.source = source;
         event.eventType = eventType;
         event.issueRef = issueRef;

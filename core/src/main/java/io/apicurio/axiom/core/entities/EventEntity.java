@@ -14,6 +14,9 @@ import java.time.Instant;
 @Table(name = "event")
 public class EventEntity extends PanacheEntity {
 
+    @Column(name = "event_source_id")
+    public Long eventSourceId;
+
     @Column(nullable = false)
     public String source;
 

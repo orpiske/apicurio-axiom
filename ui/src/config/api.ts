@@ -924,6 +924,7 @@ export async function fetchDiskUsage(
 
 export interface AxiomEvent {
     id: number;
+    eventSourceId?: number;
     source: string;
     eventType: string;
     issueRef?: string;

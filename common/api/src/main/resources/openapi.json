@@ -3227,6 +3227,11 @@
           "receivedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "eventSourceId": {
+            "format": "int64",
+            "description": "ID of the Event Source that produced this event, if applicable",
+            "type": "integer"
           }
         }
       },
