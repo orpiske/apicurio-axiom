@@ -212,7 +212,6 @@ export function ScriptAiModal({
                                     variant="primary"
                                     onClick={handleSend}
                                     isDisabled={!input.trim() || loading}
-                                    isLoading={loading}
                                     style={{ alignSelf: "flex-end" }}
                                 >
                                     <PaperPlaneIcon />

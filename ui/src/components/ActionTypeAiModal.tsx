@@ -240,7 +240,7 @@ export function ActionTypeAiModal({
                                     style={{ flex: 1, resize: "none" }}
                                 />
                                 <Button variant="primary" onClick={handleSend}
-                                    isDisabled={!input.trim() || loading} isLoading={loading}
+                                    isDisabled={!input.trim() || loading}
                                     style={{ alignSelf: "flex-end" }}>
                                     <PaperPlaneIcon />
                                 </Button>
