@@ -182,6 +182,34 @@ public class McpConfigGenerator {
     }
 
     /**
+     * Cleans up temporary MCP config and tools files for a given task/report ID.
+     *
+     * @param taskId the task or report ID used when generating the files
+     */
+    public void cleanupTempFiles(Long taskId) {
+        try {
+            Path tmpDir = Path.of(System.getProperty("java.io.tmpdir"));
+            try (var stream = Files.list(tmpDir)) {
+                stream.filter(p -> {
+                    String name = p.getFileName().toString();
+                    return (name.startsWith("axiom-mcp-" + taskId + "-")
+                            || name.startsWith("axiom-tools-" + taskId + "-"))
+                            && name.endsWith(".json");
+                }).forEach(p -> {
+                    try {
+                        Files.deleteIfExists(p);
+                        LOG.debugf("Cleaned up temp file: %s", p);
+                    } catch (IOException e) {
+                        LOG.warnf("Failed to delete temp file: %s", p);
+                    }
+                });
+            }
+        } catch (IOException e) {
+            LOG.warnf(e, "Failed to list temp directory for cleanup of task %d", taskId);
+        }
+    }
+
+    /**
      * Ensures the Axiom MCP server Node.js project is installed and dependencies
      * are resolved. On first call, copies the template project from classpath
      * resources to {@code ~/.axiom/mcp-server/} and runs {@code npm install}.

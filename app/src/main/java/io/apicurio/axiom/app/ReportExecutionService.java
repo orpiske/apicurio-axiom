@@ -220,6 +220,7 @@ public class ReportExecutionService {
         }
         logActivity("report-" + statusText, summary);
         sseEvents.fire(SseEvent.reportUpdated(reportId, report.status));
+        mcpConfigGenerator.cleanupTempFiles(reportId);
     }
 
     @Transactional
@@ -235,6 +236,7 @@ public class ReportExecutionService {
             String defName = def != null ? def.name : "Report #" + reportId;
             logActivity("report-failed", "Report failed: " + defName + " — " + reason);
             sseEvents.fire(SseEvent.reportUpdated(reportId, "Failed"));
+            mcpConfigGenerator.cleanupTempFiles(reportId);
         }
     }
 

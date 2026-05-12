@@ -115,15 +115,24 @@ public class TaskExecutionService {
         // Resolve the engine for this action type (may differ from global default)
         String engineType = actionTypeEntity != null ? actionTypeEntity.engine : null;
 
-        // Find the actor implementation (using the action type's engine, or default)
-        Actor actor = resolveActor(task, engineType);
-        if (actor == null) {
+        // Resolve the actor entity and implementation
+        ActorEntity actorEntity = resolveActorEntity(task);
+        if (actorEntity == null) {
+            // No actor configured at all — check if it's because they're all busy
+            boolean anyExist = ActorEntity.count("type", "ai-agent") > 0;
+            if (anyExist) {
+                LOG.debugf("All actors busy, task %d stays pending", task.id);
+                return;
+            }
             failTask(task.id, "No actor available for task type: " + task.actionType);
             return;
         }
 
-        // Resolve the actor entity for name and ID
-        ActorEntity actorEntity = resolveActorEntity(task);
+        Actor actor = findActorByType(actorEntity.type, engineType);
+        if (actor == null) {
+            failTask(task.id, "No actor implementation found for type: " + actorEntity.type);
+            return;
+        }
         String actorName = actorEntity != null ? actorEntity.name : "Unknown Actor";
         Long actorEntityId = actorEntity != null ? actorEntity.id : null;
 
@@ -165,21 +174,6 @@ public class TaskExecutionService {
     }
 
     /**
-     * Resolves the Actor implementation for a task. Uses the actor entity
-     * resolved by {@link #resolveActorEntity} to find the matching CDI bean.
-     *
-     * @param task       the task to resolve an actor for
-     * @param engineType the engine type override from the action type, or null for default
-     */
-    private Actor resolveActor(TaskEntity task, String engineType) {
-        ActorEntity actorEntity = resolveActorEntity(task);
-        if (actorEntity != null) {
-            return findActorByType(actorEntity.type, engineType);
-        }
-        return null;
-    }
-
-    /**
      * Resolves the ActorEntity for a task. Priority:
      * 1. Explicitly assigned actor (if set on the task)
      * 2. First actor whose capabilities include the task's action type
@@ -193,23 +187,35 @@ public class TaskExecutionService {
             }
         }
 
-        // Find an actor whose capabilities include this action type
+        // Find an actor whose capabilities include this action type and is not busy
         List<ActorEntity> allActors = ActorEntity.listAll();
         for (ActorEntity actor : allActors) {
             if (actor.capabilities != null && !actor.capabilities.isBlank()) {
                 List<String> caps = java.util.Arrays.stream(actor.capabilities.split(","))
                         .map(String::trim)
                         .toList();
-                if (caps.contains(task.actionType)) {
+                if (caps.contains(task.actionType) && !isActorBusy(actor.id)) {
                     return actor;
                 }
             }
         }
 
-        // Fallback: first AI agent actor regardless of capabilities
-        LOG.warnf("No actor with capability '%s' found, falling back to first ai-agent",
-                task.actionType);
-        return ActorEntity.<ActorEntity>find("type", "ai-agent").firstResult();
+        // Fallback: first available AI agent actor regardless of capabilities
+        List<ActorEntity> aiAgents = ActorEntity.<ActorEntity>list("type", "ai-agent");
+        for (ActorEntity actor : aiAgents) {
+            if (!isActorBusy(actor.id)) {
+                LOG.warnf("No available actor with capability '%s' found, falling back to actor '%s'",
+                        task.actionType, actor.name);
+                return actor;
+            }
+        }
+        LOG.warnf("All actors are busy, cannot execute task %d (%s)", task.id, task.actionType);
+        return null;
+    }
+
+    private boolean isActorBusy(Long actorId) {
+        return TaskEntity.count(
+                "assignedActor = ?1 and status = 'InProgress'", actorId) > 0;
     }
 
     private Actor findActorByType(String type, String engineType) {
@@ -414,6 +420,9 @@ public class TaskExecutionService {
                     "Task failed: " + task.actionType, "error"));
         }
 
+        // Clean up temporary MCP config files
+        mcpConfigGenerator.cleanupTempFiles(task.id);
+
         // Update project status back to Idle if no more active tasks
         updateProjectStatusAfterTask(task.projectId);
 
@@ -434,6 +443,7 @@ public class TaskExecutionService {
             addThreadEntry(task.projectId, "system", "result",
                     "Task failed: " + task.actionType + "\n\nError: " + reason);
 
+            mcpConfigGenerator.cleanupTempFiles(taskId);
             updateProjectStatusAfterTask(task.projectId);
         }
     }
