@@ -95,6 +95,10 @@ class ProjectsResourceTest {
     void testDeleteProject() {
         int id = createProject("Delete Test", "other", "owner/repo#200");
 
+        // Project must be Completed before it can be deleted
+        updateStatus(id, "InProgress");
+        updateStatus(id, "Completed");
+
         given()
             .when()
                 .delete(PROJECTS_PATH + "/" + id)
