@@ -55,6 +55,7 @@ import { ToolsetsPage } from "./pages/ToolsetsPage";
 import { ToolsetDetailPage } from "./pages/ToolsetDetailPage";
 import { SecretsPage } from "./pages/SecretsPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
+import { ConfigurationPacksPage } from "./pages/ConfigurationPacksPage";
 import { EngineSettingsPage } from "./pages/EngineSettingsPage";
 import { EventSourceDetailPage } from "./pages/EventSourceDetailPage";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
@@ -68,7 +69,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/event-sources", "/report-definitions", "/engine"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/event-sources", "/report-definitions", "/engine", "/configuration-packs"];
 
 let notificationIdCounter = 0;
 
@@ -254,6 +255,9 @@ export function App() {
                             <NavItem isActive={location.pathname.startsWith("/toolsets")} onClick={() => navigate("/toolsets")}>
                                 Toolsets
                             </NavItem>
+                            <NavItem isActive={location.pathname === "/configuration-packs"} onClick={() => navigate("/configuration-packs")}>
+                                Configuration Packs
+                            </NavItem>
                         </NavExpandable>
                     </NavList>
                 </Nav>
@@ -366,6 +370,7 @@ export function App() {
                     <Route path="/event-sources" element={<EventSourcesPage />} />
                     <Route path="/event-sources/:eventSourceId" element={<EventSourceDetailPage />} />
                     <Route path="/secrets" element={<SecretsPage />} />
+                    <Route path="/configuration-packs" element={<ConfigurationPacksPage />} />
                 </Routes>
             )}
 

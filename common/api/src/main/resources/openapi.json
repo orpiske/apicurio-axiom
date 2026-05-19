@@ -2685,6 +2685,58 @@
           }
         }
       ]
+    },
+    "/system/packs/export": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Export a configuration pack",
+        "operationId": "exportPack",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration pack JSON",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/system/packs/import": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Import a configuration pack",
+        "operationId": "importPack",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4400,6 +4452,77 @@
             "type": "integer"
           },
           "limit": {
+            "type": "integer"
+          }
+        }
+      },
+      "PackExportRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Pack name",
+            "type": "string"
+          },
+          "description": {
+            "description": "Pack description",
+            "type": "string"
+          },
+          "actionTypeIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "toolIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "toolsetIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "mcpServerIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          "reportDefinitionIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "ImportResult": {
+        "type": "object",
+        "properties": {
+          "actionTypes": {
+            "type": "integer"
+          },
+          "tools": {
+            "type": "integer"
+          },
+          "toolsets": {
+            "type": "integer"
+          },
+          "mcpServers": {
+            "type": "integer"
+          },
+          "reportDefinitions": {
             "type": "integer"
           }
         }

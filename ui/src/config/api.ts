@@ -116,6 +116,52 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
     return response.json();
 }
 
+// ── Configuration Packs ─────────────────────────────────────────
+
+export interface PackExportRequest {
+    name: string;
+    description?: string;
+    actionTypeIds?: number[];
+    toolIds?: number[];
+    toolsetIds?: number[];
+    mcpServerIds?: number[];
+    reportDefinitionIds?: number[];
+}
+
+export interface ImportResult {
+    actionTypes?: number;
+    tools?: number;
+    toolsets?: number;
+    mcpServers?: number;
+    reportDefinitions?: number;
+}
+
+export async function exportPack(request: PackExportRequest): Promise<Blob> {
+    const response = await fetch(`${API}/system/packs/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new Error(`Failed to export pack: ${response.status}`);
+    return response.blob();
+}
+
+export async function importPack(packJson: string): Promise<ImportResult> {
+    const response = await fetch(`${API}/system/packs/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: packJson,
+    });
+    if (!response.ok) {
+        const body = await response.json();
+        if (response.status === 409 && body.conflicts) {
+            throw { status: 409, conflicts: body.conflicts };
+        }
+        throw new Error(`Failed to import pack: ${response.status}`);
+    }
+    return response.json();
+}
+
 export async function fetchModels(): Promise<string[]> {
     const response = await fetch(`${API}/system/models`);
     if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);

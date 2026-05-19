@@ -1,16 +1,24 @@
 package io.apicurio.axiom.app.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.apicurio.axiom.api.beans.Features;
+import io.apicurio.axiom.api.beans.ImportResult;
+import io.apicurio.axiom.api.beans.PackExportRequest;
 import io.apicurio.axiom.api.beans.StartupCheck;
 import io.apicurio.axiom.api.beans.SystemConfig;
 import io.apicurio.axiom.api.beans.SystemHealth;
 import io.apicurio.axiom.api.SystemResource;
+import io.apicurio.axiom.app.ImportExportService;
 import io.apicurio.axiom.app.StartupCheckService;
 import io.apicurio.axiom.engine.spi.AiEngine;
 import io.apicurio.axiom.engine.spi.AiEngineRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
+
+import java.io.InputStream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Arrays;
@@ -44,6 +52,12 @@ public class SystemResourceImpl implements SystemResource {
 
     @Inject
     StartupCheckService startupCheckService;
+
+    @Inject
+    ImportExportService importExportService;
+
+    @Inject
+    ObjectMapper packObjectMapper;
 
     /**
      * {@inheritDoc}
@@ -103,5 +117,33 @@ public class SystemResourceImpl implements SystemResource {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Response exportPack(PackExportRequest data) {
+        JsonNode pack = importExportService.exportPack(data);
+        String filename = data.getName().replaceAll("[^a-zA-Z0-9_-]", "_") + ".json";
+        return Response.ok(pack)
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ImportResult importPack(InputStream data) {
+        try {
+            JsonNode pack = packObjectMapper.readTree(data);
+            return importExportService.importPack(pack);
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new jakarta.ws.rs.WebApplicationException(
+                    "Failed to parse pack JSON: " + e.getMessage(), 400);
+        }
     }
 }
