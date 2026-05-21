@@ -62,7 +62,8 @@ public class ProjectsResourceImpl implements ProjectsResource {
      */
     @Override
     public ProjectSearchResults listProjects(BigInteger page, BigInteger limit,
-                                              String filterName, String filterStatus) {
+                                              String filterName, String filterStatus,
+                                              String filterLabels) {
         int pageNum = page != null ? page.intValue() : 1;
         int pageSize = limit != null ? limit.intValue() : 20;
 
@@ -78,6 +79,15 @@ public class ProjectsResourceImpl implements ProjectsResource {
                     .map(String::trim).filter(s -> !s.isEmpty()).toList();
             hql.append(" and status in :statuses");
             params.put("statuses", statuses);
+        }
+        if (filterLabels != null && !filterLabels.isBlank()) {
+            List<String> labels = Arrays.stream(filterLabels.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
+            hql.append(" and id in (SELECT p.id FROM ProjectEntity p"
+                    + " JOIN p.labels pl WHERE pl IN :labels"
+                    + " GROUP BY p.id HAVING COUNT(DISTINCT pl) = :labelCount)");
+            params.put("labels", labels);
+            params.put("labelCount", (long) labels.size());
         }
 
         long totalCount = ProjectEntity.count(hql.toString(), params);
@@ -150,6 +160,10 @@ public class ProjectsResourceImpl implements ProjectsResource {
                 throw new WebApplicationException(e.getMessage(), 409);
             }
             entity.status = newStatus.name();
+        }
+        if (data.getLabels() != null) {
+            entity.labels.clear();
+            entity.labels.addAll(data.getLabels());
         }
         entity.updatedOn = Instant.now();
         return toProjectBean(entity);
@@ -409,6 +423,7 @@ public class ProjectsResourceImpl implements ProjectsResource {
         project.setRepository(entity.repository);
         project.setCreatedOn(Date.from(entity.createdOn));
         project.setUpdatedOn(Date.from(entity.updatedOn));
+        project.setLabels(entity.labels);
         return project;
     }
 

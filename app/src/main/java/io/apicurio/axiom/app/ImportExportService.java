@@ -179,6 +179,12 @@ public class ImportExportService {
             entity.description = textOrNull(item, "description");
             entity.parameters = textOrNull(item, "parameters");
             entity.scriptTemplate = textOrNull(item, "scriptTemplate");
+            JsonNode labelsNode = item.path("labels");
+            if (labelsNode.isArray()) {
+                for (JsonNode l : labelsNode) {
+                    entity.labels.add(l.asText());
+                }
+            }
             entity.persist();
             count++;
         }
@@ -273,6 +279,10 @@ public class ImportExportService {
         putIfNotNull(n, "description", e.description);
         putIfNotNull(n, "parameters", e.parameters);
         putIfNotNull(n, "scriptTemplate", e.scriptTemplate);
+        if (e.labels != null && !e.labels.isEmpty()) {
+            var labelsArr = n.putArray("labels");
+            e.labels.forEach(labelsArr::add);
+        }
         return n;
     }
 

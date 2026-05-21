@@ -7,11 +7,6 @@ import {
     Label,
     PageSection,
     Pagination,
-    Select,
-    SelectOption,
-    MenuToggle,
-    MenuToggleElement,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -19,7 +14,12 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import { type ActivityLogEntry, fetchActivityLog } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 
@@ -45,7 +45,12 @@ const ENTRY_TYPE_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "
     "report-failed": "red",
 };
 
-const ALL_ENTRY_TYPES = Object.keys(ENTRY_TYPE_COLORS);
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "eventId", label: "Event ID", testId: "activity-filter-eventId" },
+    { value: "entryType", label: "Entry Type", testId: "activity-filter-entryType" },
+    { value: "summary", label: "Summary", testId: "activity-filter-summary" },
+    { value: "projectId", label: "Project ID", testId: "activity-filter-projectId" },
+];
 
 export function ActivityLogPage() {
     const navigate = useNavigate();
@@ -55,16 +60,7 @@ export function ActivityLogPage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter values (drive the API call)
-    const [filterEventId, setFilterEventId] = useState("");
-    const [filterSummary, setFilterSummary] = useState("");
-    const [filterProjectId, setFilterProjectId] = useState("");
-    const [filterEntryTypes, setFilterEntryTypes] = useState<string[]>([]);
-    // Input values (updated on every keystroke, committed on Enter/blur)
-    const [inputEventId, setInputEventId] = useState("");
-    const [inputSummary, setInputSummary] = useState("");
-    const [inputProjectId, setInputProjectId] = useState("");
-    const [isTypeSelectOpen, setIsTypeSelectOpen] = useState(false);
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
 
     // Execution log modal state
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -86,6 +82,15 @@ export function ActivityLogPage() {
         setIsLogModalOpen(true);
     };
 
+    const filterEventId = filters.find((f) => f.filterBy.value === "eventId")?.filterValue;
+    const filterSummary = filters.find((f) => f.filterBy.value === "summary")?.filterValue;
+    const filterProjectId = filters.find((f) => f.filterBy.value === "projectId")?.filterValue;
+    const filterEntryTypes = filters
+        .filter((f) => f.filterBy.value === "entryType")
+        .map((f) => f.filterValue)
+        .join(",");
+    const isFiltered = filters.length > 0;
+
     const loadData = useCallback(() => {
         setLoading(true);
         fetchActivityLog(
@@ -93,7 +98,7 @@ export function ActivityLogPage() {
             filterEventId ? Number(filterEventId) : undefined,
             filterSummary || undefined,
             filterProjectId ? Number(filterProjectId) : undefined,
-            filterEntryTypes.length > 0 ? filterEntryTypes.join(",") : undefined
+            filterEntryTypes || undefined
         )
             .then((results) => {
                 setEntries(results.items);
@@ -107,122 +112,46 @@ export function ActivityLogPage() {
         loadData();
     }, [loadData]);
 
-    const hasActiveFilters = filterEventId || filterSummary || filterProjectId || filterEntryTypes.length > 0;
-
-    const applyFilters = () => {
-        setFilterEventId(inputEventId);
-        setFilterSummary(inputSummary);
-        setFilterProjectId(inputProjectId);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        if (criteria.filterBy.value === "eventId" || criteria.filterBy.value === "summary"
+                || criteria.filterBy.value === "projectId") {
+            const withoutSame = updated.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+            withoutSame.push(criteria);
+            setFilters(withoutSame);
+        } else {
+            updated.push(criteria);
+            setFilters(updated);
+        }
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputEventId("");
-        setInputSummary("");
-        setInputProjectId("");
-        setFilterEventId("");
-        setFilterSummary("");
-        setFilterProjectId("");
-        setFilterEntryTypes([]);
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
         setPage(1);
     };
 
-    const onTypeSelect = (_event: React.MouseEvent | undefined, value: string | number | undefined) => {
-        const val = value as string;
-        setFilterEntryTypes((prev) =>
-            prev.includes(val) ? prev.filter((t) => t !== val) : [...prev, val]
-        );
+    const onClearAllFilters = () => {
+        setFilters([]);
         setPage(1);
     };
-
-    const typeToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
-        <MenuToggle
-            ref={toggleRef}
-            onClick={() => setIsTypeSelectOpen(!isTypeSelectOpen)}
-            isExpanded={isTypeSelectOpen}
-            style={{ minWidth: "180px" }}
-        >
-            {filterEntryTypes.length > 0
-                ? `${filterEntryTypes.length} type${filterEntryTypes.length > 1 ? "s" : ""} selected`
-                : "Entry Type"}
-        </MenuToggle>
-    );
 
     return (
         <PageSection>
             <Title headingLevel="h1" size="lg">All Activity</Title>
 
-            <Toolbar clearAllFilters={clearFilters} style={{ marginTop: "16px" }}>
+            <Toolbar style={{ marginTop: "16px" }}>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by event ID"
-                            placeholder="Event ID"
-                            value={inputEventId}
-                            onChange={(_e, v) => setInputEventId(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "120px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <Select
-                            aria-label="Filter by entry type"
-                            toggle={typeToggle}
-                            onSelect={onTypeSelect}
-                            selected={filterEntryTypes}
-                            isOpen={isTypeSelectOpen}
-                            onOpenChange={setIsTypeSelectOpen}
-                        >
-                            {ALL_ENTRY_TYPES.map((type) => (
-                                <SelectOption
-                                    key={type}
-                                    value={type}
-                                    hasCheckbox
-                                    isSelected={filterEntryTypes.includes(type)}
-                                >
-                                    <Label isCompact color={ENTRY_TYPE_COLORS[type] || "grey"}>
-                                        {type}
-                                    </Label>
-                                </SelectOption>
-                            ))}
-                        </Select>
-                    </ToolbarItem>
-                    <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by summary"
-                            placeholder="Summary search"
-                            value={inputSummary}
-                            onChange={(_e, v) => setInputSummary(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "200px" }}
-                        />
-                    </ToolbarItem>
-                    <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by project ID"
-                            placeholder="Project ID"
-                            value={inputProjectId}
-                            onChange={(_e, v) => setInputProjectId(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "120px" }}
-                        />
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -238,6 +167,18 @@ export function ActivityLogPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -247,7 +188,7 @@ export function ActivityLogPage() {
                 ) : entries.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No entries match the current filters."
                                 : "No activity yet."}
                         </EmptyStateBody>
@@ -271,7 +212,12 @@ export function ActivityLogPage() {
                                     </Td>
                                     <Td>
                                         {entry.eventId ? (
-                                            <Label isCompact color="blue">
+                                            <Label isCompact color="blue"
+                                                style={{ cursor: "pointer" }}
+                                                onClick={() => {
+                                                    const eventIdType = FILTER_TYPES.find((t) => t.value === "eventId")!;
+                                                    onAddFilterCriteria({ filterBy: eventIdType, filterValue: String(entry.eventId) });
+                                                }}>
                                                 #{entry.eventId}
                                             </Label>
                                         ) : "—"}
@@ -280,7 +226,16 @@ export function ActivityLogPage() {
                                         <Label
                                             isCompact
                                             color={ENTRY_TYPE_COLORS[entry.entryType] || "grey"}
-                                        >
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                const entryTypeType = FILTER_TYPES.find((t) => t.value === "entryType")!;
+                                                const already = filters.some((f) =>
+                                                    f.filterBy.value === "entryType" && f.filterValue === entry.entryType);
+                                                if (!already) {
+                                                    setFilters([...filters, { filterBy: entryTypeType, filterValue: entry.entryType }]);
+                                                    setPage(1);
+                                                }
+                                            }}>
                                             {entry.entryType}
                                         </Label>
                                     </Td>

@@ -148,6 +148,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "filterLabels",
+            "in": "query",
+            "description": "Filter by labels (comma-separated, AND logic)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1956,6 +1965,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "filterLabels",
+            "in": "query",
+            "description": "Filter by labels (comma-separated, AND logic)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2873,6 +2891,13 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "labels": {
+            "description": "Free-form labels for categorization",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2954,6 +2979,13 @@
           "metadata": {
             "type": "object",
             "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "description": "Free-form labels for categorization",
+            "type": "array",
+            "items": {
               "type": "string"
             }
           }
@@ -4022,6 +4054,13 @@
           },
           "scriptTemplate": {
             "type": "string"
+          },
+          "labels": {
+            "description": "Free-form labels for categorization",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -4045,6 +4084,13 @@
           },
           "scriptTemplate": {
             "type": "string"
+          },
+          "labels": {
+            "description": "Free-form labels for categorization",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

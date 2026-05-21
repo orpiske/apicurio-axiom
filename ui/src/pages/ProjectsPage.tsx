@@ -9,16 +9,12 @@ import {
     FormSelect,
     FormSelectOption,
     Label,
-    MenuToggle,
-    MenuToggleElement,
     Modal,
     ModalBody,
     ModalFooter,
     ModalHeader,
     PageSection,
     Pagination,
-    Select,
-    SelectOption,
     TextArea,
     TextInput,
     Title,
@@ -29,8 +25,13 @@ import {
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import {
     type Project,
     type NewProject,
@@ -53,6 +54,12 @@ const STATUS_LABELS: Record<string, string> = {
     Completed: "Completed",
 };
 
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "name", label: "Name", testId: "project-filter-name" },
+    { value: "status", label: "Status", testId: "project-filter-status" },
+    { value: "labels", label: "Labels", testId: "project-filter-labels" },
+];
+
 export function ProjectsPage() {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
@@ -61,12 +68,7 @@ export function ProjectsPage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter values (drive the API call)
-    const [filterName, setFilterName] = useState("");
-    const [filterStatus, setFilterStatus] = useState<string[]>([]);
-    // Input value (updated on every keystroke, committed on Enter/blur)
-    const [inputName, setInputName] = useState("");
-    const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -78,12 +80,24 @@ export function ProjectsPage() {
         repository: "",
     });
 
+    const filterName = filters.find((f) => f.filterBy.value === "name")?.filterValue;
+    const filterStatus = filters
+        .filter((f) => f.filterBy.value === "status")
+        .map((f) => f.filterValue)
+        .join(",");
+    const filterLabels = filters
+        .filter((f) => f.filterBy.value === "labels")
+        .map((f) => f.filterValue)
+        .join(",");
+    const isFiltered = filters.length > 0;
+
     const loadProjects = useCallback(() => {
         setLoading(true);
         fetchProjects(
             page, perPage,
             filterName || undefined,
-            filterStatus.length > 0 ? filterStatus.join(",") : undefined
+            filterStatus || undefined,
+            filterLabels || undefined
         )
             .then((results) => {
                 setProjects(results.items);
@@ -91,46 +105,46 @@ export function ProjectsPage() {
             })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, [page, perPage, filterName, filterStatus]);
+    }, [page, perPage, filterName, filterStatus, filterLabels]);
 
     useEffect(() => {
         loadProjects();
     }, [loadProjects]);
 
-    const hasActiveFilters = filterName || filterStatus.length > 0;
-
-    const applyNameFilter = () => {
-        setFilterName(inputName);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        if (criteria.filterBy.value === "name") {
+            const withoutName = updated.filter((f) => f.filterBy.value !== "name");
+            withoutName.push(criteria);
+            setFilters(withoutName);
+        } else {
+            updated.push(criteria);
+            setFilters(updated);
+        }
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputName("");
-        setFilterName("");
-        setFilterStatus([]);
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
         setPage(1);
     };
 
-    const onStatusSelect = (_event: React.MouseEvent | undefined, value: string | number | undefined) => {
-        const val = value as string;
-        setFilterStatus((prev) =>
-            prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]
-        );
+    const onClearAllFilters = () => {
+        setFilters([]);
         setPage(1);
     };
 
-    const statusToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
-        <MenuToggle
-            ref={toggleRef}
-            onClick={() => setIsStatusSelectOpen(!isStatusSelectOpen)}
-            isExpanded={isStatusSelectOpen}
-            style={{ minWidth: "150px" }}
-        >
-            {filterStatus.length > 0
-                ? `${filterStatus.length} status${filterStatus.length > 1 ? "es" : ""} selected`
-                : "Status"}
-        </MenuToggle>
-    );
+    const addLabelFilter = (label: string) => {
+        const already = filters.some((f) => f.filterBy.value === "labels" && f.filterValue === label);
+        if (!already) {
+            const labelType = FILTER_TYPES.find((t) => t.value === "labels")!;
+            setFilters([...filters, { filterBy: labelType, filterValue: label }]);
+            setPage(1);
+        }
+    };
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
@@ -164,53 +178,15 @@ export function ProjectsPage() {
         <PageSection>
             <Title headingLevel="h1" size="lg">Projects</Title>
 
-            <Toolbar clearAllFilters={clearFilters} style={{ marginTop: "16px" }}>
+            <Toolbar style={{ marginTop: "16px" }}>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by name or issue"
-                            placeholder="Filter by name or issue"
-                            value={inputName}
-                            onChange={(_e, v) => setInputName(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyNameFilter(); }}
-                            onBlur={applyNameFilter}
-                            style={{ width: "220px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <Select
-                            aria-label="Filter by status"
-                            toggle={statusToggle}
-                            onSelect={onStatusSelect}
-                            selected={filterStatus}
-                            isOpen={isStatusSelectOpen}
-                            onOpenChange={setIsStatusSelectOpen}
-                        >
-                            {["Created", "InProgress", "Idle", "Completed"].map((status) => (
-                                <SelectOption
-                                    key={status}
-                                    value={status}
-                                    hasCheckbox
-                                    isSelected={filterStatus.includes(status)}
-                                >
-                                    <Label isCompact color={STATUS_COLORS[status] || "grey"}>
-                                        {STATUS_LABELS[status] || status}
-                                    </Label>
-                                </SelectOption>
-                            ))}
-                        </Select>
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadProjects}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadProjects}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -235,6 +211,18 @@ export function ProjectsPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -244,7 +232,7 @@ export function ProjectsPage() {
                 ) : projects.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No projects match the current filters."
                                 : "No projects yet. Create one or wait for events from a monitored repository."}
                         </EmptyStateBody>
@@ -258,6 +246,7 @@ export function ProjectsPage() {
                                 <Th>Type</Th>
                                 <Th>Issue</Th>
                                 <Th>Repository</Th>
+                                <Th>Labels</Th>
                                 <Th>Updated</Th>
                                 <Th />
                             </Tr>
@@ -280,6 +269,18 @@ export function ProjectsPage() {
                                     </Td>
                                     <Td>{project.issueRef}</Td>
                                     <Td>{project.repository}</Td>
+                                    <Td>
+                                        {project.labels?.map((label) => (
+                                            <Label key={label} isCompact color="blue"
+                                                style={{ marginRight: "4px", cursor: "pointer" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    addLabelFilter(label);
+                                                }}>
+                                                {label}
+                                            </Label>
+                                        ))}
+                                    </Td>
                                     <Td>{new Date(project.updatedOn).toLocaleString()}</Td>
                                     <Td>
                                         {project.status === "Completed" && (

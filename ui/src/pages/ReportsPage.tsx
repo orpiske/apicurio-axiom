@@ -5,17 +5,12 @@ import {
     EmptyState,
     EmptyStateBody,
     Label,
-    MenuToggle,
-    MenuToggleElement,
     Modal,
     ModalBody,
     ModalFooter,
     ModalHeader,
     PageSection,
     Pagination,
-    Select,
-    SelectOption,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -23,8 +18,13 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import { type Report, fetchReports, deleteReport } from "../config/api";
 
 const STATUS_COLORS: Record<string, "blue" | "green" | "grey" | "red"> = {
@@ -33,6 +33,11 @@ const STATUS_COLORS: Record<string, "blue" | "green" | "grey" | "red"> = {
     Completed: "green",
     Failed: "red",
 };
+
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "title", label: "Title", testId: "report-filter-title" },
+    { value: "status", label: "Status", testId: "report-filter-status" },
+];
 
 export function ReportsPage() {
     const navigate = useNavigate();
@@ -44,17 +49,21 @@ export function ReportsPage() {
 
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
-    // Filters
-    const [filterTitle, setFilterTitle] = useState("");
-    const [filterStatus, setFilterStatus] = useState<string[]>([]);
-    const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
+
+    const filterTitle = filters.find((f) => f.filterBy.value === "title")?.filterValue;
+    const filterStatus = filters
+        .filter((f) => f.filterBy.value === "status")
+        .map((f) => f.filterValue)
+        .join(",");
+    const isFiltered = filters.length > 0;
 
     const loadData = useCallback(() => {
         setLoading(true);
         fetchReports(
             page, perPage,
             undefined,
-            filterStatus.length > 0 ? filterStatus.join(",") : undefined,
+            filterStatus || undefined,
             filterTitle || undefined
         )
             .then((results) => {
@@ -79,81 +88,45 @@ export function ReportsPage() {
         }
     };
 
-    const hasActiveFilters = filterTitle || filterStatus.length > 0;
-
-    const clearFilters = () => {
-        setFilterTitle("");
-        setFilterStatus([]);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        if (criteria.filterBy.value === "title") {
+            const withoutTitle = updated.filter((f) => f.filterBy.value !== "title");
+            withoutTitle.push(criteria);
+            setFilters(withoutTitle);
+        } else {
+            updated.push(criteria);
+            setFilters(updated);
+        }
         setPage(1);
     };
 
-    const onStatusSelect = (_event: React.MouseEvent | undefined,
-                             value: string | number | undefined) => {
-        const val = value as string;
-        setFilterStatus((prev) =>
-            prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]
-        );
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
         setPage(1);
     };
 
-    const statusToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
-        <MenuToggle
-            ref={toggleRef}
-            onClick={() => setIsStatusSelectOpen(!isStatusSelectOpen)}
-            isExpanded={isStatusSelectOpen}
-            style={{ minWidth: "150px" }}
-        >
-            {filterStatus.length > 0
-                ? `${filterStatus.length} status${filterStatus.length > 1 ? "es" : ""} selected`
-                : "Status"}
-        </MenuToggle>
-    );
+    const onClearAllFilters = () => {
+        setFilters([]);
+        setPage(1);
+    };
 
     return (
         <PageSection>
             <Title headingLevel="h1" size="lg">Reports</Title>
 
-            <Toolbar clearAllFilters={clearFilters} style={{ marginTop: "16px" }}>
+            <Toolbar style={{ marginTop: "16px" }}>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by title"
-                            placeholder="Filter by title"
-                            value={filterTitle}
-                            onChange={(_e, v) => { setFilterTitle(v); setPage(1); }}
-                            style={{ width: "220px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <Select
-                            aria-label="Filter by status"
-                            toggle={statusToggle}
-                            onSelect={onStatusSelect}
-                            selected={filterStatus}
-                            isOpen={isStatusSelectOpen}
-                            onOpenChange={setIsStatusSelectOpen}
-                        >
-                            {["Pending", "Generating", "Completed", "Failed"].map((status) => (
-                                <SelectOption key={status} value={status} hasCheckbox
-                                    isSelected={filterStatus.includes(status)}>
-                                    <Label isCompact color={STATUS_COLORS[status] || "grey"}>
-                                        {status}
-                                    </Label>
-                                </SelectOption>
-                            ))}
-                        </Select>
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -169,6 +142,18 @@ export function ReportsPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -178,7 +163,7 @@ export function ReportsPage() {
                 ) : reports.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No reports match the current filters."
                                 : "No reports generated yet. Configure and enable a report definition under Configuration \u2192 Report Definitions, or click \"Run Now\" to generate one immediately."}
                         </EmptyStateBody>
@@ -201,7 +186,18 @@ export function ReportsPage() {
                                     <Td>{report.title || `Report #${report.id}`}</Td>
                                     <Td>
                                         <Label isCompact
-                                            color={STATUS_COLORS[report.status] || "grey"}>
+                                            color={STATUS_COLORS[report.status] || "grey"}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const already = filters.some((f) =>
+                                                    f.filterBy.value === "status" && f.filterValue === report.status);
+                                                if (!already) {
+                                                    const statusType = FILTER_TYPES.find((t) => t.value === "status")!;
+                                                    setFilters([...filters, { filterBy: statusType, filterValue: report.status }]);
+                                                    setPage(1);
+                                                }
+                                            }}>
                                             {report.status}
                                         </Label>
                                     </Td>

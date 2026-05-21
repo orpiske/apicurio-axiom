@@ -1,9 +1,16 @@
 package io.apicurio.axiom.core.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Defines a custom script tool that can be provided to AI agents via MCP.
@@ -33,4 +40,9 @@ public class ToolDefinitionEntity extends PanacheEntity {
      */
     @Column(name = "script_template", columnDefinition = "TEXT")
     public String scriptTemplate;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tool_label", joinColumns = @JoinColumn(name = "tool_id"))
+    @Column(name = "label")
+    public List<String> labels = new ArrayList<>();
 }

@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,8 @@ public class ToolsResourceImpl implements ToolsResource {
      * {@inheritDoc}
      */
     @Override
-    public ToolSearchResults listTools(BigInteger page, BigInteger limit, String filterName) {
+    public ToolSearchResults listTools(BigInteger page, BigInteger limit,
+                                       String filterName, String filterLabels) {
         int pageNum = page != null ? page.intValue() : 1;
         int pageSize = limit != null ? limit.intValue() : 20;
 
@@ -61,6 +63,16 @@ public class ToolsResourceImpl implements ToolsResource {
         if (filterName != null && !filterName.isBlank()) {
             hql.append(" and (lower(name) like :name or lower(description) like :name)");
             params.put("name", "%" + filterName.toLowerCase() + "%");
+        }
+
+        if (filterLabels != null && !filterLabels.isBlank()) {
+            List<String> labels = Arrays.stream(filterLabels.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
+            hql.append(" and id in (SELECT t.id FROM ToolDefinitionEntity t"
+                    + " JOIN t.labels tl WHERE tl IN :labels"
+                    + " GROUP BY t.id HAVING COUNT(DISTINCT tl) = :labelCount)");
+            params.put("labels", labels);
+            params.put("labelCount", (long) labels.size());
         }
 
         long totalCount = ToolDefinitionEntity.count(hql.toString(), params);
@@ -215,6 +227,10 @@ public class ToolsResourceImpl implements ToolsResource {
                 entity.parameters = null;
             }
         }
+        entity.labels.clear();
+        if (data.getLabels() != null) {
+            entity.labels.addAll(data.getLabels());
+        }
     }
 
     private ToolDefinition toBean(ToolDefinitionEntity entity) {
@@ -233,6 +249,8 @@ public class ToolsResourceImpl implements ToolsResource {
                 // ignore
             }
         }
+
+        tool.setLabels(entity.labels);
 
         return tool;
     }

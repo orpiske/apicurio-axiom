@@ -8,6 +8,7 @@ import {
     FlexItem,
     Form,
     FormGroup,
+    Label,
     Modal,
     ModalBody,
     ModalFooter,
@@ -23,8 +24,13 @@ import {
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import {
     type ToolDefinition,
     type NewToolDefinition,
@@ -32,6 +38,11 @@ import {
     createTool,
     deleteTool,
 } from "../config/api";
+
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "name", label: "Name", testId: "tool-filter-name" },
+    { value: "labels", label: "Labels", testId: "tool-filter-labels" },
+];
 
 export function ToolsPage() {
     const navigate = useNavigate();
@@ -43,34 +54,62 @@ export function ToolsPage() {
 
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
-    const [filterDraft, setFilterDraft] = useState("");
-    const [filterApplied, setFilterApplied] = useState("");
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
 
+    const filterName = filters.find((f) => f.filterBy.value === "name")?.filterValue;
+    const filterLabels = filters
+        .filter((f) => f.filterBy.value === "labels")
+        .map((f) => f.filterValue)
+        .join(",");
+    const isFiltered = filters.length > 0;
+
     const load = useCallback(() => {
         setLoading(true);
-        fetchTools(page, perPage, filterApplied || undefined)
+        fetchTools(page, perPage, filterName || undefined, filterLabels || undefined)
             .then((results) => {
                 setTools(results.items);
                 setTotalCount(results.totalCount);
             })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, [page, perPage, filterApplied]);
+    }, [page, perPage, filterName, filterLabels]);
 
     useEffect(() => { load(); }, [load]);
 
-    const applyFilter = () => {
-        if (filterDraft !== filterApplied) {
-            setFilterApplied(filterDraft);
-            setPage(1);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        if (criteria.filterBy.value === "name") {
+            const withoutName = updated.filter((f) => f.filterBy.value !== "name");
+            withoutName.push(criteria);
+            setFilters(withoutName);
+        } else {
+            updated.push(criteria);
+            setFilters(updated);
         }
+        setPage(1);
     };
 
-    const handleFilterKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            applyFilter();
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
+        setPage(1);
+    };
+
+    const onClearAllFilters = () => {
+        setFilters([]);
+        setPage(1);
+    };
+
+    const addLabelFilter = (label: string) => {
+        const already = filters.some((f) => f.filterBy.value === "labels" && f.filterValue === label);
+        if (!already) {
+            const labelType = FILTER_TYPES.find((t) => t.value === "labels")!;
+            setFilters([...filters, { filterBy: labelType, filterValue: label }]);
+            setPage(1);
         }
     };
 
@@ -115,30 +154,13 @@ export function ToolsPage() {
 
             <Toolbar style={{ marginTop: "16px" }}>
                 <ToolbarContent>
-                    <ToolbarItem style={{ maxWidth: "400px", flex: 1 }}>
-                        <TextInput
-                            placeholder="Filter by name or description..."
-                            value={filterDraft}
-                            onChange={(_e, v) => setFilterDraft(v)}
-                            onKeyDown={handleFilterKeyDown}
-                            onBlur={applyFilter}
-                            aria-label="Filter tools"
-                        />
-                    </ToolbarItem>
-                    {filterApplied && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={() => {
-                                setFilterDraft("");
-                                setFilterApplied("");
-                                setPage(1);
-                            }}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
                     <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={load}>
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
+                    </ToolbarItem>
+                    <ToolbarItem>
+                        <Button variant="control" aria-label="Refresh" onClick={load}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -154,14 +176,26 @@ export function ToolsPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
                     <EmptyState><EmptyStateBody>Loading...</EmptyStateBody></EmptyState>
                 ) : tools.length === 0 ? (
                     <EmptyState><EmptyStateBody>
-                        {filterApplied
-                            ? "No tools match the current filter."
+                        {isFiltered
+                            ? "No tools match the current filters."
                             : "No tools defined. Create a tool to provide custom capabilities to AI agents."}
                     </EmptyStateBody></EmptyState>
                 ) : (
@@ -171,6 +205,7 @@ export function ToolsPage() {
                                 <Tr>
                                     <Th>Name</Th>
                                     <Th>Description</Th>
+                                    <Th>Labels</Th>
                                     <Th />
                                 </Tr>
                             </Thead>
@@ -183,6 +218,18 @@ export function ToolsPage() {
                                     >
                                         <Td>{tool.name}</Td>
                                         <Td>{tool.description || "—"}</Td>
+                                        <Td>
+                                            {tool.labels?.map((label) => (
+                                                <Label key={label} isCompact color="blue"
+                                                    style={{ marginRight: "4px", cursor: "pointer" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        addLabelFilter(label);
+                                                    }}>
+                                                    {label}
+                                                </Label>
+                                            ))}
+                                        </Td>
                                         <Td>
                                             <Button variant="plain" size="sm" style={{ padding: 0 }}
                                                 onClick={(e) => handleDelete(e, tool.id)}>

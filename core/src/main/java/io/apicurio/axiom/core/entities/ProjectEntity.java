@@ -1,11 +1,17 @@
 package io.apicurio.axiom.core.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a tracked unit of work tied to a single external issue.
@@ -46,4 +52,9 @@ public class ProjectEntity extends PanacheEntity {
 
     @Column(name = "disk_usage_bytes")
     public Long diskUsageBytes;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "project_label", joinColumns = @JoinColumn(name = "project_id"))
+    @Column(name = "label")
+    public List<String> labels = new ArrayList<>();
 }

@@ -45,6 +45,8 @@ import {
     updateTool,
     testTool,
 } from "../config/api";
+import { EditLabelsModal } from "../components/EditLabelsModal";
+import { LabelDisplay } from "../components/LabelDisplay";
 import { ToolAiModal } from "../components/ToolAiModal";
 
 export function ToolDetailPage() {
@@ -54,11 +56,13 @@ export function ToolDetailPage() {
     const [tool, setTool] = useState<ToolDefinition | null>(null);
     const [form, setForm] = useState<NewToolDefinition>({ name: "" });
     const [params, setParams] = useState<ToolParameter[]>([]);
+    const [labels, setLabels] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [aiModalOpen, setAiModalOpen] = useState(false);
+    const [isLabelsOpen, setIsLabelsOpen] = useState(false);
 
     // Warn on browser close/refresh with unsaved changes
     useEffect(() => {
@@ -82,6 +86,7 @@ export function ToolDetailPage() {
                     scriptTemplate: t.scriptTemplate,
                 });
                 setParams(t.parameters || []);
+                setLabels(t.labels || []);
                 setDirty(false);
             })
             .catch(console.error)
@@ -97,7 +102,7 @@ export function ToolDetailPage() {
 
     const handleSave = () => {
         setSaving(true);
-        const data = { ...form, parameters: params };
+        const data = { ...form, parameters: params, labels };
         updateTool(id, data)
             .then((updated) => {
                 setTool(updated);
@@ -176,7 +181,9 @@ export function ToolDetailPage() {
             <Tabs activeKey={activeTab} onSelect={(_e, k) => setActiveTab(k as number)}>
                 <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
                     <TabContent id="info-tab" eventKey={0} activeKey={activeTab} style={{ marginTop: "24px" }}>
-                        <InfoTab form={form} updateForm={updateForm} />
+                        <InfoTab form={form} updateForm={updateForm}
+                            labels={labels}
+                            onEditLabels={() => setIsLabelsOpen(true)} />
                     </TabContent>
                 </Tab>
                 <Tab eventKey={1} title={<TabTitleText>Parameters ({params.length})</TabTitleText>}>
@@ -215,13 +222,22 @@ export function ToolDetailPage() {
                 }}
                 onClose={() => setAiModalOpen(false)}
             />
+
+            <EditLabelsModal
+                isOpen={isLabelsOpen}
+                labels={labels}
+                onSave={(newLabels) => { setLabels(newLabels); setDirty(true); }}
+                onClose={() => setIsLabelsOpen(false)}
+            />
         </PageSection>
     );
 }
 
-function InfoTab({ form, updateForm }: {
+function InfoTab({ form, updateForm, labels, onEditLabels }: {
     form: NewToolDefinition;
     updateForm: (updates: Partial<NewToolDefinition>) => void;
+    labels: string[];
+    onEditLabels: () => void;
 }) {
     return (
         <Form style={{ maxWidth: "600px" }}>
@@ -233,6 +249,10 @@ function InfoTab({ form, updateForm }: {
             <FormGroup label="Description" fieldId="description">
                 <TextArea id="description" value={form.description || ""}
                     onChange={(_e, v) => updateForm({ description: v })} rows={3} />
+            </FormGroup>
+
+            <FormGroup label="Labels" fieldId="labels">
+                <LabelDisplay labels={labels} onEdit={onEditLabels} />
             </FormGroup>
         </Form>
     );

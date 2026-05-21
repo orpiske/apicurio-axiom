@@ -6,7 +6,6 @@ import {
     Label,
     PageSection,
     Pagination,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -14,7 +13,12 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import { type ActivityLogEntry, type AxiomEvent, fetchActivityLog, fetchEvent } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 import { EventDetailModal } from "../components/EventDetailModal";
@@ -29,6 +33,11 @@ const ENTRY_TYPE_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "
     "manager-no-decision": "grey",
 };
 
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "summary", label: "Summary", testId: "manager-filter-summary" },
+    { value: "projectId", label: "Project ID", testId: "manager-filter-projectId" },
+];
+
 export function ManagerDecisionsPage() {
     const [entries, setEntries] = useState<ActivityLogEntry[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -36,12 +45,7 @@ export function ManagerDecisionsPage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter values
-    const [filterSummary, setFilterSummary] = useState("");
-    const [filterProjectId, setFilterProjectId] = useState("");
-    // Input values (committed on Enter/blur)
-    const [inputSummary, setInputSummary] = useState("");
-    const [inputProjectId, setInputProjectId] = useState("");
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
 
     // Log modal
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -49,6 +53,10 @@ export function ManagerDecisionsPage() {
 
     // Event payload modal
     const [selectedEvent, setSelectedEvent] = useState<AxiomEvent | null>(null);
+
+    const filterSummary = filters.find((f) => f.filterBy.value === "summary")?.filterValue;
+    const filterProjectId = filters.find((f) => f.filterBy.value === "projectId")?.filterValue;
+    const isFiltered = filters.length > 0;
 
     const loadData = useCallback(() => {
         setLoading(true);
@@ -69,19 +77,25 @@ export function ManagerDecisionsPage() {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const hasActiveFilters = filterSummary || filterProjectId;
-
-    const applyFilters = () => {
-        setFilterSummary(inputSummary);
-        setFilterProjectId(inputProjectId);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        // All filter types on this page are single-value
+        const withoutSame = updated.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+        withoutSame.push(criteria);
+        setFilters(withoutSame);
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputSummary("");
-        setInputProjectId("");
-        setFilterSummary("");
-        setFilterProjectId("");
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
+        setPage(1);
+    };
+
+    const onClearAllFilters = () => {
+        setFilters([]);
         setPage(1);
     };
 
@@ -102,42 +116,15 @@ export function ManagerDecisionsPage() {
                 Manager Decisions
             </Title>
 
-            <Toolbar clearAllFilters={clearFilters}>
+            <Toolbar>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by summary"
-                            placeholder="Summary search"
-                            value={inputSummary}
-                            onChange={(_e, v) => setInputSummary(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "220px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by project ID"
-                            placeholder="Project ID"
-                            value={inputProjectId}
-                            onChange={(_e, v) => setInputProjectId(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "120px" }}
-                        />
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -153,6 +140,18 @@ export function ManagerDecisionsPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -162,7 +161,7 @@ export function ManagerDecisionsPage() {
                 ) : entries.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No decisions match the current filters."
                                 : "No manager evaluations yet. Decisions will appear here as the Manager processes incoming events."}
                         </EmptyStateBody>

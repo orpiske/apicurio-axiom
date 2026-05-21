@@ -5,17 +5,12 @@ import {
     EmptyState,
     EmptyStateBody,
     Label,
-    MenuToggle,
-    MenuToggleElement,
     Modal,
     ModalBody,
     ModalFooter,
     ModalHeader,
     PageSection,
     Pagination,
-    Select,
-    SelectOption,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -23,8 +18,13 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 import BanIcon from "@patternfly/react-icons/dist/esm/icons/ban-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apicurio/common-ui-components";
 import { type Task, fetchAllTasks, cancelTask } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 
@@ -37,7 +37,10 @@ const STATUS_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "red"
     Cancelled: "grey",
 };
 
-const ALL_STATUSES = ["Pending", "InProgress", "AwaitingInput", "Completed", "Failed"];
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "actionType", label: "Action Type", testId: "task-filter-actionType" },
+    { value: "status", label: "Status", testId: "task-filter-status" },
+];
 
 export function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -46,12 +49,7 @@ export function TasksPage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filters
-    const [filterActionType, setFilterActionType] = useState("");
-    const [filterStatus, setFilterStatus] = useState<string[]>([]);
-    // Input values
-    const [inputActionType, setInputActionType] = useState("");
-    const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
 
     // Execution log modal
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -61,12 +59,19 @@ export function TasksPage() {
     // Cancel confirmation modal
     const [cancelTarget, setCancelTarget] = useState<Task | null>(null);
 
+    const filterActionType = filters.find((f) => f.filterBy.value === "actionType")?.filterValue;
+    const filterStatus = filters
+        .filter((f) => f.filterBy.value === "status")
+        .map((f) => f.filterValue)
+        .join(",");
+    const isFiltered = filters.length > 0;
+
     const loadData = useCallback(() => {
         setLoading(true);
         fetchAllTasks(
             page, perPage,
             filterActionType || undefined,
-            filterStatus.length > 0 ? filterStatus.join(",") : undefined
+            filterStatus || undefined
         )
             .then((results) => {
                 setTasks(results.items);
@@ -78,41 +83,33 @@ export function TasksPage() {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const hasActiveFilters = filterActionType || filterStatus.length > 0;
-
-    const applyFilters = () => {
-        setFilterActionType(inputActionType);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        if (criteria.filterBy.value === "actionType") {
+            // Single-value filter: replace existing
+            const withoutSame = updated.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+            withoutSame.push(criteria);
+            setFilters(withoutSame);
+        } else {
+            // Multi-value filter (status): accumulate
+            updated.push(criteria);
+            setFilters(updated);
+        }
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputActionType("");
-        setFilterActionType("");
-        setFilterStatus([]);
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
         setPage(1);
     };
 
-    const onStatusSelect = (_event: React.MouseEvent | undefined,
-                             value: string | number | undefined) => {
-        const val = value as string;
-        setFilterStatus((prev) =>
-            prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]
-        );
+    const onClearAllFilters = () => {
+        setFilters([]);
         setPage(1);
     };
-
-    const statusToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
-        <MenuToggle
-            ref={toggleRef}
-            onClick={() => setIsStatusSelectOpen(!isStatusSelectOpen)}
-            isExpanded={isStatusSelectOpen}
-            style={{ minWidth: "150px" }}
-        >
-            {filterStatus.length > 0
-                ? `${filterStatus.length} status${filterStatus.length > 1 ? "es" : ""} selected`
-                : "Status"}
-        </MenuToggle>
-    );
 
     const handleViewLog = (projectId: number, taskId: number) => {
         setLogProjectId(projectId);
@@ -142,49 +139,15 @@ export function TasksPage() {
                 Tasks
             </Title>
 
-            <Toolbar clearAllFilters={clearFilters}>
+            <Toolbar>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by action type"
-                            placeholder="Action type"
-                            value={inputActionType}
-                            onChange={(_e, v) => setInputActionType(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "180px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <Select
-                            aria-label="Filter by status"
-                            toggle={statusToggle}
-                            onSelect={onStatusSelect}
-                            selected={filterStatus}
-                            isOpen={isStatusSelectOpen}
-                            onOpenChange={setIsStatusSelectOpen}
-                        >
-                            {ALL_STATUSES.map((status) => (
-                                <SelectOption key={status} value={status} hasCheckbox
-                                    isSelected={filterStatus.includes(status)}>
-                                    <Label isCompact color={STATUS_COLORS[status] || "grey"}>
-                                        {status}
-                                    </Label>
-                                </SelectOption>
-                            ))}
-                        </Select>
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -200,6 +163,18 @@ export function TasksPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -209,7 +184,7 @@ export function TasksPage() {
                 ) : tasks.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No tasks match the current filters."
                                 : "No tasks recorded yet."}
                         </EmptyStateBody>
@@ -239,7 +214,17 @@ export function TasksPage() {
                                         </Link>
                                     </Td>
                                     <Td>
-                                        <Label isCompact color={STATUS_COLORS[task.status] || "grey"}>
+                                        <Label isCompact color={STATUS_COLORS[task.status] || "grey"}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                const already = filters.some((f) =>
+                                                    f.filterBy.value === "status" && f.filterValue === task.status);
+                                                if (!already) {
+                                                    const statusType = FILTER_TYPES.find((t) => t.value === "status")!;
+                                                    setFilters([...filters, { filterBy: statusType, filterValue: task.status }]);
+                                                    setPage(1);
+                                                }
+                                            }}>
                                             {task.status}
                                         </Label>
                                     </Td>
