@@ -156,7 +156,7 @@ public class TaskExecutionService {
         ActorContext context = ActorContext.builder()
                 .workingDirectory(workspace)
                 .systemPrompt(buildSystemPrompt(task, project))
-                .promptTemplate(resolvePromptTemplate(actionTypeEntity, task, project))
+                .promptTemplate(resolvePromptTemplate(actionTypeEntity, task, project, workspace))
                 .allowedTools(allowedTools)
                 .mcpConfigFile(mcpConfig)
                 .environment(env)
@@ -285,7 +285,7 @@ public class TaskExecutionService {
      * with values from the task and project. Returns null if no template is configured.
      */
     private String resolvePromptTemplate(ActionTypeEntity actionType, TaskEntity task,
-                                          ProjectEntity project) {
+                                          ProjectEntity project, Path workspace) {
         if (actionType == null || actionType.promptTemplate == null
                 || actionType.promptTemplate.isBlank()) {
             return null;
@@ -297,6 +297,7 @@ public class TaskExecutionService {
         resolved = resolved.replace("{{issueRef}}", project.issueRef != null ? project.issueRef : "");
         resolved = resolved.replace("{{repository}}", project.repository != null ? project.repository : "");
         resolved = resolved.replace("{{projectName}}", project.name != null ? project.name : "");
+        resolved = resolved.replace("{{workDir}}", workspace != null ? workspace.toAbsolutePath().toString() : "");
         return resolved;
     }
 

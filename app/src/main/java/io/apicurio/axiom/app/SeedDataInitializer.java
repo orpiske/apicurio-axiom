@@ -52,15 +52,16 @@ public class SeedDataInitializer {
                         + "action — no code changes are made.",
                 "actor", true, true, READ_ONLY_TOOLS,
                 """
-                You are analyzing a GitHub issue. Read the issue details, examine the \
-                repository structure, and produce a structured analysis.
+                You are analyzing a GitHub issue. Read the issue details and produce \
+                a structured analysis.
 
                 ## Instructions
                 1. Read and understand the issue described below
-                2. Examine the repository to gather relevant context
+                2. If you need to examine the code, clone the repository first: \
+                   git clone https://github.com/{{repository}}.git {{workDir}}/repo
                 3. Produce a summary with the following sections:
                    - **Issue Summary**: What is being asked or reported
-                   - **Findings**: What you discovered in the repository
+                   - **Findings**: What you discovered
                    - **Complexity Assessment**: Low/Medium/High with justification
                    - **Recommendations**: Suggested next steps
                 4. Do NOT make any code changes — this is a read-only analysis
@@ -68,6 +69,9 @@ public class SeedDataInitializer {
 
                 ## Issue
                 {{issueRef}} in {{repository}}
+
+                ## Work Directory
+                {{workDir}}
 
                 ## Context from Manager
                 {{managerInput}}
@@ -111,16 +115,22 @@ public class SeedDataInitializer {
                 You are implementing a code change to address a GitHub issue.
 
                 ## Instructions
-                1. Read the issue and understand what needs to be done
-                2. Examine the repository to understand the codebase
-                3. Create a feature branch: git checkout -b agent/issue-<number>
-                4. Make the necessary code changes
-                5. Commit with a descriptive message referencing the issue
-                6. Push the branch: git push -u origin agent/issue-<number>
-                7. Open a pull request: gh pr create --title "..." --body "Closes #<number>"
+                1. Clone the repository: \
+                   git clone https://github.com/{{repository}}.git {{workDir}}/repo \
+                   && cd {{workDir}}/repo
+                2. Read the issue and understand what needs to be done
+                3. Examine the codebase
+                4. Create a feature branch: git checkout -b agent/issue-<number>
+                5. Make the necessary code changes
+                6. Commit with a descriptive message referencing the issue
+                7. Push the branch: git push -u origin agent/issue-<number>
+                8. Open a pull request: gh pr create --title "..." --body "Closes #<number>"
 
                 ## Issue
                 {{issueRef}} in {{repository}}
+
+                ## Work Directory
+                {{workDir}}
 
                 ## Context from Manager
                 {{managerInput}}
@@ -138,7 +148,8 @@ public class SeedDataInitializer {
 
                 ## Instructions
                 1. Read the issue and understand the requirements
-                2. Examine the repository structure and relevant code
+                2. If you need to examine the code, clone the repository first: \
+                   git clone https://github.com/{{repository}}.git {{workDir}}/repo
                 3. Produce a design proposal with:
                    - **Approach**: How you would solve this
                    - **Files to Change**: Which files would be modified
@@ -148,6 +159,9 @@ public class SeedDataInitializer {
 
                 ## Issue
                 {{issueRef}} in {{repository}}
+
+                ## Work Directory
+                {{workDir}}
 
                 ## Context from Manager
                 {{managerInput}}
@@ -164,16 +178,21 @@ public class SeedDataInitializer {
                 You are reviewing code changes related to a GitHub issue.
 
                 ## Instructions
-                1. Examine the changes in the repository
-                2. Review for correctness, style, and potential issues
-                3. Produce a review summary with:
+                1. If you need to examine the code, clone the repository first: \
+                   git clone https://github.com/{{repository}}.git {{workDir}}/repo
+                2. Examine the changes
+                3. Review for correctness, style, and potential issues
+                4. Produce a review summary with:
                    - **Summary**: What the changes do
                    - **Issues Found**: Any bugs, style issues, or concerns
                    - **Suggestions**: Improvements or alternatives
-                4. Do NOT make any code changes
+                5. Do NOT make any code changes
 
                 ## Issue
                 {{issueRef}} in {{repository}}
+
+                ## Work Directory
+                {{workDir}}
 
                 ## Context from Manager
                 {{managerInput}}
@@ -189,15 +208,21 @@ public class SeedDataInitializer {
                 You are responding to feedback on a GitHub issue or pull request.
 
                 ## Instructions
-                1. Read the feedback or comment described below
-                2. If code changes are requested, make them and commit
-                3. Post a response on the issue:
+                1. If you need to work with the code, clone the repository first: \
+                   git clone https://github.com/{{repository}}.git {{workDir}}/repo \
+                   && cd {{workDir}}/repo
+                2. Read the feedback or comment described below
+                3. If code changes are requested, make them and commit
+                4. Post a response on the issue:
                    a. Write your comment to /tmp/gh-comment.md using the Write tool
                    b. Then run: gh issue comment <number> --repo {{repository}} --body-file /tmp/gh-comment.md
-                4. If you cannot post the comment, include the full response text in your output
+                5. If you cannot post the comment, include the full response text in your output
 
                 ## Issue
                 {{issueRef}} in {{repository}}
+
+                ## Work Directory
+                {{workDir}}
 
                 ## Context from Manager
                 {{managerInput}}

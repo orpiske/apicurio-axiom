@@ -184,6 +184,8 @@ public class ScriptExecutionService {
                 ? project.name : "");
         resolved = resolved.replace("{{managerInput}}", task.input != null ? task.input : "");
         resolved = resolved.replace("{{apiBaseUrl}}", apiBaseUrl);
+        String workDir = System.getProperty("user.home") + "/.axiom/workspaces/project-" + task.projectId;
+        resolved = resolved.replace("{{workDir}}", workDir);
         return resolved;
     }
 
