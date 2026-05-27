@@ -280,6 +280,7 @@ public class SeedDataInitializer {
         // Seed tools, toolsets, actors, manager config, test event source, and report definitions
         seedTools();
         seedToolsets();
+        ensureAxiomSdkToolset();
         seedActors();
         seedManagerConfig();
         seedEventSource();
@@ -415,6 +416,30 @@ public class SeedDataInitializer {
                         "mcp__axiom-tools__list_github_prs"));
 
         LOG.infof("Seeded %d toolsets", ToolsetEntity.count());
+    }
+
+    /**
+     * Ensures the "Axiom SDK" toolset exists. Called on every startup
+     * (not just initial seed) so that existing databases get it on upgrade.
+     */
+    private void ensureAxiomSdkToolset() {
+        if (ToolsetEntity.count("name", "Axiom SDK") > 0) {
+            return;
+        }
+        seedToolset("Axiom SDK",
+                "Built-in Axiom SDK tools for programmatic interaction with Axiom from AI agents",
+                String.join(",",
+                        "mcp__axiom-tools__axiom_fire_event",
+                        "mcp__axiom-tools__axiom_list_projects",
+                        "mcp__axiom-tools__axiom_get_project",
+                        "mcp__axiom-tools__axiom_create_task",
+                        "mcp__axiom-tools__axiom_get_task_status",
+                        "mcp__axiom-tools__axiom_add_thread_entry",
+                        "mcp__axiom-tools__axiom_close_project",
+                        "mcp__axiom-tools__axiom_reopen_project",
+                        "mcp__axiom-tools__axiom_add_project_label",
+                        "mcp__axiom-tools__axiom_remove_project_label"));
+        LOG.info("Created 'Axiom SDK' toolset");
     }
 
     private void seedToolset(String name, String description, String tools) {

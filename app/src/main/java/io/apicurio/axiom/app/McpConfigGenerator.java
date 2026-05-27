@@ -10,6 +10,7 @@ import io.apicurio.axiom.engine.opencode.OpenCodeMcpManager.McpServerConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -51,6 +52,9 @@ public class McpConfigGenerator {
     private static final String MCP_SERVER_DIR_NAME = "mcp-server";
     private static final String[] TEMPLATE_FILES = { "package.json", "server.js" };
 
+    @ConfigProperty(name = "quarkus.http.port", defaultValue = "8080")
+    int httpPort;
+
     @Inject
     ObjectMapper objectMapper;
 
@@ -91,6 +95,10 @@ public class McpConfigGenerator {
      */
     public Path generateMcpConfig(Long taskId, Map<String, String> environment,
                                    List<String> allowedTools) {
+        // Ensure AXIOM_API_URL is available to SDK tools in the MCP server
+        Map<String, String> env = new java.util.LinkedHashMap<>(environment);
+        env.putIfAbsent("AXIOM_API_URL", "http://localhost:" + httpPort + "/api/v1");
+
         boolean hasRestrictions = allowedTools != null && !allowedTools.isEmpty();
 
         // Filter script tools: include only those whose MCP name is in the allowed list
@@ -108,7 +116,11 @@ public class McpConfigGenerator {
                         || allowedTools.stream().anyMatch(a -> a.startsWith("mcp__" + s.name + "__")))
                 .toList();
 
-        if (scriptTools.isEmpty() && mcpServers.isEmpty()) {
+        // Check if any SDK tools (built into server.js) are in the allowed list
+        boolean hasSdkTools = !hasRestrictions
+                || allowedTools.stream().anyMatch(a -> a.startsWith(AXIOM_TOOLS_PREFIX + "axiom_"));
+
+        if (scriptTools.isEmpty() && mcpServers.isEmpty() && !hasSdkTools) {
             LOG.debugf("No MCP tools matched allowed list for task %d, skipping MCP config", taskId);
             return null;
         }
@@ -122,7 +134,7 @@ public class McpConfigGenerator {
 
             // If there are script tools, write a per-task tools JSON and reference
             // the pre-built Axiom MCP server project.
-            if (!scriptTools.isEmpty()) {
+            if (!scriptTools.isEmpty() || hasSdkTools) {
                 Path serverDir = ensureMcpServerInstalled();
                 Path toolsJson = writeToolsJson(scriptTools, taskId);
 
@@ -136,7 +148,7 @@ public class McpConfigGenerator {
                         .append("\"],");
                 configJson.append("\"env\":{");
                 boolean envFirst = true;
-                for (Map.Entry<String, String> entry : environment.entrySet()) {
+                for (Map.Entry<String, String> entry : env.entrySet()) {
                     if (envFirst) envFirst = false; else configJson.append(",");
                     configJson.append("\"").append(escapeJson(entry.getKey())).append("\":\"")
                             .append(escapeJson(entry.getValue())).append("\"");

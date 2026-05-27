@@ -4,6 +4,7 @@ import io.apicurio.axiom.actors.human.HumanActor;
 import io.apicurio.axiom.api.ProjectsResource;
 import io.apicurio.axiom.api.beans.Event;
 import io.apicurio.axiom.api.beans.NewProject;
+import io.apicurio.axiom.api.beans.NewThreadEntry;
 import io.apicurio.axiom.api.beans.ProjectMetrics;
 import io.apicurio.axiom.api.beans.NewTask;
 import io.apicurio.axiom.api.beans.Project;
@@ -272,6 +273,22 @@ public class ProjectsResourceImpl implements ProjectsResource {
                 .stream()
                 .map(this::toThreadEntryBean)
                 .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void addThreadEntry(long projectId, NewThreadEntry data) {
+        findProjectOrThrow(projectId);
+        ThreadEntryEntity entry = new ThreadEntryEntity();
+        entry.projectId = projectId;
+        entry.authorType = "actor";
+        entry.entryType = "message";
+        entry.content = data.getContent();
+        entry.createdOn = Instant.now();
+        entry.persist();
     }
 
     // ── Project Metrics ────────────────────────────────────────────────

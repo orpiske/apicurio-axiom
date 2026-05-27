@@ -108,7 +108,7 @@ class McpConfigGeneratorTest {
 
         JsonNode axiomToolsEnv = config.get("mcpServers").get("axiom-tools").get("env");
         assertNotNull(axiomToolsEnv, "env key should still be present");
-        assertEquals(0, axiomToolsEnv.size(), "env should be empty");
+        assertTrue(axiomToolsEnv.has("AXIOM_API_URL"), "AXIOM_API_URL should always be injected");
     }
 
     // ── Tools JSON file content ──────────────────────────────────────
@@ -294,8 +294,9 @@ class McpConfigGeneratorTest {
 
         ToolDefinitionEntity.deleteAll();
         try {
-            Path configFile = generator.generateMcpConfig(9012L, Map.of(), null);
-            assertNull(configFile, "Should return null when no tools are defined");
+            // Pass an explicit allowed list with no matching tools
+            Path configFile = generator.generateMcpConfig(9012L, Map.of(), List.of("Bash"));
+            assertNull(configFile, "Should return null when no MCP tools match");
         } finally {
             // Restore tools
             for (ToolDefinitionEntity tool : saved) {
@@ -324,7 +325,9 @@ class McpConfigGeneratorTest {
         mcpOnly.persist();
 
         try {
-            Path configFile = generator.generateMcpConfig(9013L, Map.of(), null);
+            // Restrict to only the external MCP server tools (no axiom-tools)
+            Path configFile = generator.generateMcpConfig(9013L, Map.of(),
+                    List.of("mcp__test-mcp-only__some_tool"));
             assertNotNull(configFile, "Should generate config for MCP server tools");
 
             String content = Files.readString(configFile);
@@ -332,7 +335,7 @@ class McpConfigGeneratorTest {
             JsonNode servers = config.get("mcpServers");
 
             assertFalse(servers.has("axiom-tools"),
-                    "Should NOT have axiom-tools when no script tools exist");
+                    "Should NOT have axiom-tools when no script or SDK tools requested");
             assertTrue(servers.has("test-mcp-only"),
                     "Should have the external MCP server");
         } finally {

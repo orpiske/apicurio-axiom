@@ -458,6 +458,27 @@
           }
         }
       },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Add an entry to the project thread",
+        "operationId": "addThreadEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewThreadEntry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Thread entry created"
+          }
+        }
+      },
       "parameters": [
         {
           "$ref": "#/components/parameters/ProjectId"
@@ -1588,6 +1609,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventSearchResults"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Fire a new event for processing",
+        "operationId": "fireEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created and enqueued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
                 }
               }
             }
@@ -4570,6 +4619,48 @@
           },
           "reportDefinitions": {
             "type": "integer"
+          }
+        }
+      },
+      "NewEvent": {
+        "required": [
+          "source",
+          "eventType",
+          "payload"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "description": "Event source type (e.g. github, jira, internal)",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Event type (e.g. issue-created, custom)",
+            "type": "string"
+          },
+          "issueRef": {
+            "description": "Issue reference",
+            "type": "string"
+          },
+          "repository": {
+            "description": "Repository identifier",
+            "type": "string"
+          },
+          "payload": {
+            "description": "JSON payload with event details",
+            "type": "string"
+          }
+        }
+      },
+      "NewThreadEntry": {
+        "required": [
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "description": "The message content",
+            "type": "string"
           }
         }
       }

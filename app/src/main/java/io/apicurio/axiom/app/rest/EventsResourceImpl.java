@@ -3,11 +3,14 @@ package io.apicurio.axiom.app.rest;
 import io.apicurio.axiom.api.EventsResource;
 import io.apicurio.axiom.api.beans.Event;
 import io.apicurio.axiom.api.beans.EventSearchResults;
+import io.apicurio.axiom.api.beans.NewEvent;
 import io.apicurio.axiom.core.entities.EventEntity;
+import io.apicurio.axiom.events.core.EventService;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 
 import java.math.BigInteger;
@@ -23,6 +26,9 @@ import java.util.Map;
 @ApplicationScoped
 @RunOnVirtualThread
 public class EventsResourceImpl implements EventsResource {
+
+    @Inject
+    EventService eventService;
 
     /**
      * {@inheritDoc}
@@ -76,6 +82,20 @@ public class EventsResourceImpl implements EventsResource {
         if (entity == null) {
             throw new WebApplicationException("Event not found: " + eventId, 404);
         }
+        return toBean(entity);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Event fireEvent(NewEvent data) {
+        EventEntity entity = eventService.ingestEvent(
+                data.getSource(),
+                data.getEventType(),
+                data.getIssueRef(),
+                data.getRepository(),
+                data.getPayload());
         return toBean(entity);
     }
 
