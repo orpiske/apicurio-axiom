@@ -55,12 +55,21 @@ Only the selected engine's binary needs to be installed. Both can coexist for te
 
 ## Development
 
-```bash
-# Backend (Quarkus dev mode with H2)
-cd app && mvn quarkus:dev
+The `dev.sh` script builds all modules and starts both the Quarkus backend and the Vite UI
+dev server side by side:
 
-# Frontend (Vite dev server, proxies API to localhost:8080)
-cd ui && npm install && npm run dev
+```bash
+./dev.sh
+```
+
+- Backend starts on **http://localhost:8080**
+- UI starts on **http://localhost:8888** (proxies API requests to the backend)
+- Both run in the foreground — **Ctrl+C** stops everything
+
+To run the backend only (no UI):
+
+```bash
+./dev.sh --skip-ui
 ```
 
 ## Project Structure
