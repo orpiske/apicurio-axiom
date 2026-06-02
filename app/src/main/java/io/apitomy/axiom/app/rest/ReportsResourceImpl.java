@@ -142,7 +142,8 @@ public class ReportsResourceImpl implements ReportsResource {
     @Override
     public ReportSearchResults listReports(BigInteger page, BigInteger limit,
                                             BigInteger filterDefinitionId,
-                                            String filterStatus, String filterTitle) {
+                                            String filterStatus, String filterTitle,
+                                            String filterLabels) {
         int pageNum = page != null ? page.intValue() : 1;
         int pageSize = limit != null ? limit.intValue() : 20;
 
@@ -162,6 +163,15 @@ public class ReportsResourceImpl implements ReportsResource {
         if (filterTitle != null && !filterTitle.isBlank()) {
             hql.append(" and lower(title) like :title");
             params.put("title", "%" + filterTitle.toLowerCase() + "%");
+        }
+        if (filterLabels != null && !filterLabels.isBlank()) {
+            java.util.List<String> labels = java.util.Arrays.stream(filterLabels.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).toList();
+            hql.append(" and id in (SELECT r.id FROM ReportEntity r"
+                    + " JOIN r.labels rl WHERE rl IN :labels"
+                    + " GROUP BY r.id HAVING COUNT(DISTINCT rl) = :labelCount)");
+            params.put("labels", labels);
+            params.put("labelCount", (long) labels.size());
         }
 
         long totalCount = ReportEntity.count(hql.toString(), params);
@@ -219,6 +229,21 @@ public class ReportsResourceImpl implements ReportsResource {
         entity.delete();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public Report updateReportLabels(long reportId, List<String> labels) {
+        ReportEntity entity = ReportEntity.findById(reportId);
+        if (entity == null) {
+            throw new WebApplicationException("Report not found: " + reportId, 404);
+        }
+        entity.labels.clear();
+        entity.labels.addAll(labels);
+        return toReportBean(entity);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private ReportDefinitionEntity findDefinitionOrThrow(long id) {
@@ -243,6 +268,10 @@ public class ReportsResourceImpl implements ReportsResource {
                 : (data.getEnabled() != null ? data.getEnabled() : false);
         entity.timeoutSeconds = data.getTimeoutSeconds();
         entity.environment = environmentToJson(data.getEnvironment());
+        entity.initialLabels.clear();
+        if (data.getInitialLabels() != null) {
+            entity.initialLabels.addAll(data.getInitialLabels());
+        }
 
         // Compute nextRunAt when enabled (or schedule/time changes)
         if (entity.enabled) {
@@ -271,6 +300,7 @@ public class ReportsResourceImpl implements ReportsResource {
         def.setEnvironment(jsonToEnvironment(entity.environment));
         if (entity.nextRunAt != null) def.setNextRunAt(Date.from(entity.nextRunAt));
         if (entity.lastRunAt != null) def.setLastRunAt(Date.from(entity.lastRunAt));
+        def.setInitialLabels(entity.initialLabels);
         def.setCreatedOn(Date.from(entity.createdOn));
         def.setUpdatedOn(Date.from(entity.updatedOn));
         return def;
@@ -289,6 +319,7 @@ public class ReportsResourceImpl implements ReportsResource {
         report.setDurationMs(entity.durationMs);
         report.setCreatedOn(Date.from(entity.createdOn));
         if (entity.completedOn != null) report.setCompletedOn(Date.from(entity.completedOn));
+        report.setLabels(entity.labels);
         return report;
     }
 

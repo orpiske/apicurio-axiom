@@ -1265,6 +1265,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "filterLabels",
+            "in": "query",
+            "description": "Filter by labels (comma-separated, AND logic)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1311,6 +1319,54 @@
         "responses": {
           "204": {
             "description": "Report deleted"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "reportId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "format": "int64",
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/reports/{reportId}/labels": {
+      "put": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Update report labels",
+        "description": "Replace the labels on a generated report.",
+        "operationId": "updateReportLabels",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -3623,6 +3679,13 @@
           "timeoutSeconds": {
             "description": "Optional timeout in seconds for report generation. Overrides the global default when set.",
             "type": "integer"
+          },
+          "initialLabels": {
+            "description": "Labels automatically applied to new reports generated from this definition",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -3676,6 +3739,13 @@
           "timeoutSeconds": {
             "description": "Optional timeout in seconds for report generation. Overrides the global default when set.",
             "type": "integer"
+          },
+          "initialLabels": {
+            "description": "Labels automatically applied to new reports generated from this definition",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -3723,6 +3793,13 @@
             "format": "int64",
             "description": "Report generation duration in milliseconds",
             "type": "integer"
+          },
+          "labels": {
+            "description": "Free-form labels for categorization and filtering",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

@@ -177,6 +177,36 @@ const SDK_TOOLS = [
             return await axiomApi("PUT", `/projects/${args.projectId}`, { labels });
         },
     },
+    {
+        name: "axiom_add_report_label",
+        description: "Add a label to a generated Axiom report for categorization and filtering.",
+        parameters: [
+            { name: "reportId", type: "number", description: "The report ID", required: true },
+            { name: "label", type: "string", description: "The label to add", required: true },
+        ],
+        handler: async (args) => {
+            const report = JSON.parse(await axiomApi("GET", `/reports/${args.reportId}`));
+            const labels = report.labels || [];
+            if (!labels.includes(args.label)) {
+                labels.push(args.label);
+                return await axiomApi("PUT", `/reports/${args.reportId}/labels`, labels);
+            }
+            return JSON.stringify(report);
+        },
+    },
+    {
+        name: "axiom_remove_report_label",
+        description: "Remove a label from a generated Axiom report.",
+        parameters: [
+            { name: "reportId", type: "number", description: "The report ID", required: true },
+            { name: "label", type: "string", description: "The label to remove", required: true },
+        ],
+        handler: async (args) => {
+            const report = JSON.parse(await axiomApi("GET", `/reports/${args.reportId}`));
+            const labels = (report.labels || []).filter(l => l !== args.label);
+            return await axiomApi("PUT", `/reports/${args.reportId}/labels`, labels);
+        },
+    },
 ];
 
 // ── Script-based tools (loaded from JSON file) ──────────────────

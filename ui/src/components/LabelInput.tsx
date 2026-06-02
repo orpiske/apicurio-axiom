@@ -38,7 +38,7 @@ export function LabelInput({ labels, onChange }: {
             {labels.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "8px" }}>
                     {labels.map((label) => (
-                        <Label key={label} color="blue"
+                        <Label key={label} color="purple"
                             onClose={() => handleRemove(label)}
                             closeBtnAriaLabel={`Remove ${label}`}>
                             {label}

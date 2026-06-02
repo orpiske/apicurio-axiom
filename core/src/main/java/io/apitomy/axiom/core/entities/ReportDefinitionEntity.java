@@ -1,11 +1,17 @@
 package io.apitomy.axiom.core.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Defines a recurring report that the system generates on a schedule.
@@ -85,4 +91,9 @@ public class ReportDefinitionEntity extends PanacheEntity {
 
     @Column(name = "updated_on", nullable = false)
     public Instant updatedOn;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "report_definition_initial_label", joinColumns = @JoinColumn(name = "report_definition_id"))
+    @Column(name = "label")
+    public List<String> initialLabels = new ArrayList<>();
 }

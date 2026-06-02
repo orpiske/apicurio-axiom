@@ -1,11 +1,17 @@
 package io.apitomy.axiom.core.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A single generated report instance produced from a {@link ReportDefinitionEntity}.
@@ -47,4 +53,9 @@ public class ReportEntity extends PanacheEntity {
 
     @Column(name = "completed_on")
     public Instant completedOn;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "report_label", joinColumns = @JoinColumn(name = "report_id"))
+    @Column(name = "label")
+    public List<String> labels = new ArrayList<>();
 }
