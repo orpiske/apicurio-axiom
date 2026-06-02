@@ -10,6 +10,7 @@ import io.apitomy.axiom.engine.spi.AiEngineResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 @Typed({ClaudeCodeEngine.class, AiEngineProvider.class})
 public class ClaudeCodeEngine implements AiEngine, AiEngineProvider {
+
+    @ConfigProperty(name = "axiom.claude-code.executable", defaultValue = "claude")
+    String executable;
 
     @Inject
     ClaudeCodeMcpManager mcpManager;
@@ -57,7 +61,7 @@ public class ClaudeCodeEngine implements AiEngine, AiEngineProvider {
         List<AiEngineCheckResult> results = new ArrayList<>();
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("claude", "-p", "Reply with exactly: AXIOM_OK",
+            ProcessBuilder pb = new ProcessBuilder(executable, "-p", "Reply with exactly: AXIOM_OK",
                     "--bare", "--output-format", "text", "--max-turns", "1");
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -130,6 +134,7 @@ public class ClaudeCodeEngine implements AiEngine, AiEngineProvider {
         // Build command
         ClaudeCodeCommandBuilder cmdBuilder = ClaudeCodeCommandBuilder
                 .fromContext(prompt, actorContext)
+                .executable(executable)
                 .streamJson(true)
                 .maxTurns(config.getMaxSteps());
 
