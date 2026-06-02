@@ -29,6 +29,7 @@ import {
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, REPORT_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import { AddToolInput } from "../components/AddToolInput";
+import { LabelInput } from "../components/LabelInput";
 import { ReportAiModal } from "../components/ReportAiModal";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
@@ -62,6 +63,7 @@ export function ReportDefinitionDetailPage() {
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [tools, setTools] = useState<string[]>([]);
+    const [initialLabels, setInitialLabels] = useState<string[]>([]);
     const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
     const loadData = useCallback(() => {
@@ -79,6 +81,7 @@ export function ReportDefinitionDetailPage() {
                     timeoutSeconds: def.timeoutSeconds,
                 });
                 setTools(def.allowedTools || []);
+                setInitialLabels(def.initialLabels || []);
                 setEnvVars(def.environment || {});
                 setDirty(false);
             })
@@ -99,6 +102,7 @@ export function ReportDefinitionDetailPage() {
         const data = {
             ...form,
             allowedTools: tools.length > 0 ? tools : undefined,
+            initialLabels: initialLabels,
             environment: envToSend,
         };
         updateReportDefinition(id, data)
@@ -200,7 +204,9 @@ export function ReportDefinitionDetailPage() {
                 <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
                     <TabContent id="info-tab" eventKey={0} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
-                        <InfoTab form={form} updateForm={updateForm} />
+                        <InfoTab form={form} updateForm={updateForm}
+                            initialLabels={initialLabels}
+                            onLabelsChange={(labels) => { setInitialLabels(labels); setDirty(true); }} />
                     </TabContent>
                 </Tab>
                 <Tab eventKey={1} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
@@ -251,9 +257,11 @@ export function ReportDefinitionDetailPage() {
     );
 }
 
-function InfoTab({ form, updateForm }: {
+function InfoTab({ form, updateForm, initialLabels, onLabelsChange }: {
     form: NewReportDefinition;
     updateForm: (updates: Partial<NewReportDefinition>) => void;
+    initialLabels: string[];
+    onLabelsChange: (labels: string[]) => void;
 }) {
     return (
         <Form style={{ maxWidth: "600px" }}>
@@ -268,6 +276,7 @@ function InfoTab({ form, updateForm }: {
             <FormGroup label="Schedule" isRequired fieldId="schedule">
                 <FormSelect id="schedule" value={form.schedule}
                     onChange={(_e, v) => updateForm({ schedule: v })}>
+                    <FormSelectOption value="none" label="Not Scheduled (ad hoc only)" />
                     <FormSelectOption value="hourly" label="Hourly" />
                     <FormSelectOption value="daily" label="Daily" />
                     <FormSelectOption value="weekly" label="Weekly" />
@@ -290,11 +299,13 @@ function InfoTab({ form, updateForm }: {
                     </FormSelect>
                 </FormGroup>
             )}
-            <FormGroup label="Time of Day" fieldId="scheduleTime">
-                <TextInput id="scheduleTime" value={form.scheduleTime || ""}
-                    onChange={(_e, v) => updateForm({ scheduleTime: v })}
-                    placeholder="08:00" />
-            </FormGroup>
+            {form.schedule !== "none" && (
+                <FormGroup label="Time of Day" fieldId="scheduleTime">
+                    <TextInput id="scheduleTime" value={form.scheduleTime || ""}
+                        onChange={(_e, v) => updateForm({ scheduleTime: v })}
+                        placeholder="08:00" />
+                </FormGroup>
+            )}
             <FormGroup label="Time Window" isRequired fieldId="timeWindow">
                 <FormSelect id="timeWindow" value={form.timeWindow}
                     onChange={(_e, v) => updateForm({ timeWindow: v })}>
@@ -310,11 +321,17 @@ function InfoTab({ form, updateForm }: {
                     onChange={(_e, v) => updateForm({ timeoutSeconds: v ? parseInt(v) : undefined })}
                     placeholder="Global default (600)" />
             </FormGroup>
-            <FormGroup fieldId="enabled">
-                <Switch id="enabled" label="Enabled — report will run automatically on schedule"
-                    isChecked={form.enabled}
-                    onChange={(_e, v) => updateForm({ enabled: v })} />
+            <FormGroup label="Initial Labels" fieldId="initialLabels">
+                <LabelInput labels={initialLabels}
+                    onChange={onLabelsChange} />
             </FormGroup>
+            {form.schedule !== "none" && (
+                <FormGroup fieldId="enabled">
+                    <Switch id="enabled" label="Enabled — report will run automatically on schedule"
+                        isChecked={form.enabled}
+                        onChange={(_e, v) => updateForm({ enabled: v })} />
+                </FormGroup>
+            )}
         </Form>
     );
 }

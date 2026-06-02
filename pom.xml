@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.apicurio</groupId>
-    <artifactId>apicurio-axiom</artifactId>
-    <version>2.0.2-SNAPSHOT</version>
+    <groupId>io.apitomy</groupId>
+    <artifactId>apitomy-axiom</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Apicurio Axiom</name>
+    <name>Apitomy Axiom</name>
     <description>Event-driven project orchestration platform</description>
-    <url>https://github.com/Apicurio/apicurio-axiom</url>
+    <url>https://github.com/Apitomy/apitomy-axiom</url>
 
     <licenses>
         <license>
@@ -54,7 +54,7 @@
         <compiler-plugin.version>3.14.0</compiler-plugin.version>
         <surefire-plugin.version>3.5.2</surefire-plugin.version>
         <version.build.helper.maven.plugin>3.6.1</version.build.helper.maven.plugin>
-        <apicurio-codegen.version>1.2.11.Final</apicurio-codegen.version>
+        <apitomy-codegen.version>1.3.0</apitomy-codegen.version>
         <jandex-plugin.version>3.2.7</jandex-plugin.version>
     </properties>
 
@@ -70,78 +70,78 @@
 
             <!-- Internal modules -->
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-api</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-core</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-manager</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-manager</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-engine-spi</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-engine-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-engine-opencode</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-engine-opencode</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-actors-spi</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-actors-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-actors-claude-code</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-actors-claude-code</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-actors-human</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-actors-human</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-events-core</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-events-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-events-github</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-events-github</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-events-jira</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-events-jira</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-notifications-spi</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-notifications-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-notifications-slack</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-notifications-slack</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-notifications-telegram</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-notifications-telegram</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-axiom-ui-bundle</artifactId>
+                <groupId>io.apitomy</groupId>
+                <artifactId>apitomy-axiom-ui-bundle</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
@@ -169,9 +169,9 @@
                     <version>${quarkus.platform.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>io.apicurio</groupId>
-                    <artifactId>apicurio-codegen-maven-plugin</artifactId>
-                    <version>${apicurio-codegen.version}</version>
+                    <groupId>io.apitomy</groupId>
+                    <artifactId>apitomy-codegen-maven-plugin</artifactId>
+                    <version>${apitomy-codegen.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>io.smallrye</groupId>

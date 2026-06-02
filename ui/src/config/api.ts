@@ -55,6 +55,7 @@ export interface Project {
     createdOn: string;
     updatedOn: string;
     metadata?: Record<string, string>;
+    labels?: string[];
 }
 
 export interface NewProject {
@@ -116,6 +117,52 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
     return response.json();
 }
 
+// ── Configuration Packs ─────────────────────────────────────────
+
+export interface PackExportRequest {
+    name: string;
+    description?: string;
+    actionTypeIds?: number[];
+    toolIds?: number[];
+    toolsetIds?: number[];
+    mcpServerIds?: number[];
+    reportDefinitionIds?: number[];
+}
+
+export interface ImportResult {
+    actionTypes?: number;
+    tools?: number;
+    toolsets?: number;
+    mcpServers?: number;
+    reportDefinitions?: number;
+}
+
+export async function exportPack(request: PackExportRequest): Promise<Blob> {
+    const response = await fetch(`${API}/system/packs/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new Error(`Failed to export pack: ${response.status}`);
+    return response.blob();
+}
+
+export async function importPack(packJson: string): Promise<ImportResult> {
+    const response = await fetch(`${API}/system/packs/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: packJson,
+    });
+    if (!response.ok) {
+        const body = await response.json();
+        if (response.status === 409 && body.conflicts) {
+            throw { status: 409, conflicts: body.conflicts };
+        }
+        throw new Error(`Failed to import pack: ${response.status}`);
+    }
+    return response.json();
+}
+
 export async function fetchModels(): Promise<string[]> {
     const response = await fetch(`${API}/system/models`);
     if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);
@@ -131,13 +178,14 @@ export async function fetchEngines(): Promise<string[]> {
 // ── Projects ──────────────────────────────────────────────────────
 
 export async function fetchProjects(
-    page = 1, limit = 20, filterName?: string, filterStatus?: string
+    page = 1, limit = 20, filterName?: string, filterStatus?: string, filterLabels?: string
 ): Promise<SearchResults<Project>> {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("limit", String(limit));
     if (filterName) params.set("filterName", filterName);
     if (filterStatus) params.set("filterStatus", filterStatus);
+    if (filterLabels) params.set("filterLabels", filterLabels);
     const response = await fetch(`${API}/projects?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch projects: ${response.status}`);
     return response.json();
@@ -146,6 +194,16 @@ export async function fetchProjects(
 export async function fetchProject(id: number): Promise<Project> {
     const response = await fetch(`${API}/projects/${id}`);
     if (!response.ok) throw new Error(`Failed to fetch project: ${response.status}`);
+    return response.json();
+}
+
+export async function updateProject(id: number, data: Partial<Project>): Promise<Project> {
+    const response = await fetch(`${API}/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`Failed to update project: ${response.status}`);
     return response.json();
 }
 
@@ -406,6 +464,7 @@ export interface ToolDefinition {
     description?: string;
     parameters?: ToolParameter[];
     scriptTemplate?: string;
+    labels?: string[];
 }
 
 export interface McpServer {
@@ -423,12 +482,13 @@ export type NewMcpServer = Omit<McpServer, "id">;
 export type NewToolDefinition = Omit<ToolDefinition, "id">;
 
 export async function fetchTools(
-    page = 1, limit = 20, filterName?: string
+    page = 1, limit = 20, filterName?: string, filterLabels?: string
 ): Promise<SearchResults<ToolDefinition>> {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("limit", String(limit));
     if (filterName) params.set("filterName", filterName);
+    if (filterLabels) params.set("filterLabels", filterLabels);
     const response = await fetch(`${API}/tools?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch tools: ${response.status}`);
     return response.json();
@@ -762,6 +822,7 @@ export interface ReportDefinition {
     enabled: boolean;
     timeoutSeconds?: number;
     environment?: Record<string, string>;
+    initialLabels?: string[];
     nextRunAt?: string;
     lastRunAt?: string;
     createdOn: string;
@@ -780,6 +841,7 @@ export interface Report {
     timeRangeEnd?: string;
     costUsd?: number;
     durationMs?: number;
+    labels?: string[];
     createdOn: string;
     completedOn?: string;
 }
@@ -853,7 +915,8 @@ export async function runReportDefinition(id: number): Promise<Report> {
 
 export async function fetchReports(
     page = 1, limit = 20,
-    filterDefinitionId?: number, filterStatus?: string, filterTitle?: string
+    filterDefinitionId?: number, filterStatus?: string, filterTitle?: string,
+    filterLabels?: string
 ): Promise<SearchResults<Report>> {
     const params = new URLSearchParams();
     params.set("page", String(page));
@@ -861,6 +924,7 @@ export async function fetchReports(
     if (filterDefinitionId != null) params.set("filterDefinitionId", String(filterDefinitionId));
     if (filterStatus) params.set("filterStatus", filterStatus);
     if (filterTitle) params.set("filterTitle", filterTitle);
+    if (filterLabels) params.set("filterLabels", filterLabels);
     const response = await fetch(`${API}/reports?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
     return response.json();
@@ -875,6 +939,16 @@ export async function fetchReportExecutionLog(reportId: number): Promise<string>
 export async function fetchReport(id: number): Promise<Report> {
     const response = await fetch(`${API}/reports/${id}`);
     if (!response.ok) throw new Error(`Failed to fetch report: ${response.status}`);
+    return response.json();
+}
+
+export async function updateReportLabels(reportId: number, labels: string[]): Promise<Report> {
+    const response = await fetch(`${API}/reports/${reportId}/labels`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(labels),
+    });
+    if (!response.ok) throw new Error(`Failed to update report labels: ${response.status}`);
     return response.json();
 }
 

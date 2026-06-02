@@ -18,13 +18,23 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apitomy/common-ui-components";
 import { type AiUsage, fetchUsage } from "../config/api";
 
 const TYPE_COLORS: Record<string, "blue" | "green"> = {
     task: "green",
     manager: "blue",
 };
+
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "invocationType", label: "Type", testId: "usage-filter-type" },
+    { value: "actionType", label: "Action Type", testId: "usage-filter-action" },
+];
 
 export function AiUsagePage() {
     const [records, setRecords] = useState<AiUsage[]>([]);
@@ -33,19 +43,18 @@ export function AiUsagePage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter values (drive the API call)
-    const [filterActionType, setFilterActionType] = useState("");
-    const [filterInvocationType, setFilterInvocationType] = useState("");
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
     const [filterDateFrom, setFilterDateFrom] = useState("");
     const [filterDateTo, setFilterDateTo] = useState("");
-    // Input values (updated on every keystroke, committed on Enter/blur)
-    const [inputActionType, setInputActionType] = useState("");
-    const [inputInvocationType, setInputInvocationType] = useState("");
 
     // Summary stats
     const [totalCost, setTotalCost] = useState(0);
     const [totalInputTokens, setTotalInputTokens] = useState(0);
     const [totalOutputTokens, setTotalOutputTokens] = useState(0);
+
+    const filterInvocationType = filters.find((f) => f.filterBy.value === "invocationType")?.filterValue;
+    const filterActionType = filters.find((f) => f.filterBy.value === "actionType")?.filterValue;
+    const isFiltered = filters.length > 0 || !!filterDateFrom || !!filterDateTo;
 
     const loadData = useCallback(() => {
         setLoading(true);
@@ -66,23 +75,26 @@ export function AiUsagePage() {
             })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, [page, perPage, filterActionType, filterInvocationType, filterDateFrom, filterDateTo]);
+    }, [page, perPage, filterInvocationType, filterActionType, filterDateFrom, filterDateTo]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const hasActiveFilters = filterActionType || filterInvocationType || filterDateFrom || filterDateTo;
-
-    const applyFilters = () => {
-        setFilterInvocationType(inputInvocationType);
-        setFilterActionType(inputActionType);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const withoutSame = filters.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+        withoutSame.push(criteria);
+        setFilters(withoutSame);
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputActionType("");
-        setInputInvocationType("");
-        setFilterActionType("");
-        setFilterInvocationType("");
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
+        setPage(1);
+    };
+
+    const onClearAllFilters = () => {
+        setFilters([]);
         setFilterDateFrom("");
         setFilterDateTo("");
         setPage(1);
@@ -145,62 +157,29 @@ export function AiUsagePage() {
                 </GalleryItem>
             </Gallery>
 
-            <Toolbar clearAllFilters={clearFilters}>
+            <Toolbar>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by invocation type"
-                            placeholder="Type (task/manager)"
-                            value={inputInvocationType}
-                            onChange={(_e, v) => setInputInvocationType(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "180px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by action type"
-                            placeholder="Action type"
-                            value={inputActionType}
-                            onChange={(_e, v) => setInputActionType(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "180px" }}
-                        />
-                    </ToolbarItem>
-                    <ToolbarItem>
-                        <TextInput
-                            type="date"
-                            aria-label="From date"
-                            value={filterDateFrom}
-                            onChange={(_e, v) => { setFilterDateFrom(v); setPage(1); }}
-                            style={{ width: "160px" }}
-                        />
-                    </ToolbarItem>
-                    <ToolbarItem>
-                        <TextInput
-                            type="date"
-                            aria-label="To date"
-                            value={filterDateTo}
-                            onChange={(_e, v) => { setFilterDateTo(v); setPage(1); }}
-                            style={{ width: "160px" }}
-                        />
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
+                    </ToolbarItem>
+                    <ToolbarItem variant="label">From</ToolbarItem>
+                    <ToolbarItem>
+                        <TextInput type="date" aria-label="From date" value={filterDateFrom}
+                            onChange={(_e, v) => { setFilterDateFrom(v); setPage(1); }}
+                            style={{ width: "160px" }} />
+                    </ToolbarItem>
+                    <ToolbarItem variant="label">To</ToolbarItem>
+                    <ToolbarItem>
+                        <TextInput type="date" aria-label="To date" value={filterDateTo}
+                            onChange={(_e, v) => { setFilterDateTo(v); setPage(1); }}
+                            style={{ width: "160px" }} />
                     </ToolbarItem>
                     <ToolbarItem variant="pagination" align={{ default: "alignEnd" }}>
                         <Pagination
@@ -214,6 +193,18 @@ export function AiUsagePage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -223,7 +214,7 @@ export function AiUsagePage() {
                 ) : records.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No usage records match the current filters."
                                 : "No AI usage recorded yet."}
                         </EmptyStateBody>
@@ -249,7 +240,12 @@ export function AiUsagePage() {
                                     </Td>
                                     <Td>
                                         <Label isCompact
-                                            color={TYPE_COLORS[r.invocationType] || "grey"}>
+                                            color={TYPE_COLORS[r.invocationType] || "grey"}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                const typeFilter = FILTER_TYPES.find((t) => t.value === "invocationType")!;
+                                                onAddFilterCriteria({ filterBy: typeFilter, filterValue: r.invocationType });
+                                            }}>
                                             {r.invocationType}
                                         </Label>
                                     </Td>

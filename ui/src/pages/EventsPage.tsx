@@ -6,7 +6,6 @@ import {
     Label,
     PageSection,
     Pagination,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -14,7 +13,12 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apitomy/common-ui-components";
 import { type AxiomEvent, fetchEvents } from "../config/api";
 import { EventDetailModal } from "../components/EventDetailModal";
 
@@ -24,6 +28,12 @@ const SOURCE_COLORS: Record<string, "blue" | "green" | "orange" | "grey"> = {
     internal: "orange",
 };
 
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "source", label: "Source", testId: "event-filter-source" },
+    { value: "eventType", label: "Event Type", testId: "event-filter-eventType" },
+    { value: "repository", label: "Repository", testId: "event-filter-repository" },
+];
+
 export function EventsPage() {
     const [events, setEvents] = useState<AxiomEvent[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -31,17 +41,15 @@ export function EventsPage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter values
-    const [filterSource, setFilterSource] = useState("");
-    const [filterEventType, setFilterEventType] = useState("");
-    const [filterRepository, setFilterRepository] = useState("");
-    // Input values (committed on Enter/blur)
-    const [inputSource, setInputSource] = useState("");
-    const [inputEventType, setInputEventType] = useState("");
-    const [inputRepository, setInputRepository] = useState("");
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
 
     // Payload modal
     const [selectedEvent, setSelectedEvent] = useState<AxiomEvent | null>(null);
+
+    const filterSource = filters.find((f) => f.filterBy.value === "source")?.filterValue;
+    const filterEventType = filters.find((f) => f.filterBy.value === "eventType")?.filterValue;
+    const filterRepository = filters.find((f) => f.filterBy.value === "repository")?.filterValue;
+    const isFiltered = filters.length > 0;
 
     const loadData = useCallback(() => {
         setLoading(true);
@@ -61,22 +69,25 @@ export function EventsPage() {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const hasActiveFilters = filterSource || filterEventType || filterRepository;
-
-    const applyFilters = () => {
-        setFilterSource(inputSource);
-        setFilterEventType(inputEventType);
-        setFilterRepository(inputRepository);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const updated = filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue));
+        // All filter types on this page are single-value
+        const withoutSame = updated.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+        withoutSame.push(criteria);
+        setFilters(withoutSame);
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputSource("");
-        setInputEventType("");
-        setInputRepository("");
-        setFilterSource("");
-        setFilterEventType("");
-        setFilterRepository("");
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
+        setPage(1);
+    };
+
+    const onClearAllFilters = () => {
+        setFilters([]);
         setPage(1);
     };
 
@@ -86,54 +97,15 @@ export function EventsPage() {
                 Events
             </Title>
 
-            <Toolbar clearAllFilters={clearFilters}>
+            <Toolbar>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by source"
-                            placeholder="Source"
-                            value={inputSource}
-                            onChange={(_e, v) => setInputSource(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "150px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by event type"
-                            placeholder="Event type"
-                            value={inputEventType}
-                            onChange={(_e, v) => setInputEventType(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "180px" }}
-                        />
-                    </ToolbarItem>
-                    <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by repository"
-                            placeholder="Repository"
-                            value={inputRepository}
-                            onChange={(_e, v) => setInputRepository(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                            onBlur={applyFilters}
-                            style={{ width: "200px" }}
-                        />
-                    </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
-                    <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -149,6 +121,18 @@ export function EventsPage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             <div>
                 {loading ? (
@@ -158,7 +142,7 @@ export function EventsPage() {
                 ) : events.length === 0 ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {hasActiveFilters
+                            {isFiltered
                                 ? "No events match the current filters."
                                 : "No events recorded yet."}
                         </EmptyStateBody>
@@ -186,7 +170,13 @@ export function EventsPage() {
                                     </Td>
                                     <Td>
                                         <Label isCompact
-                                            color={SOURCE_COLORS[event.source] || "grey"}>
+                                            color={SOURCE_COLORS[event.source] || "grey"}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const sourceType = FILTER_TYPES.find((t) => t.value === "source")!;
+                                                onAddFilterCriteria({ filterBy: sourceType, filterValue: event.source });
+                                            }}>
                                             {event.source}
                                         </Label>
                                     </Td>

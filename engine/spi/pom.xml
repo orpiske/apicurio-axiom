@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.apicurio</groupId>
-        <artifactId>apicurio-axiom</artifactId>
-        <version>2.0.2-SNAPSHOT</version>
+        <groupId>io.apitomy</groupId>
+        <artifactId>apitomy-axiom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>apicurio-axiom-engine-spi</artifactId>
-    <name>Apicurio Axiom - Engine SPI</name>
+    <artifactId>apitomy-axiom-engine-spi</artifactId>
+    <name>Apitomy Axiom - Engine SPI</name>
     <description>Pluggable AI engine abstraction layer</description>
 
     <dependencies>

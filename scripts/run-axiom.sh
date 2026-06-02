@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Downloads and runs the latest release of Apicurio Axiom.
+# Downloads and runs the latest release of Apitomy Axiom.
 #
 # This script queries the GitHub API for the most recent release,
 # downloads the application JAR, and runs it. The JAR is cached
@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-REPO="Apicurio/apicurio-axiom"
+REPO="Apitomy/apitomy-axiom"
 CACHE_DIR="${HOME}/.axiom/releases"
 
 # ── Check prerequisites ───────────────────────────────────────────
@@ -43,7 +43,7 @@ if ! command -v jq &>/dev/null; then
 fi
 
 # ── Query latest release ──────────────────────────────────────────
-echo "Checking for latest Apicurio Axiom release..."
+echo "Checking for latest Apitomy Axiom release..."
 
 RELEASE_JSON=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest")
 
@@ -59,7 +59,7 @@ fi
 echo "Latest release: ${VERSION} (${TAG})"
 
 # ── Find the JAR asset ───────────────────────────────────────────
-JAR_NAME="apicurio-axiom-${VERSION}.jar"
+JAR_NAME="apitomy-axiom-${VERSION}.jar"
 DOWNLOAD_URL=$(echo "$RELEASE_JSON" | jq -r \
     ".assets[] | select(.name == \"${JAR_NAME}\") | .browser_download_url")
 
@@ -85,7 +85,7 @@ fi
 # ── Run ──────────────────────────────────────────────────────────
 echo ""
 echo "============================================"
-echo "  Starting Apicurio Axiom ${VERSION}"
+echo "  Starting Apitomy Axiom ${VERSION}"
 echo "============================================"
 echo ""
 

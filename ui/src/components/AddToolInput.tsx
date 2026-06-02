@@ -43,6 +43,19 @@ const BUILTIN_TOOLS = [
     "Bash(mv *)",
 ];
 
+const AXIOM_SDK_TOOLS = [
+    "mcp__axiom-tools__axiom_fire_event",
+    "mcp__axiom-tools__axiom_list_projects",
+    "mcp__axiom-tools__axiom_get_project",
+    "mcp__axiom-tools__axiom_create_task",
+    "mcp__axiom-tools__axiom_get_task_status",
+    "mcp__axiom-tools__axiom_add_thread_entry",
+    "mcp__axiom-tools__axiom_close_project",
+    "mcp__axiom-tools__axiom_reopen_project",
+    "mcp__axiom-tools__axiom_add_project_label",
+    "mcp__axiom-tools__axiom_remove_project_label",
+];
+
 const TOOLSET_STYLE: React.CSSProperties = {
     color: "var(--pf-t--global--color--brand--default)",
     fontWeight: 500,
@@ -92,6 +105,9 @@ export function AddToolInput({
 
         customTools.forEach((t) =>
             items.push({ value: `mcp__axiom-tools__${t.name}`, style: MCP_STYLE }));
+
+        AXIOM_SDK_TOOLS.forEach((t) =>
+            items.push({ value: t, style: MCP_STYLE }));
 
         mcpServers.forEach((s) =>
             items.push({ value: `mcp__${s.name}__*`, style: MCP_STYLE }));

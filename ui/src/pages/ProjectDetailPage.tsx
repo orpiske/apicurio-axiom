@@ -56,9 +56,12 @@ import {
     fetchThreadEntries,
     createTask,
     deleteProject,
+    updateProject,
     formatBytes,
     respondToTask,
 } from "../config/api";
+import { EditLabelsModal } from "../components/EditLabelsModal";
+import { LabelDisplay } from "../components/LabelDisplay";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 
 const STATUS_COLORS: Record<string, "blue" | "green" | "orange" | "grey" | "red"> = {
@@ -85,6 +88,7 @@ export function ProjectDetailPage() {
     const [loading, setLoading] = useState(true);
 
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isLabelsOpen, setIsLabelsOpen] = useState(false);
 
     // Trigger Action state
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -289,6 +293,13 @@ export function ProjectDetailPage() {
                         </DescriptionListDescription>
                     </DescriptionListGroup>
                 )}
+                <DescriptionListGroup>
+                    <DescriptionListTerm>Labels</DescriptionListTerm>
+                    <DescriptionListDescription>
+                        <LabelDisplay labels={project.labels || []}
+                            onEdit={() => setIsLabelsOpen(true)} />
+                    </DescriptionListDescription>
+                </DescriptionListGroup>
             </DescriptionList>
 
             {/* Tabs */}
@@ -398,6 +409,16 @@ export function ProjectDetailPage() {
                     <Button variant="link" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
                 </ModalFooter>
             </Modal>
+
+            <EditLabelsModal
+                isOpen={isLabelsOpen}
+                labels={project.labels || []}
+                onSave={async (labels) => {
+                    const updated = await updateProject(id, { labels });
+                    setProject(updated);
+                }}
+                onClose={() => setIsLabelsOpen(false)}
+            />
         </PageSection>
     );
 }

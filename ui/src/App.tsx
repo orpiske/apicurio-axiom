@@ -55,6 +55,7 @@ import { ToolsetsPage } from "./pages/ToolsetsPage";
 import { ToolsetDetailPage } from "./pages/ToolsetDetailPage";
 import { SecretsPage } from "./pages/SecretsPage";
 import { ConfigurationWarning } from "./components/ConfigurationWarning";
+import { ConfigurationPacksPage } from "./pages/ConfigurationPacksPage";
 import { EngineSettingsPage } from "./pages/EngineSettingsPage";
 import { EventSourceDetailPage } from "./pages/EventSourceDetailPage";
 import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./config/api";
@@ -68,7 +69,7 @@ interface Notification {
     read: boolean;
 }
 
-const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/event-sources", "/report-definitions", "/engine"];
+const CONFIG_PATHS = ["/actors", "/manager", "/action-types", "/tools", "/toolsets", "/mcp-servers", "/secrets", "/event-sources", "/report-definitions", "/engine", "/configuration-packs"];
 
 let notificationIdCounter = 0;
 
@@ -151,9 +152,9 @@ export function App() {
         }}>
             <MastheadMain>
                 <MastheadBrand>
-                    <img src="/logo.png" alt="Apicurio Axiom"
-                        style={{ height: "42px", padding: "0", cursor: "pointer" }}
-                        onClick={() => navigate("/")} />
+                    <span
+                        style={{ fontSize: "20px", fontWeight: 600, color: "#0b2545", cursor: "pointer", letterSpacing: "-0.5px" }}
+                        onClick={() => navigate("/")}>Apitomy Axiom</span>
                 </MastheadBrand>
             </MastheadMain>
             <MastheadContent>
@@ -253,6 +254,9 @@ export function App() {
                             </NavItem>
                             <NavItem isActive={location.pathname.startsWith("/toolsets")} onClick={() => navigate("/toolsets")}>
                                 Toolsets
+                            </NavItem>
+                            <NavItem isActive={location.pathname === "/configuration-packs"} onClick={() => navigate("/configuration-packs")}>
+                                Configuration Packs
                             </NavItem>
                         </NavExpandable>
                     </NavList>
@@ -366,6 +370,7 @@ export function App() {
                     <Route path="/event-sources" element={<EventSourcesPage />} />
                     <Route path="/event-sources/:eventSourceId" element={<EventSourceDetailPage />} />
                     <Route path="/secrets" element={<SecretsPage />} />
+                    <Route path="/configuration-packs" element={<ConfigurationPacksPage />} />
                 </Routes>
             )}
 
@@ -373,7 +378,7 @@ export function App() {
                 isOpen={isAboutOpen}
                 onClose={() => setIsAboutOpen(false)}
                 brandImageSrc="/logo.png"
-                brandImageAlt="Apicurio Axiom"
+                brandImageAlt="Apitomy Axiom"
                 trademark="Copyright &copy; 2025-2026"
             >
                 <Content component="dl">
@@ -389,9 +394,9 @@ export function App() {
                     <dd>Apache License 2.0</dd>
                     <dt>Source</dt>
                     <dd>
-                        <a href="https://github.com/Apicurio/apicurio-axiom"
+                        <a href="https://github.com/Apitomy/apitomy-axiom"
                             target="_blank" rel="noopener noreferrer">
-                            github.com/Apicurio/apicurio-axiom
+                            github.com/Apitomy/apitomy-axiom
                         </a>
                     </dd>
                 </Content>

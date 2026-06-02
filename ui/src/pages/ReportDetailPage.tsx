@@ -23,11 +23,13 @@ import {
     Title,
 } from "@patternfly/react-core";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
-import { type Report, fetchReport, deleteReport } from "../config/api";
+import { type Report, fetchReport, deleteReport, updateReportLabels } from "../config/api";
 import { sseClient, type AxiomSseEvent } from "../config/sse";
 import { RenderedReport } from "../components/RenderedReport";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
-import {If} from "../components/If.tsx";
+import { LabelDisplay } from "../components/LabelDisplay";
+import { EditLabelsModal } from "../components/EditLabelsModal";
+import {If} from "@apitomy/common-ui-components";
 
 export function ReportDetailPage() {
     const { reportId } = useParams<{ reportId: string }>();
@@ -38,6 +40,7 @@ export function ReportDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isLabelsOpen, setIsLabelsOpen] = useState(false);
 
     const handleDelete = () => {
         deleteReport(id)
@@ -156,6 +159,13 @@ export function ReportDetailPage() {
                                 </DescriptionListDescription>
                             </DescriptionListGroup>
                         )}
+                        <DescriptionListGroup>
+                            <DescriptionListTerm>Labels</DescriptionListTerm>
+                            <DescriptionListDescription>
+                                <LabelDisplay labels={report.labels || []}
+                                    onEdit={() => setIsLabelsOpen(true)} />
+                            </DescriptionListDescription>
+                        </DescriptionListGroup>
                     </DescriptionList>
                 </CardBody>
             </Card>
@@ -181,6 +191,16 @@ export function ReportDetailPage() {
                 isOpen={isLogModalOpen}
                 reportId={report.id}
                 onClose={() => setIsLogModalOpen(false)}
+            />
+
+            <EditLabelsModal
+                isOpen={isLabelsOpen}
+                labels={report.labels || []}
+                onSave={async (labels) => {
+                    const updated = await updateReportLabels(Number(id), labels);
+                    setReport(updated);
+                }}
+                onClose={() => setIsLabelsOpen(false)}
             />
 
             <Modal isOpen={isDeleteOpen}

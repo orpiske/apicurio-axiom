@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Builds the entire Apicurio Axiom project and runs all tests except
+# Builds the entire Apitomy Axiom project and runs all tests except
 # integration tests that require the Claude Code CLI.
 #
 # Prerequisites:
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 echo "============================================"
-echo "  Apicurio Axiom — Build + Tests"
+echo "  Apitomy Axiom — Build + Tests"
 echo "============================================"
 echo ""
 

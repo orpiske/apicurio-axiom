@@ -10,7 +10,6 @@ import {
     GalleryItem,
     PageSection,
     Pagination,
-    TextInput,
     Title,
     Toolbar,
     ToolbarContent,
@@ -18,8 +17,17 @@ import {
 } from "@patternfly/react-core";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
-import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
+import {
+    type ChipFilterCriteria,
+    type ChipFilterType,
+    ChipFilterInput,
+    FilterChips,
+} from "@apitomy/common-ui-components";
 import { type DiskUsageProject, fetchDiskUsage, formatBytes } from "../config/api";
+
+const FILTER_TYPES: ChipFilterType[] = [
+    { value: "name", label: "Project Name", testId: "disk-filter-name" },
+];
 
 export function DiskUsagePage() {
     const navigate = useNavigate();
@@ -31,10 +39,10 @@ export function DiskUsagePage() {
     const [perPage, setPerPage] = useState(20);
     const [loading, setLoading] = useState(true);
 
-    // Committed filter (drives the API call)
-    const [filterName, setFilterName] = useState("");
-    // Input value (updated on every keystroke, committed on Enter/blur)
-    const [inputName, setInputName] = useState("");
+    const [filters, setFilters] = useState<ChipFilterCriteria[]>([]);
+
+    const filterName = filters.find((f) => f.filterBy.value === "name")?.filterValue;
+    const isFiltered = filters.length > 0;
 
     const loadData = useCallback(() => {
         setLoading(true);
@@ -51,18 +59,24 @@ export function DiskUsagePage() {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const applyFilter = () => {
-        setFilterName(inputName);
+    const onAddFilterCriteria = (criteria: ChipFilterCriteria) => {
+        if (!criteria.filterValue) return;
+        const withoutSame = filters.filter((f) => f.filterBy.value !== criteria.filterBy.value);
+        withoutSame.push(criteria);
+        setFilters(withoutSame);
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setInputName("");
-        setFilterName("");
+    const onRemoveFilterCriteria = (criteria: ChipFilterCriteria) => {
+        setFilters(filters.filter((f) =>
+            !(f.filterBy.value === criteria.filterBy.value && f.filterValue === criteria.filterValue)));
         setPage(1);
     };
 
-    const hasActiveFilters = !!filterName;
+    const onClearAllFilters = () => {
+        setFilters([]);
+        setPage(1);
+    };
 
     return (
         <PageSection>
@@ -97,30 +111,15 @@ export function DiskUsagePage() {
                 </GalleryItem>
             </Gallery>
 
-            <Toolbar clearAllFilters={clearFilters}>
+            <Toolbar>
                 <ToolbarContent>
                     <ToolbarItem>
-                        <TextInput
-                            type="text"
-                            aria-label="Filter by project name"
-                            placeholder="Project name"
-                            value={inputName}
-                            onChange={(_e, v) => setInputName(v)}
-                            onKeyDown={(e) => { if (e.key === "Enter") applyFilter(); }}
-                            onBlur={applyFilter}
-                            style={{ width: "220px" }}
-                        />
+                        <ChipFilterInput
+                            filterTypes={FILTER_TYPES}
+                            onAddCriteria={onAddFilterCriteria} />
                     </ToolbarItem>
-                    {hasActiveFilters && (
-                        <ToolbarItem>
-                            <Button variant="link" icon={<TimesIcon />} onClick={clearFilters}>
-                                Clear filters
-                            </Button>
-                        </ToolbarItem>
-                    )}
-                    <ToolbarItem variant="separator" />
                     <ToolbarItem>
-                        <Button variant="plain" aria-label="Refresh" onClick={loadData}>
+                        <Button variant="control" aria-label="Refresh" onClick={loadData}>
                             <SyncAltIcon />
                         </Button>
                     </ToolbarItem>
@@ -136,6 +135,18 @@ export function DiskUsagePage() {
                     </ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+            {isFiltered && (
+                <Toolbar>
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <FilterChips
+                                criteria={filters}
+                                onClearAllCriteria={onClearAllFilters}
+                                onRemoveCriteria={onRemoveFilterCriteria} />
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+            )}
 
             {loading ? (
                 <EmptyState>
@@ -144,7 +155,7 @@ export function DiskUsagePage() {
             ) : projects.length === 0 ? (
                 <EmptyState>
                     <EmptyStateBody>
-                        {hasActiveFilters
+                        {isFiltered
                             ? "No projects match the current filter."
                             : "No projects found."}
                     </EmptyStateBody>

@@ -5,7 +5,7 @@ set -euo pipefail
 # Excludes bot/Renovate PRs. Returns JSON array.
 #
 # Parameters (via environment or positional):
-#   REPOS  - comma-separated owner/repo list (e.g. "Apicurio/apicurio-registry,Apicurio/apicurio-codegen")
+#   REPOS  - comma-separated owner/repo list (e.g. "Apitomy/apitomy-data-models,Apitomy/apitomy-codegen")
 
 REPOS="${REPOS:-$1}"
 
