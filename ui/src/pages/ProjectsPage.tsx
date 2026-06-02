@@ -260,7 +260,7 @@ export function ProjectsPage() {
                                 >
                                     <Td>{project.name}</Td>
                                     <Td>
-                                        <Label color={STATUS_COLORS[project.status] || "grey"}>
+                                        <Label isCompact={true} color={STATUS_COLORS[project.status] || "grey"}>
                                             {STATUS_LABELS[project.status] || project.status}
                                         </Label>
                                     </Td>
@@ -271,7 +271,7 @@ export function ProjectsPage() {
                                     <Td>{project.repository}</Td>
                                     <Td>
                                         {project.labels?.map((label) => (
-                                            <Label key={label} isCompact color="blue"
+                                            <Label key={label} isCompact color="purple"
                                                 style={{ marginRight: "4px", cursor: "pointer" }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();

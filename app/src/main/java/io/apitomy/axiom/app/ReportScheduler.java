@@ -71,6 +71,7 @@ public class ReportScheduler {
                 report.status = "Pending";
                 report.title = definition.name;
                 report.createdOn = Instant.now();
+                report.labels.addAll(definition.initialLabels);
                 report.persist();
 
                 definition.lastRunAt = Instant.now();
@@ -102,6 +103,7 @@ public class ReportScheduler {
         report.status = "Pending";
         report.title = definition.name;
         report.createdOn = Instant.now();
+        report.labels.addAll(definition.initialLabels);
         report.persist();
 
         // Update the definition's scheduling

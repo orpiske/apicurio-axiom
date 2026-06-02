@@ -152,9 +152,9 @@ export function App() {
         }}>
             <MastheadMain>
                 <MastheadBrand>
-                    <img src="/logo.png" alt="Apitomy Axiom"
-                        style={{ height: "42px", padding: "0", cursor: "pointer" }}
-                        onClick={() => navigate("/")} />
+                    <span
+                        style={{ fontSize: "20px", fontWeight: 600, color: "#0b2545", cursor: "pointer", letterSpacing: "-0.5px" }}
+                        onClick={() => navigate("/")}>Apitomy Axiom</span>
                 </MastheadBrand>
             </MastheadMain>
             <MastheadContent>

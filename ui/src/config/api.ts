@@ -822,6 +822,7 @@ export interface ReportDefinition {
     enabled: boolean;
     timeoutSeconds?: number;
     environment?: Record<string, string>;
+    initialLabels?: string[];
     nextRunAt?: string;
     lastRunAt?: string;
     createdOn: string;
@@ -840,6 +841,7 @@ export interface Report {
     timeRangeEnd?: string;
     costUsd?: number;
     durationMs?: number;
+    labels?: string[];
     createdOn: string;
     completedOn?: string;
 }
@@ -913,7 +915,8 @@ export async function runReportDefinition(id: number): Promise<Report> {
 
 export async function fetchReports(
     page = 1, limit = 20,
-    filterDefinitionId?: number, filterStatus?: string, filterTitle?: string
+    filterDefinitionId?: number, filterStatus?: string, filterTitle?: string,
+    filterLabels?: string
 ): Promise<SearchResults<Report>> {
     const params = new URLSearchParams();
     params.set("page", String(page));
@@ -921,6 +924,7 @@ export async function fetchReports(
     if (filterDefinitionId != null) params.set("filterDefinitionId", String(filterDefinitionId));
     if (filterStatus) params.set("filterStatus", filterStatus);
     if (filterTitle) params.set("filterTitle", filterTitle);
+    if (filterLabels) params.set("filterLabels", filterLabels);
     const response = await fetch(`${API}/reports?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
     return response.json();
@@ -935,6 +939,16 @@ export async function fetchReportExecutionLog(reportId: number): Promise<string>
 export async function fetchReport(id: number): Promise<Report> {
     const response = await fetch(`${API}/reports/${id}`);
     if (!response.ok) throw new Error(`Failed to fetch report: ${response.status}`);
+    return response.json();
+}
+
+export async function updateReportLabels(reportId: number, labels: string[]): Promise<Report> {
+    const response = await fetch(`${API}/reports/${reportId}/labels`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(labels),
+    });
+    if (!response.ok) throw new Error(`Failed to update report labels: ${response.status}`);
     return response.json();
 }
 

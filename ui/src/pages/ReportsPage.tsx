@@ -37,6 +37,7 @@ const STATUS_COLORS: Record<string, "blue" | "green" | "grey" | "red"> = {
 const FILTER_TYPES: ChipFilterType[] = [
     { value: "title", label: "Title", testId: "report-filter-title" },
     { value: "status", label: "Status", testId: "report-filter-status" },
+    { value: "labels", label: "Labels", testId: "report-filter-labels" },
 ];
 
 export function ReportsPage() {
@@ -56,6 +57,10 @@ export function ReportsPage() {
         .filter((f) => f.filterBy.value === "status")
         .map((f) => f.filterValue)
         .join(",");
+    const filterLabels = filters
+        .filter((f) => f.filterBy.value === "labels")
+        .map((f) => f.filterValue)
+        .join(",");
     const isFiltered = filters.length > 0;
 
     const loadData = useCallback(() => {
@@ -64,7 +69,8 @@ export function ReportsPage() {
             page, perPage,
             undefined,
             filterStatus || undefined,
-            filterTitle || undefined
+            filterTitle || undefined,
+            filterLabels || undefined
         )
             .then((results) => {
                 setReports(results.items);
@@ -72,7 +78,7 @@ export function ReportsPage() {
             })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, [page, perPage, filterTitle, filterStatus]);
+    }, [page, perPage, filterTitle, filterStatus, filterLabels]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -175,6 +181,7 @@ export function ReportsPage() {
                                 <Th>Title</Th>
                                 <Th>Status</Th>
                                 <Th>Time Range</Th>
+                                <Th>Labels</Th>
                                 <Th>Generated</Th>
                                 <Th />
                             </Tr>
@@ -205,6 +212,24 @@ export function ReportsPage() {
                                         {report.timeRangeStart && report.timeRangeEnd
                                             ? `${new Date(report.timeRangeStart).toLocaleDateString()} \u2014 ${new Date(report.timeRangeEnd).toLocaleDateString()}`
                                             : "\u2014"}
+                                    </Td>
+                                    <Td>
+                                        {(report.labels || []).map((label) => (
+                                            <Label key={label} isCompact color="purple"
+                                                style={{ marginRight: "4px", cursor: "pointer" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const already = filters.some((f) =>
+                                                        f.filterBy.value === "labels" && f.filterValue === label);
+                                                    if (!already) {
+                                                        const labelsType = FILTER_TYPES.find((t) => t.value === "labels")!;
+                                                        setFilters([...filters, { filterBy: labelsType, filterValue: label }]);
+                                                        setPage(1);
+                                                    }
+                                                }}>
+                                                {label}
+                                            </Label>
+                                        ))}
                                     </Td>
                                     <Td style={{ whiteSpace: "nowrap" }}>
                                         {new Date(report.createdOn).toLocaleString()}

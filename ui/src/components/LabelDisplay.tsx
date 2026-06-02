@@ -14,7 +14,7 @@ export function LabelDisplay({ labels, onEdit }: {
             {labels.length > 0 ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                     {labels.map((label) => (
-                        <Label key={label} isCompact color="blue">{label}</Label>
+                        <Label key={label} isCompact color="purple">{label}</Label>
                     ))}
                 </div>
             ) : (

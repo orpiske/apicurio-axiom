@@ -220,7 +220,7 @@ export function ToolsPage() {
                                         <Td>{tool.description || "—"}</Td>
                                         <Td>
                                             {tool.labels?.map((label) => (
-                                                <Label key={label} isCompact color="blue"
+                                                <Label key={label} isCompact color="purple"
                                                     style={{ marginRight: "4px", cursor: "pointer" }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();

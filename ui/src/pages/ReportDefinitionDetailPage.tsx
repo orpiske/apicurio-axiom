@@ -29,6 +29,7 @@ import {
 import { CodeEditor, Language } from "@patternfly/react-code-editor";
 import { registerPlaceholderCompletions, REPORT_PLACEHOLDERS } from "../components/PlaceholderCompletionProvider";
 import { AddToolInput } from "../components/AddToolInput";
+import { LabelInput } from "../components/LabelInput";
 import { ReportAiModal } from "../components/ReportAiModal";
 import SaveIcon from "@patternfly/react-icons/dist/esm/icons/save-icon";
 import MagicIcon from "@patternfly/react-icons/dist/esm/icons/magic-icon";
@@ -62,6 +63,7 @@ export function ReportDefinitionDetailPage() {
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [tools, setTools] = useState<string[]>([]);
+    const [initialLabels, setInitialLabels] = useState<string[]>([]);
     const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
     const loadData = useCallback(() => {
@@ -79,6 +81,7 @@ export function ReportDefinitionDetailPage() {
                     timeoutSeconds: def.timeoutSeconds,
                 });
                 setTools(def.allowedTools || []);
+                setInitialLabels(def.initialLabels || []);
                 setEnvVars(def.environment || {});
                 setDirty(false);
             })
@@ -99,6 +102,7 @@ export function ReportDefinitionDetailPage() {
         const data = {
             ...form,
             allowedTools: tools.length > 0 ? tools : undefined,
+            initialLabels: initialLabels,
             environment: envToSend,
         };
         updateReportDefinition(id, data)
@@ -200,7 +204,9 @@ export function ReportDefinitionDetailPage() {
                 <Tab eventKey={0} title={<TabTitleText>Info</TabTitleText>}>
                     <TabContent id="info-tab" eventKey={0} activeKey={activeTab}
                         style={{ marginTop: "24px" }}>
-                        <InfoTab form={form} updateForm={updateForm} />
+                        <InfoTab form={form} updateForm={updateForm}
+                            initialLabels={initialLabels}
+                            onLabelsChange={(labels) => { setInitialLabels(labels); setDirty(true); }} />
                     </TabContent>
                 </Tab>
                 <Tab eventKey={1} title={<TabTitleText>Allowed Tools ({tools.length})</TabTitleText>}>
@@ -251,9 +257,11 @@ export function ReportDefinitionDetailPage() {
     );
 }
 
-function InfoTab({ form, updateForm }: {
+function InfoTab({ form, updateForm, initialLabels, onLabelsChange }: {
     form: NewReportDefinition;
     updateForm: (updates: Partial<NewReportDefinition>) => void;
+    initialLabels: string[];
+    onLabelsChange: (labels: string[]) => void;
 }) {
     return (
         <Form style={{ maxWidth: "600px" }}>
@@ -312,6 +320,10 @@ function InfoTab({ form, updateForm }: {
                     value={form.timeoutSeconds?.toString() || ""}
                     onChange={(_e, v) => updateForm({ timeoutSeconds: v ? parseInt(v) : undefined })}
                     placeholder="Global default (600)" />
+            </FormGroup>
+            <FormGroup label="Initial Labels" fieldId="initialLabels">
+                <LabelInput labels={initialLabels}
+                    onChange={onLabelsChange} />
             </FormGroup>
             {form.schedule !== "none" && (
                 <FormGroup fieldId="enabled">
