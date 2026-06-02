@@ -3,11 +3,11 @@ set -euo pipefail
 
 # Fetches full details for a specific GitHub Pull Request.
 # Usage: github_pr_detail.sh <repo> <pr_number>
-#   e.g. github_pr_detail.sh Apicurio/apicurio-registry 7984
+#   e.g. github_pr_detail.sh Apitomy/apitomy-data-models 7984
 
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <owner/repo> <pr_number>" >&2
-    echo "  e.g. $0 Apicurio/apicurio-registry 7984" >&2
+    echo "  e.g. $0 Apitomy/apitomy-data-models 7984" >&2
     exit 1
 fi
 

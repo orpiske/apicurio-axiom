@@ -31,7 +31,7 @@ export function ConfigurationWarning({ checks }: ConfigurationWarningProps) {
                     Application Configuration Required
                 </Title>
                 <p style={{ color: "#6a6e73", marginBottom: "24px" }}>
-                    Apicurio Axiom detected configuration issues during startup.
+                    Apitomy Axiom detected configuration issues during startup.
                     Please resolve the items below and restart the application.
                 </p>
 

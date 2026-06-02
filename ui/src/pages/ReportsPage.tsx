@@ -24,7 +24,7 @@ import {
     type ChipFilterType,
     ChipFilterInput,
     FilterChips,
-} from "@apicurio/common-ui-components";
+} from "@apitomy/common-ui-components";
 import { type Report, fetchReports, deleteReport } from "../config/api";
 
 const STATUS_COLORS: Record<string, "blue" | "green" | "grey" | "red"> = {

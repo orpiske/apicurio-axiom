@@ -22,7 +22,7 @@ import {
     type ChipFilterType,
     ChipFilterInput,
     FilterChips,
-} from "@apicurio/common-ui-components";
+} from "@apitomy/common-ui-components";
 import { type DiskUsageProject, fetchDiskUsage, formatBytes } from "../config/api";
 
 const FILTER_TYPES: ChipFilterType[] = [

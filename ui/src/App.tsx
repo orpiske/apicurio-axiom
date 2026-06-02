@@ -152,7 +152,7 @@ export function App() {
         }}>
             <MastheadMain>
                 <MastheadBrand>
-                    <img src="/logo.png" alt="Apicurio Axiom"
+                    <img src="/logo.png" alt="Apitomy Axiom"
                         style={{ height: "42px", padding: "0", cursor: "pointer" }}
                         onClick={() => navigate("/")} />
                 </MastheadBrand>
@@ -378,7 +378,7 @@ export function App() {
                 isOpen={isAboutOpen}
                 onClose={() => setIsAboutOpen(false)}
                 brandImageSrc="/logo.png"
-                brandImageAlt="Apicurio Axiom"
+                brandImageAlt="Apitomy Axiom"
                 trademark="Copyright &copy; 2025-2026"
             >
                 <Content component="dl">
@@ -394,9 +394,9 @@ export function App() {
                     <dd>Apache License 2.0</dd>
                     <dt>Source</dt>
                     <dd>
-                        <a href="https://github.com/Apicurio/apicurio-axiom"
+                        <a href="https://github.com/Apitomy/apitomy-axiom"
                             target="_blank" rel="noopener noreferrer">
-                            github.com/Apicurio/apicurio-axiom
+                            github.com/Apitomy/apitomy-axiom
                         </a>
                     </dd>
                 </Content>

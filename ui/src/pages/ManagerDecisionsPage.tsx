@@ -18,7 +18,7 @@ import {
     type ChipFilterType,
     ChipFilterInput,
     FilterChips,
-} from "@apicurio/common-ui-components";
+} from "@apitomy/common-ui-components";
 import { type ActivityLogEntry, type AxiomEvent, fetchActivityLog, fetchEvent } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 import { EventDetailModal } from "../components/EventDetailModal";

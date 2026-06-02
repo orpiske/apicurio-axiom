@@ -1,12 +1,12 @@
 # GitHub Workflows
 
-This directory contains GitHub Actions workflows for the Apicurio Axiom project.
+This directory contains GitHub Actions workflows for the Apitomy Axiom project.
 
 ## Workflows
 
 ### Release (`release.yaml`)
 
-Creates a new release of Apicurio Axiom, including building and publishing Docker images.
+Creates a new release of Apitomy Axiom, including building and publishing Docker images.
 
 **Trigger**: Manual workflow dispatch
 
@@ -52,8 +52,8 @@ Example: `1.0.0-RC1` will be marked as a pre-release.
 **Registry Locations**:
 
 After release, images are available at:
-- Docker Hub: `docker.io/apicurio/apicurio-axiom:<version>`
-- Quay.io: `quay.io/apicurio/apicurio-axiom:<version>`
+- Docker Hub: `docker.io/apitomy/apitomy-axiom:<version>`
+- Quay.io: `quay.io/apitomy/apitomy-axiom:<version>`
 
 **Multi-Architecture Support**:
 
@@ -71,7 +71,7 @@ cd docker/build
 ./build.sh 1.0.0-test
 
 # Test the image
-docker run --rm apicurio/apicurio-axiom:1.0.0-test node --version
+docker run --rm apitomy/apitomy-axiom:1.0.0-test node --version
 ```
 
 ## Troubleshooting

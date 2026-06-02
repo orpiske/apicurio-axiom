@@ -5,20 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.apicurio</groupId>
-        <artifactId>apicurio-axiom</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <groupId>io.apitomy</groupId>
+        <artifactId>apitomy-axiom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>apicurio-axiom-notifications-telegram</artifactId>
-    <name>Apicurio Axiom - Notifications - Telegram</name>
+    <artifactId>apitomy-axiom-notifications-telegram</artifactId>
+    <name>Apitomy Axiom - Notifications - Telegram</name>
     <description>Telegram notification channel implementation</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-axiom-notifications-spi</artifactId>
+            <groupId>io.apitomy</groupId>
+            <artifactId>apitomy-axiom-notifications-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>

@@ -23,7 +23,7 @@ import {
     type ChipFilterType,
     ChipFilterInput,
     FilterChips,
-} from "@apicurio/common-ui-components";
+} from "@apitomy/common-ui-components";
 import { type AiUsage, fetchUsage } from "../config/api";
 
 const TYPE_COLORS: Record<string, "blue" | "green"> = {

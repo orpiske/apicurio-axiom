@@ -1,4 +1,4 @@
-# Research: Claude Code Integration for Apicurio Axiom v2
+# Research: Claude Code Integration for Apitomy Axiom v2
 
 **Date:** 2026-04-02
 **Depth:** Deep

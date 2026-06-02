@@ -5,20 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.apicurio</groupId>
-        <artifactId>apicurio-axiom</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <groupId>io.apitomy</groupId>
+        <artifactId>apitomy-axiom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>apicurio-axiom-core</artifactId>
-    <name>Apicurio Axiom - Core</name>
+    <artifactId>apitomy-axiom-core</artifactId>
+    <name>Apitomy Axiom - Core</name>
     <description>Domain model, entities, repositories, and lifecycle logic</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-axiom-api</artifactId>
+            <groupId>io.apitomy</groupId>
+            <artifactId>apitomy-axiom-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

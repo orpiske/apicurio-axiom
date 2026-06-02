@@ -1,9 +1,9 @@
-# Apicurio Axiom v2 — Phased Implementation Plan
+# Apitomy Axiom v2 — Phased Implementation Plan
 
 **Status:** Draft
 **Last Updated:** 2026-04-02
 
-This document defines the phased implementation plan for Apicurio Axiom v2. Each phase builds
+This document defines the phased implementation plan for Apitomy Axiom v2. Each phase builds
 on the previous one and delivers a usable increment of functionality. Phases are ordered to
 maximize early feedback: we get the core loop working first, then layer on intelligence, UI
 polish, and integrations.
@@ -41,7 +41,7 @@ empty UI shell.
 - Maven multi-module project structure (all modules created, mostly empty)
 - Parent POM with Quarkus 3.33 LTS BOM, Java 25 compiler settings
 - `common/api` module with initial OpenAPI document (minimal — system health endpoint)
-- apicurio-codegen Maven plugin configured to generate JAX-RS interfaces
+- apitomy-codegen Maven plugin configured to generate JAX-RS interfaces
 - `core` module with Panache Next entity base classes (empty entities, just the setup)
 - `app` module as Quarkus entry point, H2 configured for dev profile
 - `ui` module initialized with Vite + React + TypeScript + PatternFly
@@ -71,7 +71,7 @@ empty UI shell.
 - **Entities (Panache Next):** Project, Task, Actor, ActionType, Policy, Event, Repository,
   ActivityLog, ThreadEntry, EventQueue
 - **OpenAPI:** Full CRUD endpoints for Projects, Actors, Action Types, Policies, Repositories
-- **Generated code:** JAX-RS interfaces and beans via apicurio-codegen
+- **Generated code:** JAX-RS interfaces and beans via apitomy-codegen
 - **REST implementations:** CRUD operations for all entities
 - **TypeScript SDK:** Regenerated from the expanded OpenAPI document
 - **Seed data:** Built-in action types (analyze, auto-tag, implement, propose, review,

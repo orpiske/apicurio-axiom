@@ -1,5 +1,5 @@
 {
-    "name": "@apicurio/axiom-ui",
+    "name": "@apitomy/axiom-ui",
     "private": true,
     "version": "2",
     "type": "module",
@@ -10,7 +10,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@apicurio/common-ui-components": "4.0.2",
+        "@apitomy/common-ui-components": "4.1.0",
         "@patternfly/react-code-editor": "6.4.3",
         "@patternfly/react-core": "6.4.3",
         "@patternfly/react-icons": "6.4.0",

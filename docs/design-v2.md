@@ -1,4 +1,4 @@
-# Apicurio Axiom v2 — Design Document
+# Apitomy Axiom v2 — Design Document
 
 **Status:** Draft
 **Last Updated:** 2026-04-01
@@ -7,7 +7,7 @@
 
 ## 1. Vision & Goals
 
-Apicurio Axiom v2 is an **event-driven project orchestration platform** that monitors GitHub and Jira
+Apitomy Axiom v2 is an **event-driven project orchestration platform** that monitors GitHub and Jira
 repositories for issue activity, creates and manages long-lived Projects around those issues, and
 delegates work to a mix of human and AI actors.
 

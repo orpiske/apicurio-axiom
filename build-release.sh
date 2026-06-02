@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Builds the Apicurio Axiom application with the React UI bundled in.
+# Builds the Apitomy Axiom application with the React UI bundled in.
 # The UI is compiled with Vite and packaged into the Quarkus JAR so that
 # a single artifact serves both the API and the frontend.
 #
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 echo "============================================"
-echo "  Apicurio Axiom — Release Build (with UI)"
+echo "  Apitomy Axiom — Release Build (with UI)"
 echo "============================================"
 echo ""
 

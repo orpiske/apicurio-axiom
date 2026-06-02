@@ -1,6 +1,6 @@
-# Contributing to Apicurio Axiom
+# Contributing to Apitomy Axiom
 
-Thank you for your interest in contributing to Apicurio Axiom! We welcome contributions from the community.
+Thank you for your interest in contributing to Apitomy Axiom! We welcome contributions from the community.
 
 ## Ways to Contribute
 
@@ -97,7 +97,7 @@ Feature requests are welcome! Please:
 
 - Check existing issues to avoid duplicates
 - Clearly describe the feature and its use case
-- Explain how it would benefit Apicurio Axiom users
+- Explain how it would benefit Apitomy Axiom users
 - Be open to discussion and feedback
 
 ## Questions?
@@ -106,12 +106,12 @@ If you have questions about contributing, feel free to:
 
 - Open a discussion on GitHub
 - Ask in an existing issue or PR
-- Reach out to the Apicurio community
+- Reach out to the Apitomy community
 
 ## License
 
-By contributing to Apicurio Axiom, you agree that your contributions will be licensed under the Apache License 2.0.
+By contributing to Apitomy Axiom, you agree that your contributions will be licensed under the Apache License 2.0.
 
 ---
 
-Thank you for contributing to Apicurio Axiom!
+Thank you for contributing to Apitomy Axiom!

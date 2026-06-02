@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.apicurio</groupId>
-        <artifactId>apicurio-axiom</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <groupId>io.apitomy</groupId>
+        <artifactId>apitomy-axiom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>apicurio-axiom-ui-bundle</artifactId>
-    <name>Apicurio Axiom - UI Bundle</name>
+    <artifactId>apitomy-axiom-ui-bundle</artifactId>
+    <name>Apitomy Axiom - UI Bundle</name>
     <description>Packages the React UI into a JAR for embedding in the Quarkus application.</description>
 
     <build>

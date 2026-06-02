@@ -27,7 +27,7 @@ import { type Report, fetchReport, deleteReport } from "../config/api";
 import { sseClient, type AxiomSseEvent } from "../config/sse";
 import { RenderedReport } from "../components/RenderedReport";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
-import {If} from "@apicurio/common-ui-components";
+import {If} from "@apitomy/common-ui-components";
 
 export function ReportDetailPage() {
     const { reportId } = useParams<{ reportId: string }>();

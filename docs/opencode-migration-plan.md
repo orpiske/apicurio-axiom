@@ -1,9 +1,9 @@
-# Apicurio Axiom — OpenCode Migration Plan
+# Apitomy Axiom — OpenCode Migration Plan
 
 **Status:** In Progress
 **Last Updated:** 2026-05-06
 
-This document defines the plan for adding OpenCode as an AI engine in Apicurio Axiom alongside
+This document defines the plan for adding OpenCode as an AI engine in Apitomy Axiom alongside
 the existing Claude Code CLI integration. It covers the feasibility assessment, architectural
 differences, feature parity analysis, a phased migration plan, and risk considerations.
 
@@ -17,7 +17,7 @@ that shapes every phase of this plan.
 
 ## 1. Executive Summary
 
-Apicurio Axiom currently integrates with Claude Code CLI as its AI engine, invoking it as a
+Apitomy Axiom currently integrates with Claude Code CLI as its AI engine, invoking it as a
 subprocess for event triage (Manager), task execution (Actor), script editing, tool definition
 generation, and report generation. This plan proposes adding OpenCode as a second pluggable
 AI engine, while retaining Claude Code support and establishing an engine abstraction layer
@@ -256,7 +256,7 @@ Key architectural properties:
 
 ### Phase 1: Engine Abstraction Layer (SPI) — COMPLETED
 
-**Status:** Completed (PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Extract the engine-agnostic interface from the current Claude Code integration,
@@ -290,7 +290,7 @@ compilable.
 
 | Class | Change |
 |-------|--------|
-| `ManagerService` | Removed all `ClaudeCodeSubprocess`/`ClaudeCodeCommandBuilder`/`ExecutionLogBuilder` imports. Injects `AiEngine`, calls `promptWithSchema()`. Manager module POM no longer depends on `apicurio-axiom-actors-claude-code`. |
+| `ManagerService` | Removed all `ClaudeCodeSubprocess`/`ClaudeCodeCommandBuilder`/`ExecutionLogBuilder` imports. Injects `AiEngine`, calls `promptWithSchema()`. Manager module POM no longer depends on `apitomy-axiom-actors-claude-code`. |
 | `ScriptAiService` | Same — uses `AiEngine.promptWithSchema()` with `AiEngineConfig` builder. |
 | `ToolAiService` | Same — uses `AiEngine.promptWithSchema()` with `AiEngineConfig` builder. |
 | `ReportExecutionService` | Uses `AiEngine.prompt()` and `AiEngineMcpManager.configureMcpServers()`. Callback `onReportCompleted()` now receives `AiEngineResult` instead of `ClaudeCodeResult`. |
@@ -303,10 +303,10 @@ compilable.
 | Change | Description |
 |--------|-------------|
 | `application.properties` | Added `axiom.ai-engine=claude-code` property |
-| `pom.xml` (parent) | Added `engine/spi` module, `apicurio-axiom-engine-spi` dependency management entry |
-| `manager/pom.xml` | Replaced `apicurio-axiom-actors-claude-code` dependency with `apicurio-axiom-engine-spi` |
-| `actors/claude-code/pom.xml` | Added `apicurio-axiom-engine-spi` dependency |
-| `app/pom.xml` | Added `apicurio-axiom-engine-spi` dependency |
+| `pom.xml` (parent) | Added `engine/spi` module, `apitomy-axiom-engine-spi` dependency management entry |
+| `manager/pom.xml` | Replaced `apitomy-axiom-actors-claude-code` dependency with `apitomy-axiom-engine-spi` |
+| `actors/claude-code/pom.xml` | Added `apitomy-axiom-engine-spi` dependency |
+| `app/pom.xml` | Added `apitomy-axiom-engine-spi` dependency |
 
 #### Design Decision: Merged Phase 2 into Phase 1
 
@@ -332,7 +332,7 @@ The following items were **not** done and are deferred to a future cleanup:
 
 ### Phase 2: OpenCode Core Integration Layer — COMPLETED
 
-**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (same PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Build the OpenCode engine implementation behind the SPI.
@@ -386,7 +386,7 @@ The following items were **not** done and are deferred to a future cleanup:
 
 ### Phase 3: Permission & Tool Mapping — COMPLETED
 
-**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (same PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Map Axiom's tool restriction model to OpenCode's permission system.
@@ -428,7 +428,7 @@ four resolved tool name formats — it never sees `@ToolsetName` references.
 
 ### Phase 4: MCP Server Management — COMPLETED
 
-**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (same PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Implement OpenCode's MCP management behind the `AiEngineMcpManager` SPI.
@@ -490,7 +490,7 @@ be implemented in the engine-agnostic layer so it applies to all engines.
 
 ### Phase 6: Configuration & UI Updates — COMPLETED
 
-**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (same PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Update configuration, model picker, and UI to support pluggable engines.
@@ -517,7 +517,7 @@ be implemented in the engine-agnostic layer so it applies to all engines.
 
 ### Phase 7: Testing — COMPLETED
 
-**Status:** Completed (same PR [#2](https://github.com/Apicurio/apicurio-axiom/pull/2))
+**Status:** Completed (same PR [#2](https://github.com/Apitomy/apitomy-axiom/pull/2))
 **Branch:** `feature/engine-spi`
 
 **Goal:** Port and expand the test suite for both engines and the SPI layer.

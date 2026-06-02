@@ -1,9 +1,9 @@
-# Apicurio Axiom v2 — Architecture Document
+# Apitomy Axiom v2 — Architecture Document
 
 **Status:** Draft
 **Last Updated:** 2026-04-02
 
-This document describes the technical architecture for Apicurio Axiom v2. It builds on the
+This document describes the technical architecture for Apitomy Axiom v2. It builds on the
 functional design document (`design-v2.md`) and specifies the technology choices, component
 structure, and implementation approach.
 
@@ -17,7 +17,7 @@ structure, and implementation approach.
 | Frontend       | TypeScript / React            | Vite for dev, nginx for production           |
 | Database       | H2 (dev) / PostgreSQL (prod)  | Configurable via Quarkus profiles            |
 | ORM            | Hibernate ORM with Panache Next |                                            |
-| REST API       | JAX-RS (RESTEasy Reactive)    | Contract-first via OpenAPI + apicurio-codegen|
+| REST API       | JAX-RS (RESTEasy Reactive)    | Contract-first via OpenAPI + apitomy-codegen|
 | Real-time      | Server-Sent Events (SSE)      | RESTEasy Reactive SSE support                |
 | AI (Manager)   | Claude Code CLI subprocess    | Specialized MCP tools for triage decisions   |
 | AI (Actors)    | Claude Code CLI subprocess    | Scoped to project working directory          |
@@ -39,7 +39,7 @@ structure, and implementation approach.
 ## 2. Module Structure
 
 ```
-apicurio-axiom/
+apitomy-axiom/
 ├── pom.xml                           # Parent POM (Maven multi-module)
 │
 ├── common/
@@ -109,7 +109,7 @@ The REST API is defined **contract-first** using an OpenAPI 3.x document. Implem
 this workflow:
 
 1. **Define** the API in `common/api/src/main/resources/openapi.json`
-2. **Generate** JAX-RS interfaces and request/response beans using `apicurio-codegen` (Maven plugin)
+2. **Generate** JAX-RS interfaces and request/response beans using `apitomy-codegen` (Maven plugin)
 3. **Implement** the generated interfaces in the `common/api` module
 
 ### API Resource Groups
@@ -607,7 +607,7 @@ configuration is baked into the UI container.
 | HTTP client      | Generated TypeScript SDK (see Section 6.4)                      |
 
 **PatternFly** is the primary UI component library. Additional reusable components from
-[apicurio-common-ui-components](https://github.com/Apicurio/apicurio-common-ui-components) are
+[apicurio-common-ui-components](https://github.com/Apitomy/apicurio-common-ui-components) are
 used where applicable.
 
 ### 6.4 TypeScript SDK (API Client)
@@ -616,7 +616,7 @@ A TypeScript SDK is generated from the OpenAPI document using **Kiota**. This pr
 API calls in the frontend and keeps the client in sync with the backend contract automatically.
 
 The SDK follows the same pattern used in
-[apicurio-registry/typescript-sdk](https://github.com/Apicurio/apicurio-registry/tree/main/typescript-sdk):
+[apicurio-registry/typescript-sdk](https://github.com/Apitomy/apicurio-registry/tree/main/typescript-sdk):
 - Generated from the same `openapi.json` used by the backend
 - Published as a package within the monorepo (consumed by the `ui/` module)
 - Regenerated as part of the build whenever the OpenAPI document changes

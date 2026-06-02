@@ -2,7 +2,7 @@
 
 ## Overview
 
-Apicurio Axiom includes an AI-assisted editing feature for script tools. Users can
+Apitomy Axiom includes an AI-assisted editing feature for script tools. Users can
 describe what they want a tool to do in natural language, and Claude Code generates
 the complete tool definition — name, description, parameters, and script template —
 automatically. The feature supports iterative refinement: users can ask for changes
@@ -96,7 +96,7 @@ POST /api/v1/tools/ai-edit
 
 #### ToolAiService
 
-`app/src/main/java/io/apicurio/axiom/app/ToolAiService.java`
+`app/src/main/java/io/apitomy/axiom/app/ToolAiService.java`
 
 This service follows the same Claude Code invocation pattern used by `ManagerService`:
 

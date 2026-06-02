@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Starts Apicurio Axiom in development mode.
+# Starts Apitomy Axiom in development mode.
 #
 # Launches the Quarkus backend (port 8080) and the Vite UI dev server
 # (port 8888) side by side. Both run in the foreground — Ctrl+C stops
@@ -38,7 +38,7 @@ done
 # ── Prerequisites ─────────────────────────────────────────────────
 
 echo "============================================"
-echo "  Apicurio Axiom — Development Mode"
+echo "  Apitomy Axiom — Development Mode"
 echo "============================================"
 echo ""
 

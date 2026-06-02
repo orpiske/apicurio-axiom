@@ -5,24 +5,24 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.apicurio</groupId>
-        <artifactId>apicurio-axiom</artifactId>
-        <version>2.0.3-SNAPSHOT</version>
+        <groupId>io.apitomy</groupId>
+        <artifactId>apitomy-axiom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>apicurio-axiom-actors-human</artifactId>
-    <name>Apicurio Axiom - Actors - Human</name>
+    <artifactId>apitomy-axiom-actors-human</artifactId>
+    <name>Apitomy Axiom - Actors - Human</name>
     <description>Human actor implementation (notification-driven)</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-axiom-actors-spi</artifactId>
+            <groupId>io.apitomy</groupId>
+            <artifactId>apitomy-axiom-actors-spi</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-axiom-notifications-spi</artifactId>
+            <groupId>io.apitomy</groupId>
+            <artifactId>apitomy-axiom-notifications-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>

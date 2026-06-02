@@ -256,7 +256,7 @@ export function EventSourcesPage() {
                                 <TextInput id="ghUrl" isRequired value={ghUrl}
                                     onChange={(_e, v) => setGhUrl(v)}
                                     placeholder="https://github.com/owner/repo" />
-                                <HelperText><HelperTextItem>Full URL to the GitHub repository (e.g. https://github.com/Apicurio/apicurio-axiom)</HelperTextItem></HelperText>
+                                <HelperText><HelperTextItem>Full URL to the GitHub repository (e.g. https://github.com/Apitomy/apitomy-axiom)</HelperTextItem></HelperText>
                             </FormGroup>
                         )}
 

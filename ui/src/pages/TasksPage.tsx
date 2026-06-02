@@ -24,7 +24,7 @@ import {
     type ChipFilterType,
     ChipFilterInput,
     FilterChips,
-} from "@apicurio/common-ui-components";
+} from "@apitomy/common-ui-components";
 import { type Task, fetchAllTasks, cancelTask } from "../config/api";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
 

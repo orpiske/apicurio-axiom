@@ -1,4 +1,6 @@
-# Apicurio Axiom
+[![Verify Build Workflow](https://github.com/Apitomy/apitomy-axiom/actions/workflows/verify.yaml/badge.svg)](https://github.com/Apitomy/apitomy-axiom/actions/workflows/verify.yaml?query=branch%3Amain)
+
+# Apitomy Axiom
 
 Event-driven project orchestration platform that monitors GitHub and Jira issues, creates
 long-lived projects around them, and delegates work to human and AI actors.
@@ -19,7 +21,7 @@ long-lived projects around them, and delegates work to human and AI actors.
 | Frontend | TypeScript / React / PatternFly |
 | Database | H2 (in-memory dev, file-based prod) |
 | AI | Pluggable: Claude Code CLI or OpenCode (configurable) |
-| API | Contract-first OpenAPI + apicurio-codegen |
+| API | Contract-first OpenAPI + apitomy-codegen |
 
 ## AI Engine
 
@@ -125,3 +127,12 @@ ALTER TABLE task ADD COLUMN IF NOT EXISTS priority VARCHAR(255) DEFAULT 'normal'
 ## License
 
 [Apache License 2.0](LICENSE)
+
+## Links
+
+- [GitHub Repository](https://github.com/Apitomy/apitomy-axiom)
+- [Apitomy Website](https://www.apitomy.io)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
