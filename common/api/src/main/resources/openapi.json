@@ -2860,6 +2860,329 @@
           }
         }
       }
+    },
+    "/assistant/sessions": {
+      "get": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "List active assistant sessions",
+        "operationId": "listAssistantSessions",
+        "responses": {
+          "200": {
+            "description": "List of active sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantSessionInfoList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Create a new interactive AI assistant session",
+        "operationId": "createAssistantSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssistantSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantSessionInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant/sessions/{sessionId}": {
+      "get": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Get assistant session info",
+        "operationId": "getAssistantSession",
+        "responses": {
+          "200": {
+            "description": "Session info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantSessionInfo"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "End an assistant session",
+        "operationId": "deleteAssistantSession",
+        "responses": {
+          "204": {
+            "description": "Session ended"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Rename an assistant session",
+        "operationId": "renameAssistantSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameAssistantSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session renamed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantSessionInfo"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/events": {
+      "get": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "SSE event stream for an assistant session",
+        "operationId": "streamAssistantEvents"
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/messages": {
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Send a user message to the AI assistant",
+        "operationId": "sendAssistantMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAssistantMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Message sent"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/permissions": {
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Respond to a permission prompt",
+        "operationId": "respondToAssistantPermission",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantPermissionResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Permission response sent"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/items": {
+      "get": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "List generated items from the session",
+        "operationId": "listAssistantItems",
+        "responses": {
+          "200": {
+            "description": "List of generated items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantItemList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/items/{itemType}/{itemName}": {
+      "get": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Get full content of a generated item",
+        "operationId": "getAssistantItem",
+        "responses": {
+          "200": {
+            "description": "Item content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "itemType",
+          "in": "path",
+          "description": "Item type (tools, action-types, report-definitions)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "itemName",
+          "in": "path",
+          "description": "Item name (file name without .json extension)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/assistant/sessions/{sessionId}/apply": {
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "summary": "Import all generated items as a Configuration Pack",
+        "operationId": "applyAssistantSession",
+        "responses": {
+          "200": {
+            "description": "Items imported successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantApplyResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "description": "The assistant session identifier",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -4740,6 +5063,158 @@
             "type": "string"
           }
         }
+      },
+      "AssistantSessionInfo": {
+        "required": [
+          "id",
+          "name",
+          "status",
+          "createdAt",
+          "lastActivityAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique session identifier",
+            "type": "string"
+          },
+          "name": {
+            "description": "User-visible session name",
+            "type": "string"
+          },
+          "status": {
+            "description": "Session status (starting, running, stopped, error)",
+            "enum": [
+              "starting",
+              "running",
+              "stopped",
+              "error"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "description": "Session creation timestamp",
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "description": "Last activity timestamp",
+            "type": "string"
+          },
+          "errorMessage": {
+            "description": "Error message if status is error",
+            "type": "string"
+          }
+        }
+      },
+      "CreateAssistantSessionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Optional session name",
+            "type": "string"
+          }
+        }
+      },
+      "SendAssistantMessageRequest": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "description": "The user message to send to the AI assistant",
+            "type": "string"
+          }
+        }
+      },
+      "AssistantPermissionResponse": {
+        "required": [
+          "permissionId",
+          "allow"
+        ],
+        "type": "object",
+        "properties": {
+          "permissionId": {
+            "description": "The permission request ID to respond to",
+            "type": "string"
+          },
+          "allow": {
+            "description": "Whether to allow (true) or deny (false) the tool call",
+            "type": "boolean"
+          }
+        }
+      },
+      "RenameAssistantSessionRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "New session name",
+            "type": "string"
+          }
+        }
+      },
+      "AssistantItem": {
+        "required": [
+          "type",
+          "name",
+          "valid"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "Item type directory (tools, action-types, report-definitions)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Item name (file name without .json)",
+            "type": "string"
+          },
+          "valid": {
+            "description": "Whether the item passed validation",
+            "type": "boolean"
+          },
+          "validationErrors": {
+            "description": "List of validation errors (empty if valid)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AssistantApplyResult": {
+        "type": "object",
+        "properties": {
+          "tools": {
+            "description": "Number of tools imported",
+            "type": "integer"
+          },
+          "actionTypes": {
+            "description": "Number of action types imported",
+            "type": "integer"
+          },
+          "reportDefinitions": {
+            "description": "Number of report definitions imported",
+            "type": "integer"
+          }
+        }
+      },
+      "AssistantSessionInfoList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AssistantSessionInfo"
+        }
+      },
+      "AssistantItemList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AssistantItem"
+        }
       }
     },
     "responses": {
@@ -4851,6 +5326,10 @@
     {
       "name": "Tools",
       "description": "Custom tool definitions for AI agents"
+    },
+    {
+      "name": "Assistant",
+      "description": "Interactive AI assistant session management"
     }
   ]
 }

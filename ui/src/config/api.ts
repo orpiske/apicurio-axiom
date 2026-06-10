@@ -1117,3 +1117,103 @@ export async function fetchActivityLogDetails(activityId: number): Promise<strin
     if (!response.ok) throw new Error(`Failed to fetch activity log details: ${response.status}`);
     return response.text();
 }
+
+// ── AI Assistant ────────────────────────────────────────────────
+
+export interface AssistantSessionInfo {
+    id: string;
+    name: string;
+    status: "starting" | "running" | "stopped" | "error";
+    createdAt: string;
+    lastActivityAt: string;
+    errorMessage?: string;
+}
+
+export interface AssistantItem {
+    type: string;
+    name: string;
+    valid: boolean;
+    validationErrors?: string[];
+}
+
+export async function createAssistantSession(name?: string): Promise<AssistantSessionInfo> {
+    const response = await fetch(`${API}/assistant/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw { status: response.status, message: body.message || `Failed: ${response.status}` };
+    }
+    return response.json();
+}
+
+export async function fetchAssistantSessions(): Promise<AssistantSessionInfo[]> {
+    const response = await fetch(`${API}/assistant/sessions`);
+    if (!response.ok) throw new Error(`Failed to fetch sessions: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchAssistantSession(id: string): Promise<AssistantSessionInfo> {
+    const response = await fetch(`${API}/assistant/sessions/${id}`);
+    if (!response.ok) throw new Error(`Failed to fetch session: ${response.status}`);
+    return response.json();
+}
+
+export async function deleteAssistantSession(id: string): Promise<void> {
+    const response = await fetch(`${API}/assistant/sessions/${id}`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`Failed to delete session: ${response.status}`);
+}
+
+export async function sendAssistantMessage(sessionId: string, message: string): Promise<void> {
+    const response = await fetch(`${API}/assistant/sessions/${sessionId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+    });
+    if (!response.ok) throw new Error(`Failed to send message: ${response.status}`);
+}
+
+export async function respondToAssistantPermission(
+    sessionId: string, permissionId: string, allow: boolean,
+    updatedInput?: Record<string, unknown>
+): Promise<void> {
+    const response = await fetch(`${API}/assistant/sessions/${sessionId}/permissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissionId, allow, updatedInput }),
+    });
+    if (!response.ok) throw new Error(`Failed to respond to permission: ${response.status}`);
+}
+
+export async function fetchAssistantItems(sessionId: string): Promise<AssistantItem[]> {
+    const response = await fetch(`${API}/assistant/sessions/${sessionId}/items`);
+    if (!response.ok) throw new Error(`Failed to fetch items: ${response.status}`);
+    return response.json();
+}
+
+export async function fetchAssistantItemContent(
+    sessionId: string, itemType: string, itemName: string
+): Promise<Record<string, unknown>> {
+    const response = await fetch(
+        `${API}/assistant/sessions/${sessionId}/items/${itemType}/${itemName}`
+    );
+    if (!response.ok) throw new Error(`Failed to fetch item: ${response.status}`);
+    return response.json();
+}
+
+export async function applyAssistantSession(sessionId: string): Promise<ImportResult> {
+    const response = await fetch(`${API}/assistant/sessions/${sessionId}/apply`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw { status: response.status, ...body };
+    }
+    return response.json();
+}
+
+export function assistantEventsUrl(sessionId: string): string {
+    return `${API}/assistant/sessions/${sessionId}/events`;
+}
