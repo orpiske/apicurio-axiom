@@ -90,12 +90,32 @@ export function AssistantChatPanel({ sessionId, onItemsChanged }: AssistantChatP
         es.addEventListener("permission_request", (e) => {
             try {
                 const data = JSON.parse(e.data);
-                addMessage({
-                    type: "permission_request",
-                    permissionId: data.requestId,
-                    toolName: data.toolName,
-                    toolInput: data.toolInput,
+
+                // Attach permission to the matching tool_use block
+                setMessages((prev) => {
+                    const lastToolIdx = prev.findLastIndex(
+                        (m) => m.type === "tool_use" && m.toolName === data.toolName && !m.permissionId
+                    );
+                    if (lastToolIdx >= 0) {
+                        const updated = [...prev];
+                        updated[lastToolIdx] = {
+                            ...updated[lastToolIdx],
+                            permissionId: data.requestId,
+                            permissionResolved: false,
+                            toolInput: data.toolInput || updated[lastToolIdx].toolInput,
+                        };
+                        return updated;
+                    }
+                    // Fallback: add as standalone if no matching tool_use
+                    return [...prev, {
+                        id: String(++messageIdCounter),
+                        type: "permission_request" as const,
+                        permissionId: data.requestId,
+                        toolName: data.toolName,
+                        toolInput: data.toolInput,
+                    }];
                 });
+                setIsProcessing(false);
             } catch {
                 // ignore
             }
@@ -148,10 +168,12 @@ export function AssistantChatPanel({ sessionId, onItemsChanged }: AssistantChatP
                     : m
             )
         );
+        setIsProcessing(true);
         try {
             await respondToAssistantPermission(sessionId, permissionId, allow, toolInput);
         } catch (err) {
             console.error("Failed to respond to permission:", err);
+            setIsProcessing(false);
         }
     }, [sessionId]);
 

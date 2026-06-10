@@ -86,9 +86,9 @@ export function AssistantPage() {
 
     return (
         <PageSection>
-            <Content component="h1">AI Assistant</Content>
+            <Content component="h1"><RobotIcon style={{ marginRight: 8 }} />AI Assistant</Content>
             <Content component="p" style={{ marginBottom: 16 }}>
-                Interactive AI assistant for creating related sets of configuration items.
+                Interactive AI assistant for creating related sets of Axiom configuration items.
             </Content>
 
             {!loading && sessions.length > 0 && (

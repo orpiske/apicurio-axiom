@@ -4,6 +4,8 @@ import remarkGfm from "remark-gfm";
 import { Content, Spinner } from "@patternfly/react-core";
 import { AssistantToolUseBlock } from "./AssistantToolUseBlock";
 import { AssistantPermissionPrompt } from "./AssistantPermissionPrompt";
+import { AssistantAskUserQuestion } from "./AssistantAskUserQuestion";
+import "./AssistantMessageList.css";
 
 export interface ChatMessage {
     id: string;
@@ -81,7 +83,7 @@ export function AssistantMessageList({ messages, onPermissionRespond, isProcessi
                                 justifyContent: "flex-start",
                                 margin: "8px 0",
                             }}>
-                                <div style={{
+                                <div className="assistant-markdown" style={{
                                     maxWidth: "80%",
                                     padding: "10px 14px",
                                     borderRadius: "12px 12px 12px 2px",
@@ -105,6 +107,9 @@ export function AssistantMessageList({ messages, onPermissionRespond, isProcessi
                                 input={msg.toolInput}
                                 result={msg.toolResult}
                                 isError={msg.isError}
+                                permissionId={msg.permissionId}
+                                permissionResolved={msg.permissionResolved}
+                                onPermissionRespond={onPermissionRespond}
                             />
                         );
 

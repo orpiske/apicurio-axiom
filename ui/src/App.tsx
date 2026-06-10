@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { Page } from "@patternfly/react-core";
 
 import { DashboardPage } from "./pages/DashboardPage";
@@ -40,6 +40,7 @@ import { type StartupCheck, fetchSystemHealth, fetchSystemConfig } from "./confi
 import { sseClient } from "./config/sse";
 
 export function App() {
+    const location = useLocation();
     const [startupChecks, setStartupChecks] = useState<StartupCheck[] | null>(null);
     const [engineName, setEngineName] = useState<string | undefined>(undefined);
     const [appVersion, setAppVersion] = useState<string>("");
@@ -70,11 +71,12 @@ export function App() {
 
     const hasCheckErrors = startupChecks != null &&
         startupChecks.some((c) => c.status === "error");
+    const isAssistantPage = location.pathname.startsWith("/assistant");
 
     return (
         <Page
             masthead={<AppMasthead engineName={engineName} appVersion={appVersion} />}
-            sidebar={hasCheckErrors ? undefined : <AppSidebar />}
+            sidebar={hasCheckErrors || isAssistantPage ? undefined : <AppSidebar />}
             isContentFilled
         >
             {hasCheckErrors ? (

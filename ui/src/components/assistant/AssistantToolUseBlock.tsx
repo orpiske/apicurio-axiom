@@ -1,12 +1,16 @@
 import { useState } from "react";
 import {
+    Button,
     ExpandableSection,
+    Flex,
+    FlexItem,
     Label,
 } from "@patternfly/react-core";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import json from "react-syntax-highlighter/dist/esm/languages/hljs/json";
 import bash from "react-syntax-highlighter/dist/esm/languages/hljs/bash";
 import { stackoverflowLight } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { AssistantAskUserQuestion } from "./AssistantAskUserQuestion";
 
 SyntaxHighlighter.registerLanguage("json", json);
 SyntaxHighlighter.registerLanguage("bash", bash);
@@ -16,14 +20,28 @@ interface AssistantToolUseBlockProps {
     input?: Record<string, unknown>;
     result?: string;
     isError?: boolean;
+    permissionId?: string;
+    permissionResolved?: boolean;
+    onPermissionRespond?: (permissionId: string, allow: boolean, toolInput?: Record<string, unknown>) => void;
 }
 
-export function AssistantToolUseBlock({ toolName, input, result, isError }: AssistantToolUseBlockProps) {
+export function AssistantToolUseBlock({
+    toolName, input, result, isError,
+    permissionId, permissionResolved, onPermissionRespond,
+}: AssistantToolUseBlockProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const needsPermission = permissionId && !permissionResolved;
+    const isAskUser = toolName === "AskUserQuestion";
+    const borderColor = needsPermission
+        ? (isAskUser ? "#2b9af3" : "#f0ab00")
+        : undefined;
 
     const inputPreview = input
         ? JSON.stringify(input).substring(0, 100)
         : "";
+
+    const contextSummary = getContextSummary(toolName, input);
 
     const codeStyle = {
         margin: 0,
@@ -36,56 +54,150 @@ export function AssistantToolUseBlock({ toolName, input, result, isError }: Assi
     return (
         <div style={{
             margin: "4px 0",
-            padding: "8px 12px",
             borderRadius: "6px",
-            backgroundColor: "#f0f0f0",
-            fontSize: "13px",
+            overflow: "hidden",
+            border: borderColor ? `2px solid ${borderColor}` : undefined,
         }}>
-            <ExpandableSection
-                toggleText={
-                    <span>
-                        <Label isCompact color={isError ? "red" : "blue"}>
-                            {toolName}
-                        </Label>
-                        {inputPreview && (
-                            <span style={{ marginLeft: 8, color: "#6a6e73", fontSize: "12px" }}>
-                                {inputPreview}{input && JSON.stringify(input).length > 100 ? "..." : ""}
-                            </span>
-                        )}
-                    </span>
-                }
-                isExpanded={isExpanded}
-                onToggle={(_e, expanded) => setIsExpanded(expanded)}
-                isIndented
-            >
-                {input && (
-                    <div style={{ marginBottom: result ? 8 : 0 }}>
+            <div style={{
+                padding: "8px 12px",
+                backgroundColor: "#f0f0f0",
+                fontSize: "13px",
+            }}>
+                <ExpandableSection
+                    toggleText={
+                        <span>
+                            <Label isCompact color={isError ? "red" : "blue"}>
+                                {toolName}
+                            </Label>
+                            {inputPreview && (
+                                <span style={{ marginLeft: 8, color: "#6a6e73", fontSize: "12px" }}>
+                                    {inputPreview}{input && JSON.stringify(input).length > 100 ? "..." : ""}
+                                </span>
+                            )}
+                        </span>
+                    }
+                    isExpanded={isExpanded}
+                    onToggle={(_e, expanded) => setIsExpanded(expanded)}
+                    isIndented
+                >
+                    {input && (
+                        <div style={{ marginBottom: result ? 8 : 0 }}>
+                            <SyntaxHighlighter
+                                language="json"
+                                style={stackoverflowLight}
+                                customStyle={codeStyle}
+                                wrapLongLines
+                            >
+                                {JSON.stringify(input, null, 2)}
+                            </SyntaxHighlighter>
+                        </div>
+                    )}
+                    {result && (
                         <SyntaxHighlighter
-                            language="json"
+                            language={isJson(result) ? "json" : "bash"}
                             style={stackoverflowLight}
-                            customStyle={codeStyle}
+                            customStyle={{
+                                ...codeStyle,
+                                ...(isError ? { backgroundColor: "#fef3f2" } : {}),
+                            }}
                             wrapLongLines
                         >
-                            {JSON.stringify(input, null, 2)}
+                            {isJson(result) ? formatJson(result) : result}
                         </SyntaxHighlighter>
-                    </div>
-                )}
-                {result && (
-                    <SyntaxHighlighter
-                        language={isJson(result) ? "json" : "bash"}
-                        style={stackoverflowLight}
-                        customStyle={{
-                            ...codeStyle,
-                            ...(isError ? { backgroundColor: "#fef3f2" } : {}),
-                        }}
-                        wrapLongLines
-                    >
-                        {isJson(result) ? formatJson(result) : result}
-                    </SyntaxHighlighter>
-                )}
-            </ExpandableSection>
+                    )}
+                </ExpandableSection>
+            </div>
+
+            {permissionId && isAskUser && input?.questions && (
+                <div style={{ borderTop: "1px solid #d2d2d2" }}>
+                    <AssistantAskUserQuestion
+                        permissionId={permissionId}
+                        questions={input.questions as {
+                            question: string;
+                            header?: string;
+                            options: { label: string; description?: string }[];
+                            multiSelect?: boolean;
+                        }[]}
+                        onRespond={onPermissionRespond!}
+                        resolved={permissionResolved}
+                    />
+                </div>
+            )}
+
+            {permissionId && !isAskUser && (
+                <div style={{
+                    padding: "10px 12px",
+                    backgroundColor: needsPermission ? "#fdf7e7" : "#f0f0f0",
+                    borderTop: "1px solid #d2d2d2",
+                    fontSize: "13px",
+                }}>
+                    {needsPermission ? (
+                        <>
+                            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                                Permission required
+                            </div>
+                            {contextSummary && (
+                                <div style={{
+                                    marginBottom: 8,
+                                    padding: "6px 10px",
+                                    backgroundColor: "white",
+                                    borderRadius: "4px",
+                                    border: "1px solid #d2d2d2",
+                                    fontFamily: "monospace",
+                                    fontSize: "12px",
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-all",
+                                    maxHeight: "120px",
+                                    overflow: "auto",
+                                }}>
+                                    {contextSummary}
+                                </div>
+                            )}
+                            <Flex>
+                                <FlexItem>
+                                    <Button variant="primary" size="sm"
+                                        onClick={() => onPermissionRespond?.(permissionId, true, input)}>
+                                        Allow
+                                    </Button>
+                                </FlexItem>
+                                <FlexItem>
+                                    <Button variant="secondary" size="sm"
+                                        onClick={() => onPermissionRespond?.(permissionId, false, input)}>
+                                        Deny
+                                    </Button>
+                                </FlexItem>
+                            </Flex>
+                        </>
+                    ) : (
+                        <span style={{ color: "#6a6e73", fontStyle: "italic" }}>
+                            Permission granted
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
     );
+}
+
+function getContextSummary(toolName: string, input?: Record<string, unknown>): string | null {
+    if (!input) return null;
+    switch (toolName) {
+        case "Bash":
+            return input.command as string || null;
+        case "Write":
+            return `Write to: ${input.file_path || "unknown file"}`;
+        case "Edit":
+            return `Edit: ${input.file_path || "unknown file"}`;
+        case "Read":
+            return `Read: ${input.file_path || "unknown file"}`;
+        case "Agent":
+            return `Agent: ${input.description || input.prompt || ""}`.substring(0, 200);
+        default:
+            if (typeof input === "object" && Object.keys(input).length > 0) {
+                return JSON.stringify(input, null, 2).substring(0, 200);
+            }
+            return null;
+    }
 }
 
 function isJson(text: string): boolean {
