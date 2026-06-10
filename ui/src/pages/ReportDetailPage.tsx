@@ -23,7 +23,14 @@ import {
     Title,
 } from "@patternfly/react-core";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
-import { type Report, fetchReport, deleteReport, updateReportLabels } from "../config/api";
+import {
+    type Report,
+    type ReportDefinition,
+    fetchReport,
+    fetchReportDefinition,
+    deleteReport,
+    updateReportLabels,
+} from "../config/api";
 import { sseClient, type AxiomSseEvent } from "../config/sse";
 import { RenderedReport } from "../components/RenderedReport";
 import { ExecutionLogModal } from "../components/ExecutionLogModal";
@@ -37,6 +44,7 @@ export function ReportDetailPage() {
     const id = Number(reportId);
 
     const [report, setReport] = useState<Report | null>(null);
+    const [definition, setDefinition] = useState<ReportDefinition | null>(null);
     const [loading, setLoading] = useState(true);
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -52,7 +60,12 @@ export function ReportDetailPage() {
         if (!id) return;
         setLoading(true);
         fetchReport(id)
-            .then(setReport)
+            .then((r) => {
+                setReport(r);
+                fetchReportDefinition(r.definitionId)
+                    .then(setDefinition)
+                    .catch(console.error);
+            })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, [id]);
@@ -125,6 +138,14 @@ export function ReportDetailPage() {
                                     : report.status === "Failed" ? "red" : "blue"}>
                                     {report.status}
                                 </Label>
+                            </DescriptionListDescription>
+                        </DescriptionListGroup>
+                        <DescriptionListGroup>
+                            <DescriptionListTerm>Definition</DescriptionListTerm>
+                            <DescriptionListDescription>
+                                <Link to={`/report-definitions/${report.definitionId}`}>
+                                    {definition?.name || `Definition #${report.definitionId}`}
+                                </Link>
                             </DescriptionListDescription>
                         </DescriptionListGroup>
                         {report.timeRangeStart && report.timeRangeEnd && (
