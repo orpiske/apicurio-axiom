@@ -1,0 +1,20 @@
+@keyframes axiom-throb {
+    0%, 100% {
+        transform: scale(1);
+        color: #2082a3;
+    }
+    50% {
+        transform: scale(2);
+        color: #cc6600;
+    }
+}
+
+.axiom-assistant-throb svg {
+    animation: axiom-throb 2s ease-in-out infinite;
+}
+
+.axiom-assistant-throb:hover svg {
+    animation: none;
+    transform: scale(1.3);
+    color: #0066cc;
+}

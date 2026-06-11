@@ -204,7 +204,7 @@ export function DashboardPage() {
     }
 
     return (
-        <PageSection style={{ height: "100vh" }}>
+        <PageSection isFilled={true}>
             <Title headingLevel="h1" size="lg" style={{ marginBottom: "16px" }}>
                 Dashboard
             </Title>

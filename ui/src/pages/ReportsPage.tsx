@@ -4,6 +4,8 @@ import {
     Button,
     EmptyState,
     EmptyStateBody,
+    EmptyStateFooter,
+    EmptyStateActions,
     Label,
     Modal,
     ModalBody,
@@ -166,13 +168,27 @@ export function ReportsPage() {
                     <EmptyState>
                         <EmptyStateBody>Loading reports...</EmptyStateBody>
                     </EmptyState>
-                ) : reports.length === 0 ? (
+                ) : reports.length === 0 && isFiltered ? (
                     <EmptyState>
                         <EmptyStateBody>
-                            {isFiltered
-                                ? "No reports match the current filters."
-                                : "No reports generated yet. Configure and enable a report definition under Configuration \u2192 Report Definitions, or click \"Run Now\" to generate one immediately."}
+                            No reports match the current filters.
                         </EmptyStateBody>
+                    </EmptyState>
+                ) : reports.length === 0 ? (
+                    <EmptyState headingLevel="h2" titleText="No reports yet">
+                        <EmptyStateBody>
+                            Reports are generated from Report Definitions. Configure and
+                            enable a report definition, or click "Run Now" on an existing
+                            one to generate a report.
+                        </EmptyStateBody>
+                        <EmptyStateFooter>
+                            <EmptyStateActions>
+                                <Button variant="primary"
+                                    onClick={() => navigate("/report-definitions")}>
+                                    Go to Report Definitions
+                                </Button>
+                            </EmptyStateActions>
+                        </EmptyStateFooter>
                     </EmptyState>
                 ) : (
                     <Table aria-label="Reports" variant="compact">

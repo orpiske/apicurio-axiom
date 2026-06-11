@@ -16,6 +16,9 @@ yarn-error.log
 # Build output
 dist/
 
+# Plans
+docs/plans/
+
 # Runtime data
 data/
 logs/

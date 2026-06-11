@@ -1,0 +1,19 @@
+.assistant-tabbed-modal-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.assistant-tabbed-modal-body > .pf-v6-c-tab-content:not([hidden]) {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column;
+}
+
+.assistant-tabbed-modal-body > .pf-v6-c-tab-content:not([hidden]) > div {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
