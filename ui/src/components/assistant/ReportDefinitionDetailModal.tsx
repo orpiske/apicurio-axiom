@@ -109,7 +109,7 @@ export function ReportDefinitionDetailModal({
                             </DescriptionList>
                         </div>
                     </Tab>
-                    {promptTemplate && (
+                    {promptTemplate ? (
                         <Tab eventKey={1} title={<TabTitleText>Prompt Template</TabTitleText>}>
                             <div style={{ paddingTop: 16, flex: "1 1 0", minHeight: 0 }}>
                                 <CodeEditor
@@ -121,7 +121,7 @@ export function ReportDefinitionDetailModal({
                                 />
                             </div>
                         </Tab>
-                    )}
+                    ) : null}
                 </Tabs>
             </ModalBody>
         </Modal>

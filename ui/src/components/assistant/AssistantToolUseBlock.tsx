@@ -64,7 +64,7 @@ export function AssistantToolUseBlock({
                 fontSize: "13px",
             }}>
                 <ExpandableSection
-                    toggleText={
+                    toggleContent={
                         <span>
                             <Label isCompact color={isError ? "red" : "blue"}>
                                 {toolName}
@@ -108,7 +108,7 @@ export function AssistantToolUseBlock({
                 </ExpandableSection>
             </div>
 
-            {permissionId && isAskUser && input?.questions && (
+            {permissionId && isAskUser && Array.isArray(input?.questions) && (
                 <div style={{ borderTop: "1px solid #d2d2d2" }}>
                     <AssistantAskUserQuestion
                         permissionId={permissionId}

@@ -79,7 +79,7 @@ export function ToolDetailModal({ isOpen, onClose, name, content }: ToolDetailMo
                                     <DescriptionList isHorizontal isCompact style={{ marginTop: 16 }}>
                                         <DescriptionListGroup>
                                             <DescriptionListTerm>Parameters</DescriptionListTerm>
-                                            <DescriptionListDescription />
+                                            <DescriptionListDescription>{" "}</DescriptionListDescription>
                                         </DescriptionListGroup>
                                     </DescriptionList>
                                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
@@ -106,7 +106,7 @@ export function ToolDetailModal({ isOpen, onClose, name, content }: ToolDetailMo
                             )}
                         </div>
                     </Tab>
-                    {scriptTemplate && (
+                    {scriptTemplate ? (
                         <Tab eventKey={1} title={<TabTitleText>Script Template</TabTitleText>}>
                             <div style={{ paddingTop: 16, flex: "1 1 0", minHeight: 0 }}>
                                 <CodeEditor
@@ -118,7 +118,7 @@ export function ToolDetailModal({ isOpen, onClose, name, content }: ToolDetailMo
                                 />
                             </div>
                         </Tab>
-                    )}
+                    ) : null}
                 </Tabs>
             </ModalBody>
         </Modal>

@@ -102,7 +102,7 @@ export function AssistantAskUserQuestion({
             backgroundColor: "#f0f8ff",
         }}>
             <ExpandableSection
-                toggleText={
+                toggleContent={
                     <span>
                         <Label isCompact color="blue" style={{ marginRight: 8 }}>
                             Question

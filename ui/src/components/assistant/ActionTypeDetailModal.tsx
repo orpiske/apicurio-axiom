@@ -115,7 +115,7 @@ export function ActionTypeDetailModal({ isOpen, onClose, name, content }: Action
                             </DescriptionList>
                         </div>
                     </Tab>
-                    {templateContent && (
+                    {templateContent ? (
                         <Tab eventKey={1} title={<TabTitleText>{templateLabel}</TabTitleText>}>
                             <div style={{ paddingTop: 16, flex: "1 1 0", minHeight: 0 }}>
                                 <CodeEditor
@@ -127,7 +127,7 @@ export function ActionTypeDetailModal({ isOpen, onClose, name, content }: Action
                                 />
                             </div>
                         </Tab>
-                    )}
+                    ) : null}
                 </Tabs>
             </ModalBody>
         </Modal>

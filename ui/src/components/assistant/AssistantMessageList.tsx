@@ -4,7 +4,6 @@ import remarkGfm from "remark-gfm";
 import { Content, Spinner } from "@patternfly/react-core";
 import { AssistantToolUseBlock } from "./AssistantToolUseBlock";
 import { AssistantPermissionPrompt } from "./AssistantPermissionPrompt";
-import { AssistantAskUserQuestion } from "./AssistantAskUserQuestion";
 import "./AssistantMessageList.css";
 
 export interface ChatMessage {
@@ -132,7 +131,7 @@ export function AssistantMessageList({ messages, onPermissionRespond, isProcessi
                                 key={msg.id}
                                 permissionId={msg.permissionId || ""}
                                 toolName={msg.toolName || "unknown"}
-                                toolInput={msg.toolInput}
+                                input={msg.toolInput}
                                 onRespond={onPermissionRespond}
                                 resolved={msg.permissionResolved}
                             />
